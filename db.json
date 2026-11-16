@@ -1,0 +1,124 @@
+{
+  "event": {
+    "id": "EVT-2026-001",
+    "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern",
+    "jp": 32,
+    "category": "Teknis & Manajerial Kepegawaian",
+    "schedule": "18 - 20 November 2026, 08:00 - 16:30 WIB",
+    "location": "Auditorium Sasana Praja BKPSDM & Hybrid Zoom",
+    "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia (BKPSDM)",
+    "targetAudience": "Aparatur Sipil Negara (ASN) Pelaksana & Fungsional",
+    "updatedAt": "2026-11-16T12:00:00.000Z"
+  },
+  "employees": [
+    {
+      "id": "EMP-001",
+      "nip": "198803152010121002",
+      "name": "Budi Santoso, S.Kom., M.T.",
+      "jabatan": "Pranata Komputer Ahli Muda",
+      "instansi": "Dinas Komunikasi dan Informatika",
+      "attended": true,
+      "attendedAt": "2026-11-16T08:15:20.000Z",
+      "accumulatedJp": 96,
+      "lpti": {
+        "status": "approved",
+        "fileName": "LPTI_Budi_Santoso_EVT001.pdf",
+        "fileOriginalName": "Laporan_Pasca_Pelatihan_Budi_Santoso.pdf",
+        "filePath": "/uploads/lpti/LPTI_Budi_Santoso_EVT001.pdf",
+        "fileSize": 348160,
+        "uploadedAt": "2026-11-16T09:30:15.000Z",
+        "revisionNote": ""
+      },
+      "certificate": {
+        "number": "800.1.3/SERT-LPTI/2026/001",
+        "issuedAt": "2026-11-16T10:00:00.000Z",
+        "verifier": "Drs. H. Hendrawan, M.Si",
+        "verifierTitle": "Kepala Badan Kepegawaian dan Pengembangan SDM"
+      }
+    },
+    {
+      "id": "EMP-002",
+      "nip": "199207212015032004",
+      "name": "Siti Nurhaliza, S.E., M.M.",
+      "jabatan": "Analis Kepegawaian Pertama",
+      "instansi": "Badan Kepegawaian Daerah",
+      "attended": true,
+      "attendedAt": "2026-11-16T08:22:45.000Z",
+      "accumulatedJp": 64,
+      "lpti": {
+        "status": "pending",
+        "fileName": "LPTI_Siti_Nurhaliza_EVT001.pdf",
+        "fileOriginalName": "LPTI_Siti_Nurhaliza_Final.pdf",
+        "filePath": "/uploads/lpti/LPTI_Siti_Nurhaliza_EVT001.pdf",
+        "fileSize": 284500,
+        "uploadedAt": "2026-11-16T09:45:10.000Z",
+        "revisionNote": ""
+      },
+      "certificate": null
+    },
+    {
+      "id": "EMP-003",
+      "nip": "198511042008011003",
+      "name": "Ahmad Fauzi, S.Sos.",
+      "jabatan": "Pengelola Pengadaan Barang/Jasa",
+      "instansi": "Sekretariat Daerah",
+      "attended": true,
+      "attendedAt": "2026-11-16T08:35:10.000Z",
+      "accumulatedJp": 48,
+      "lpti": {
+        "status": "revision",
+        "fileName": "LPTI_Ahmad_Fauzi_EVT001.pdf",
+        "fileOriginalName": "Laporan_Ahmad_Fauzi.pdf",
+        "filePath": "/uploads/lpti/LPTI_Ahmad_Fauzi_EVT001.pdf",
+        "fileSize": 195200,
+        "uploadedAt": "2026-11-16T10:10:00.000Z",
+        "revisionNote": "Bab 3 Rencana Tindak Lanjut belum dilengkapi tandatangan atasan langsung. Mohon upload ulang dengan lembar pengesahan berstempel basah/TTE."
+      },
+      "certificate": null
+    },
+    {
+      "id": "EMP-004",
+      "nip": "199504122019022007",
+      "name": "Rina Marlina, S.Tr.Ak.",
+      "jabatan": "Auditor Pertama",
+      "instansi": "Inspektorat Daerah",
+      "attended": false,
+      "attendedAt": null,
+      "accumulatedJp": 40,
+      "lpti": {
+        "status": "none",
+        "fileName": null,
+        "fileOriginalName": null,
+        "filePath": null,
+        "fileSize": 0,
+        "uploadedAt": null,
+        "revisionNote": ""
+      },
+      "certificate": null
+    },
+    {
+      "id": "EMP-005",
+      "nip": "199010052014021005",
+      "name": "Dr. Dian Puspitasari, M.Pd.",
+      "jabatan": "Widyaiswara Ahli Pertama",
+      "instansi": "BPSDM Provinsi",
+      "attended": false,
+      "attendedAt": null,
+      "accumulatedJp": 112,
+      "lpti": {
+        "status": "none",
+        "fileName": null,
+        "fileOriginalName": null,
+        "filePath": null,
+        "fileSize": 0,
+        "uploadedAt": null,
+        "revisionNote": ""
+      },
+      "certificate": null
+    }
+  ],
+  "system": {
+    "certPrefix": "800.1.3/SERT-LPTI/2026",
+    "certCounter": 2
+  }
+}

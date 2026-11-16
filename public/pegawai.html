@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Mandiri Pegawai - Presensi, LPTI & E-Sertifikat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-cert-serif { font-family: 'Cinzel', serif; }
+    
+    @keyframes pulse-soft {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.03); opacity: 0.9; }
+    }
+    .pulse-soft { animation: pulse-soft 2s infinite ease-in-out; }
+
+    /* CSS Khusus Cetak E-Sertifikat Presisi A4 Landscape */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificatePrintArea, #certificatePrintArea * {
+        visibility: visible;
+      }
+      #certificatePrintArea {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 20px !important;
+        background: white !important;
+        box-shadow: none !important;
+        border: none !important;
+        z-index: 99999;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 8mm;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen selection:bg-emerald-500 selection:text-white pb-16">
+
+  <!-- Employee Navigation Bar -->
+  <header class="bg-white sticky top-0 z-30 border-b border-emerald-100 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="/" class="p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition" title="Kembali ke Beranda">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        </a>
+        <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-sm shadow-emerald-600/30">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 block">Portal Layanan ASN</span>
+          <h1 class="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">Presensi Mandiri & E-Sertifikat</h1>
+        </div>
+      </div>
+
+      <!-- Quick Switcher Demo Akun Pegawai -->
+      <div class="flex items-center space-x-2">
+        <div class="text-right hidden sm:block">
+          <span class="text-[10px] text-slate-400 block font-semibold uppercase">Pilih Pegawai (Simulasi):</span>
+          <select id="employeeSelect" onchange="switchEmployee(this.value)" class="text-xs font-bold text-emerald-800 bg-emerald-50/80 border border-emerald-200 rounded-lg px-2.5 py-1 focus:ring-1 focus:ring-emerald-500">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+        <a href="/admin" target="_blank" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-emerald-700 transition">
+          <span class="hidden sm:inline">Buka Admin</span>
+          <svg class="w-3.5 h-3.5 sm:ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Switcher Bar -->
+  <div class="sm:hidden bg-emerald-50/90 border-b border-emerald-100 px-4 py-2 flex items-center justify-between">
+    <span class="text-xs font-bold text-emerald-800">Akun Pegawai:</span>
+    <select id="employeeSelectMobile" onchange="switchEmployee(this.value)" class="text-xs font-bold text-emerald-900 bg-white border border-emerald-200 rounded-lg px-2 py-1">
+      <!-- Populated via JS -->
+    </select>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed top-20 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+
+    <!-- Active Event Banner Ribbon -->
+    <div class="bg-gradient-to-r from-emerald-800 to-teal-800 rounded-3xl p-6 sm:p-7 text-white shadow-lg shadow-emerald-900/10 mb-8 relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-white/5 rounded-full pointer-events-none"></div>
+      
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/15 text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-2">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="eventCategoryBadge">Teknis & Manajerial Kepegawaian</span>
+          </div>
+          <h2 id="eventTitleBanner" class="text-xl sm:text-2xl font-black text-white leading-tight mb-2">
+            Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern
+          </h2>
+          <p id="eventScheduleBanner" class="text-xs sm:text-sm text-emerald-100 flex items-center">
+            <svg class="w-4 h-4 mr-1.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            18 - 20 November 2026 &bull; Auditorium Sasana Praja BKPSDM
+          </p>
+        </div>
+
+        <div class="flex-shrink-0 flex items-center space-x-3">
+          <div class="bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 text-center">
+            <span class="text-[10px] uppercase font-bold text-emerald-200 block">Bobot Pelatihan</span>
+            <span id="eventJpBadge" class="text-2xl font-black text-white">32 JP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 Column Layout: Left (Profil & Presensi) | Right (Unggah LPTI & E-Sertifikat) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- LEFT COLUMN: PROFIL PEGAWAI & PRESENSI MANDIRI (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- 1. Profil Pegawai Card -->
+        <section class="bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm">
+          <div class="flex items-center space-x-3 pb-4 mb-5 border-b border-slate-100">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xl">
+              <span id="empAvatarInitial">B</span>
+            </div>
+            <div class="flex-grow">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Identitas Peserta</span>
+              <h3 id="empName" class="text-base font-extrabold text-slate-900 leading-tight">Budi Santoso, S.Kom., M.T.</h3>
+              <p id="empNip" class="text-xs font-mono text-slate-500">NIP: 198803152010121002</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs mb-6">
+            <div class="flex justify-between py-1.5 border-b border-slate-50">
+              <span class="text-slate-400 font-medium">Jabatan</span>
+              <span id="empJabatan" class="font-bold text-slate-800 text-right">Pranata Komputer Ahli Muda</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-50">
+              <span class="text-slate-400 font-medium">Unit Kerja</span>
+              <span id="empInstansi" class="font-bold text-slate-800 text-right">Diskominfo</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-50">
+              <span class="text-slate-400 font-medium">Akumulasi Jam Pelajaran (JP)</span>
+              <span id="empAccumulatedJp" class="font-black text-emerald-700 text-right text-sm">96 JP</span>
+            </div>
+            <div class="flex justify-between py-1.5 items-center">
+              <span class="text-slate-400 font-medium">Status Kehadiran Hari Ini</span>
+              <span id="empAttendanceBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>
+                HADIR
+              </span>
+            </div>
+          </div>
+
+          <!-- Section Presensi QR Token -->
+          <div id="attendanceActionBox" class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+            <div class="flex items-center space-x-2 mb-2">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Validasi Kehadiran Aula</h4>
+            </div>
+            
+            <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+              Masukkan token 6-karakter yang sedang tampil di layar proyektor aula (berganti tiap 30s):
+            </p>
+
+            <div class="flex space-x-2">
+              <input type="text" id="inputPresenceToken" placeholder="Contoh: LPTI-A8B9C1" class="uppercase font-mono font-bold text-sm px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-full text-slate-800 placeholder:normal-case placeholder:font-normal placeholder:text-slate-400">
+              <button onclick="submitPresenceToken()" id="btnSubmitPresence" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex-shrink-0">
+                Presensi
+              </button>
+            </div>
+
+            <div class="mt-2.5 flex items-center justify-between text-[11px]">
+              <span class="text-slate-400">Pengujian lokal?</span>
+              <button onclick="autoFillCurrentToken()" class="text-emerald-700 hover:text-emerald-800 font-semibold underline">
+                Isi Token Proyektor Otomatis ⚡
+              </button>
+            </div>
+          </div>
+
+          <div id="attendanceSuccessBox" class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center hidden">
+            <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto mb-1.5">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h4 class="text-xs font-bold text-emerald-900">Presensi Berhasil Terverifikasi</h4>
+            <p id="attendanceTimeLabel" class="text-[11px] text-emerald-700 mt-0.5">Tercatat pada: 16 Nov 2026, 08:15 WIB</p>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: FORM UNGGAH LPTI & OTOMASI E-SERTIFIKAT (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- 2. Form Unggah Dokumen LPTI Card -->
+        <section class="bg-white rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-sm">
+          
+          <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+            <div class="flex items-center space-x-2">
+              <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">2</span>
+              <div>
+                <h3 class="text-base font-extrabold text-slate-900">Unggah Berkas LPTI (File Asli PDF)</h3>
+                <p class="text-xs text-slate-500">Laporan Pasca Pelatihan & Rencana Tindak Lanjut</p>
+              </div>
+            </div>
+
+            <!-- Indikator Status Approval Real-time -->
+            <div id="lptiStatusPill">
+              <!-- Render via JS -->
+            </div>
+          </div>
+
+          <!-- Alert Khusus Catatan Revisi Dari Admin -->
+          <div id="revisionAlertBox" class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 mb-6 hidden animate-in fade-in">
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-xs">!</div>
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-rose-800">Perhatian: Berkas Memerlukan Revisi</h4>
+                <p id="revisionNoteContent" class="text-xs text-rose-700 mt-1 leading-relaxed font-medium">
+                  Catatan dari Admin Kepegawaian...
+                </p>
+                <p class="text-[11px] text-rose-500 mt-2">Silakan unggah ulang dokumen PDF yang telah diperbaiki melalui formulir di bawah ini.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Form -->
+          <form id="lptiUploadForm" onsubmit="handleUploadLpti(event)" class="space-y-4">
+            
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Pilih Berkas Laporan PDF Asli <span class="text-red-500">*</span>
+              </label>
+              
+              <div class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 text-center transition bg-slate-50/50 cursor-pointer relative" onclick="document.getElementById('lptiFileInput').click()">
+                <input type="file" id="lptiFileInput" accept="application/pdf" class="hidden" onchange="handleFileSelected(this)">
+                
+                <div id="fileUploadPrompt">
+                  <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                  </div>
+                  <p class="text-sm font-bold text-slate-800 mb-1">Pilih Dokumen PDF Anda</p>
+                  <p class="text-xs text-slate-400">Klik di sini untuk menelusuri file PDF asli (Maks. 15MB)</p>
+                </div>
+
+                <div id="fileSelectedInfo" class="hidden flex items-center justify-center space-x-3 text-left">
+                  <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                    PDF
+                  </div>
+                  <div class="overflow-hidden">
+                    <p id="selectedFileName" class="text-xs font-bold text-slate-900 truncate max-w-xs">dokumen.pdf</p>
+                    <p id="selectedFileSize" class="text-[11px] text-slate-400 font-mono">0 KB</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Info Dokumen Terunggah Sebelumnya -->
+            <div id="currentUploadedDocCard" class="p-3.5 rounded-xl bg-slate-100/80 border border-slate-200/80 flex items-center justify-between text-xs hidden">
+              <div class="flex items-center space-x-2.5 overflow-hidden">
+                <span class="text-base">📄</span>
+                <div class="truncate">
+                  <span class="text-slate-400 block text-[10px]">Berkas Saat Ini Tersimpan di Server:</span>
+                  <a id="currentUploadedLink" href="#" target="_blank" class="font-bold text-emerald-700 hover:text-emerald-800 hover:underline truncate block">
+                    Nama_File.pdf
+                  </a>
+                </div>
+              </div>
+              <a id="btnPreviewPdf" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 font-semibold text-xs transition flex-shrink-0">
+                👁️ Buka PDF
+              </a>
+            </div>
+
+            <button type="submit" id="btnUploadSubmit" class="w-full inline-flex items-center justify-center px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all text-sm">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              <span>Unggah Berkas LPTI</span>
+            </button>
+          </form>
+
+        </section>
+
+        <!-- 3. Otomasi Penerbitan E-Sertifikat Card -->
+        <section class="bg-white rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-sm relative overflow-hidden">
+          
+          <div class="flex items-center space-x-2 pb-4 mb-4 border-b border-slate-100">
+            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">3</span>
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Penerbitan E-Sertifikat Kepegawaian</h3>
+              <p class="text-xs text-slate-500">Sertifikat resmi diterbitkan otomatis setelah verifikasi disetujui</p>
+            </div>
+          </div>
+
+          <!-- KONDISI A: TERKUNCI -->
+          <div id="certLockedView" class="p-6 rounded-2xl bg-slate-50 border border-slate-200/90 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-slate-200 text-slate-400 flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <h4 class="text-sm font-bold text-slate-800 mb-1">E-Sertifikat Masih Terkunci</h4>
+            <p id="certLockedReason" class="text-xs text-slate-500 max-w-md mx-auto mb-4 leading-relaxed">
+              Tombol klaim sertifikat akan aktif secara otomatis begitu Admin Kepegawaian menyetujui berkas LPTI yang Anda unggah.
+            </p>
+            
+            <button disabled class="inline-flex items-center px-5 py-3 rounded-xl bg-slate-200 text-slate-400 text-xs font-bold cursor-not-allowed">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              <span>Klaim & Unduh E-Sertifikat Resmi (Terkunci)</span>
+            </button>
+          </div>
+
+          <!-- KONDISI B: AKTIF / DISETUJUI -->
+          <div id="certUnlockedView" class="p-6 rounded-2xl bg-gradient-to-tr from-emerald-50 to-teal-50 border border-emerald-200 text-center hidden">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto mb-3 shadow-md shadow-emerald-600/30">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            </div>
+            
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 uppercase tracking-wide mb-1 border border-emerald-200">
+              Selamat! Berkas Disetujui
+            </span>
+            <h4 class="text-base font-extrabold text-slate-900 mb-1">E-Sertifikat Resmi Siap Diterbitkan</h4>
+            <p id="certNumberBadge" class="text-xs font-mono font-bold text-emerald-700 mb-5">Nomor: 800.1.3/SERT-LPTI/2026/001</p>
+
+            <button onclick="openCertificateModal()" class="inline-flex items-center px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold shadow-lg shadow-emerald-600/30 hover:shadow-xl transition-all hover:scale-[1.02]">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              <span>Klaim & Unduh E-Sertifikat Resmi (PDF)</span>
+            </button>
+          </div>
+
+        </section>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL: PREVIEW E-SERTIFIKAT RESMI & CETAK PDF -->
+  <div id="certificateModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto hidden">
+    
+    <div class="relative bg-white rounded-3xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 my-auto">
+      
+      <!-- Modal Action Bar (Cetak & Tutup) -->
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
+          <h3 class="text-sm font-bold text-slate-800">Pratinjau E-Sertifikat Resmi Kepegawaian</h3>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            <span>Cetak / Simpan PDF</span>
+          </button>
+          <button onclick="closeCertificateModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- AREA CETAK SERTIFIKAT (PRINT AREA) -->
+      <div id="certificatePrintArea" class="bg-gradient-to-b from-white via-slate-50 to-emerald-50/20 p-6 sm:p-10 rounded-2xl border-4 border-double border-emerald-800 shadow-inner relative text-center">
+        
+        <!-- Ornamen Sudut Sertifikat -->
+        <div class="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-emerald-700"></div>
+        <div class="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-emerald-700"></div>
+        <div class="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-emerald-700"></div>
+        <div class="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-emerald-700"></div>
+
+        <!-- Kop Lembaga Resmi -->
+        <div class="mb-4">
+          <!-- Logo Garuda / Instansi Vector -->
+          <div class="w-14 h-14 mx-auto mb-2 text-emerald-800 flex items-center justify-center">
+            <svg class="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L9.5 7.5L3.5 8L8 12.5L6.5 18.5L12 15.5L17.5 18.5L16 12.5L20.5 8L14.5 7.5L12 2Z"/>
+            </svg>
+          </div>
+          <h4 class="text-xs sm:text-sm font-bold tracking-widest text-slate-700 uppercase">PEMERINTAH REPUBLIK INDONESIA</h4>
+          <h5 class="text-xs sm:text-sm font-extrabold tracking-wide text-emerald-900 uppercase">BADAN KEPEGAWAIAN DAN PENGEMBANGAN SUMBER DAYA MANUSIA</h5>
+          <div class="w-24 h-0.5 bg-emerald-700 mx-auto mt-2 mb-3"></div>
+        </div>
+
+        <!-- Judul Piagam Sertifikat -->
+        <h2 class="font-cert-serif text-2xl sm:text-3xl font-extrabold text-emerald-950 tracking-wider mb-1">SERTIFIKAT KEPEGAWAIAN</h2>
+        <p id="certModalNumber" class="text-xs font-mono font-semibold text-slate-500 mb-6">Nomor: 800.1.3/SERT-LPTI/2026/001</p>
+
+        <!-- Teks Penerima -->
+        <p class="text-xs text-slate-600 italic mb-2">Diberikan secara resmi kepada:</p>
+        <h3 id="certModalName" class="text-xl sm:text-2xl font-black text-slate-900 mb-1 border-b border-slate-300 pb-1 max-w-lg mx-auto">
+          Budi Santoso, S.Kom., M.T.
+        </h3>
+        <p id="certModalNip" class="text-xs font-mono font-bold text-slate-600 mb-1">NIP: 198803152010121002</p>
+        <p id="certModalJabatanInstansi" class="text-xs text-slate-500 mb-6">Pranata Komputer Ahli Muda &bull; Dinas Komunikasi dan Informatika</p>
+
+        <!-- Pernyataan Kegiatan & JP -->
+        <div class="max-w-2xl mx-auto mb-6 text-xs sm:text-sm leading-relaxed text-slate-700">
+          Atas partisipasi aktif, kehadiran penuh, dan penyelesaian Laporan Pasca Pelatihan dan Rencana Tindak Lanjut (LPTI) pada kegiatan:
+          <div id="certModalEventTitle" class="font-bold text-emerald-900 text-sm sm:text-base mt-1.5 px-4">
+            "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern"
+          </div>
+          <div class="mt-2 text-xs text-slate-500 flex items-center justify-center space-x-2">
+            <span>Diselenggarakan pada: <strong id="certModalSchedule">18 - 20 November 2026</strong></span>
+            <span>&bull;</span>
+            <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold" id="certModalJp">32 Jam Pelajaran (JP)</span>
+          </div>
+        </div>
+
+        <!-- Tanda Tangan & QR Verifikasi -->
+        <div class="grid grid-cols-2 gap-4 max-w-xl mx-auto pt-4 border-t border-slate-200/80 items-end text-left">
+          
+          <!-- Verifikasi Digital QR & Stempel -->
+          <div class="flex items-center space-x-3">
+            <img id="certModalQr" src="" alt="QR Keabsahan" class="w-16 h-16 rounded border border-emerald-200">
+            <div>
+              <span class="text-[9px] font-bold text-emerald-800 uppercase tracking-wider block">Verifikasi Keabsahan</span>
+              <span class="text-[8px] text-slate-400 block leading-tight">Pindai kode QR untuk validasi keaslian dokumen di pangkalan data resmi.</span>
+              <span class="text-[9px] font-mono text-emerald-700 font-bold block mt-1">STATUS: SAH / RESMI</span>
+            </div>
+          </div>
+
+          <!-- Pengesahan Pejabat -->
+          <div class="text-right">
+            <p id="certModalIssueDate" class="text-[10px] text-slate-500 mb-1">Ditetapkan pada: 16 November 2026</p>
+            <p class="text-[10px] font-bold text-slate-700 leading-tight">Kepala Badan Kepegawaian & Pengembangan SDM,</p>
+            
+            <!-- Stempel & TTE Graphic -->
+            <div class="py-2 pr-4 flex items-center justify-end relative">
+              <div class="w-16 h-16 rounded-full border-2 border-emerald-700/60 text-emerald-800/80 flex flex-col items-center justify-center text-[7px] font-bold uppercase rotate-[-12deg] tracking-tighter">
+                <span>★ BKPSDM ★</span>
+                <span class="text-[6px]">TERVERIFIKASI</span>
+                <span>ELEKTRONIK</span>
+              </div>
+            </div>
+
+            <p id="certModalVerifier" class="text-xs font-bold text-slate-900 underline">Drs. H. Hendrawan, M.Si</p>
+            <p class="text-[9px] font-mono text-slate-500">NIP. 197405101998031004</p>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let currentEmployeeId = 'EMP-001';
+    let currentEmployee = null;
+    let currentEvent = null;
+    let employeesList = [];
+
+    // Toast
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const isSuccess = (type === 'success');
+      const isError = (type === 'error');
+
+      toast.className = `pointer-events-auto flex items-center p-4 rounded-2xl shadow-xl border text-sm font-semibold transition-all transform duration-300 translate-y-2 opacity-0 ${
+        isSuccess ? 'bg-emerald-800 text-white border-emerald-600' :
+        isError ? 'bg-rose-800 text-white border-rose-600' : 'bg-slate-900 text-white border-slate-700'
+      }`;
+
+      toast.innerHTML = `
+        <div class="mr-3">
+          ${isSuccess ? '<svg class="w-5 h-5 text-emerald-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' :
+            '<svg class="w-5 h-5 text-rose-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
+          }
+        </div>
+        <div class="flex-grow">${message}</div>
+      `;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // 1. Fetch & Initialize All Data
+    async function loadAllEmployees() {
+      try {
+        const res = await fetch('/api/employees');
+        const data = await res.json();
+        if (data.success) {
+          employeesList = data.employees || [];
+          currentEvent = data.event || {};
+          populateEmployeeDropdown();
+          renderEventBanner();
+          loadEmployeeProfile(currentEmployeeId);
+        }
+      } catch (err) {
+        console.error('Error load employees:', err);
+      }
+    }
+
+    function populateEmployeeDropdown() {
+      const selectDesktop = document.getElementById('employeeSelect');
+      const selectMobile = document.getElementById('employeeSelectMobile');
+
+      const optionsHtml = employeesList.map(e => `
+        <option value="${e.id}" ${e.id === currentEmployeeId ? 'selected' : ''}>
+          ${e.name} (${e.lpti?.status === 'approved' ? '✓ Sertifikat Terbit' : e.lpti?.status === 'pending' ? '⏳ Review' : e.lpti?.status === 'revision' ? '✕ Revisi' : '⚪ Belum Unggah'})
+        </option>
+      `).join('');
+
+      selectDesktop.innerHTML = optionsHtml;
+      selectMobile.innerHTML = optionsHtml;
+    }
+
+    function switchEmployee(id) {
+      currentEmployeeId = id;
+      loadEmployeeProfile(id);
+      populateEmployeeDropdown();
+    }
+
+    function renderEventBanner() {
+      if (!currentEvent) return;
+      document.getElementById('eventTitleBanner').textContent = currentEvent.title || 'Pelatihan Kepegawaian';
+      document.getElementById('eventCategoryBadge').textContent = currentEvent.category || 'Teknis & Manajerial';
+      document.getElementById('eventScheduleBanner').innerHTML = `
+        <svg class="w-4 h-4 mr-1.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        ${currentEvent.schedule || 'Jadwal Ditentukan'} &bull; ${currentEvent.location || 'Auditorium BKPSDM'}
+      `;
+      document.getElementById('eventJpBadge').textContent = `${currentEvent.jp || 32} JP`;
+    }
+
+    // 2. Load Single Employee Profile & Dynamic State
+    async function loadEmployeeProfile(empId) {
+      try {
+        const res = await fetch(`/api/employees/${empId}`);
+        const data = await res.json();
+        if (data.success && data.employee) {
+          currentEmployee = data.employee;
+          if (data.event) currentEvent = data.event;
+
+          // Render Profil
+          document.getElementById('empAvatarInitial').textContent = currentEmployee.name.charAt(0);
+          document.getElementById('empName').textContent = currentEmployee.name;
+          document.getElementById('empNip').textContent = `NIP: ${currentEmployee.nip}`;
+          document.getElementById('empJabatan').textContent = currentEmployee.jabatan;
+          document.getElementById('empInstansi').textContent = currentEmployee.instansi;
+          document.getElementById('empAccumulatedJp').textContent = `${currentEmployee.accumulatedJp || 0} JP`;
+
+          // Attendance State
+          const isAttended = currentEmployee.attended;
+          const attendanceBadge = document.getElementById('empAttendanceBadge');
+          const actionBox = document.getElementById('attendanceActionBox');
+          const successBox = document.getElementById('attendanceSuccessBox');
+
+          if (isAttended) {
+            attendanceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800';
+            attendanceBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span> HADIR';
+            actionBox.classList.add('hidden');
+            successBox.classList.remove('hidden');
+            if (currentEmployee.attendedAt) {
+              const d = new Date(currentEmployee.attendedAt);
+              document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${d.toLocaleDateString('id-ID')} pukul ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
+            }
+          } else {
+            attendanceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500';
+            attendanceBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-400 mr-1.5"></span> BELUM HADIR';
+            actionBox.classList.remove('hidden');
+            successBox.classList.add('hidden');
+          }
+
+          // LPTI Status Pill & Revision Note
+          renderLptiStatus(currentEmployee.lpti);
+
+          // E-Certificate Section
+          renderCertificateSection(currentEmployee);
+        }
+      } catch (err) {
+        console.error('Error load profile:', err);
+      }
+    }
+
+    // 3. Status Approval Real-time Renderer
+    function renderLptiStatus(lpti) {
+      const status = lpti?.status || 'none';
+      const pill = document.getElementById('lptiStatusPill');
+      const revBox = document.getElementById('revisionAlertBox');
+      const docCard = document.getElementById('currentUploadedDocCard');
+      const docLink = document.getElementById('currentUploadedLink');
+      const btnPreview = document.getElementById('btnPreviewPdf');
+
+      // Reset info upload file picker
+      document.getElementById('fileUploadPrompt').classList.remove('hidden');
+      document.getElementById('fileSelectedInfo').classList.add('hidden');
+      document.getElementById('lptiFileInput').value = '';
+
+      if (lpti && lpti.filePath) {
+        docCard.classList.remove('hidden');
+        docLink.textContent = lpti.fileOriginalName || lpti.fileName;
+        docLink.href = lpti.filePath;
+        btnPreview.href = lpti.filePath;
+      } else {
+        docCard.classList.add('hidden');
+      }
+
+      // Status Badge UI
+      if (status === 'none') {
+        pill.innerHTML = `
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+            ⚪ Belum Diunggah
+          </span>
+        `;
+        revBox.classList.add('hidden');
+      } else if (status === 'pending') {
+        pill.innerHTML = `
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 pulse-soft">
+            <span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5 animate-ping"></span>
+            ⏳ Menunggu Persetujuan Kepegawaian
+          </span>
+        `;
+        revBox.classList.add('hidden');
+      } else if (status === 'revision') {
+        pill.innerHTML = `
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+            ✕ Perlu Revisi
+          </span>
+        `;
+        revBox.classList.remove('hidden');
+        document.getElementById('revisionNoteContent').textContent = lpti.revisionNote || 'Mohon periksa kembali kelengkapan lembar pengesahan berkas LPTI.';
+      } else if (status === 'approved') {
+        pill.innerHTML = `
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+            ✓ Disetujui Kepegawaian!
+          </span>
+        `;
+        revBox.classList.add('hidden');
+      }
+    }
+
+    // 4. Render Bagian E-Sertifikat
+    function renderCertificateSection(emp) {
+      const isApproved = (emp.lpti?.status === 'approved' && Boolean(emp.certificate));
+      const lockedView = document.getElementById('certLockedView');
+      const unlockedView = document.getElementById('certUnlockedView');
+      const lockedReason = document.getElementById('certLockedReason');
+
+      if (isApproved) {
+        lockedView.classList.add('hidden');
+        unlockedView.classList.remove('hidden');
+        document.getElementById('certNumberBadge').textContent = `Nomor Sertifikat: ${emp.certificate.number}`;
+      } else {
+        lockedView.classList.remove('hidden');
+        unlockedView.classList.add('hidden');
+
+        if (!emp.attended) {
+          lockedReason.textContent = 'Presensi kehadiran di aula belum dilakukan. Silakan validasi token QR terlebih dahulu.';
+        } else if (!emp.lpti || emp.lpti.status === 'none') {
+          lockedReason.textContent = 'Berkas LPTI belum diunggah. Unggah laporan format PDF Anda untuk diverifikasi Admin.';
+        } else if (emp.lpti.status === 'pending') {
+          lockedReason.textContent = 'Berkas LPTI Anda sedang dalam antrean verifikasi manual oleh Admin Kepegawaian.';
+        } else if (emp.lpti.status === 'revision') {
+          lockedReason.textContent = 'Berkas LPTI memerlukan perbaikan sesuai catatan Admin. Harap unggah revisi dokumen.';
+        }
+      }
+    }
+
+    // 5. Submit Presensi Mandiri
+    async function submitPresenceToken() {
+      const tokenInput = document.getElementById('inputPresenceToken');
+      const token = tokenInput.value.trim();
+
+      if (!token) {
+        showToast('Silakan masukkan kode token Dynamic QR terlebih dahulu!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitPresence');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/presensi/verify-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employeeId: currentEmployeeId, token: token })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          tokenInput.value = '';
+          loadEmployeeProfile(currentEmployeeId);
+          loadAllEmployees();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal memverifikasi presensi: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function autoFillCurrentToken() {
+      try {
+        const res = await fetch('/api/qr/current');
+        const data = await res.json();
+        if (data.success && data.token) {
+          document.getElementById('inputPresenceToken').value = data.token;
+          showToast(`Token aktif "${data.token}" berhasil diisikan secara otomatis!`, 'success');
+        }
+      } catch (err) {
+        showToast('Gagal mengambil token server: ' + err.message, 'error');
+      }
+    }
+
+    // 6. Handle File Selection & Upload (Multer)
+    function handleFileSelected(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+          showToast('Hanya file berformat PDF (.pdf) yang diperbolehkan!', 'error');
+          input.value = '';
+          return;
+        }
+
+        document.getElementById('fileUploadPrompt').classList.add('hidden');
+        document.getElementById('fileSelectedInfo').classList.remove('hidden');
+        document.getElementById('selectedFileName').textContent = file.name;
+        document.getElementById('selectedFileSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+      }
+    }
+
+    async function handleUploadLpti(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('lptiFileInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('Silakan pilih berkas PDF asli terlebih dahulu!', 'error');
+        return;
+      }
+
+      if (!currentEmployee.attended) {
+        showToast('Anda wajib presensi kehadiran di aula sebelum mengunggah LPTI!', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('lptiFile', fileInput.files[0]);
+
+      const btn = document.getElementById('btnUploadSubmit');
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Mengunggah Berkas PDF...`;
+
+      try {
+        const res = await fetch(`/api/employees/${currentEmployeeId}/upload-lpti`, {
+          method: 'POST',
+          body: formData
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          loadEmployeeProfile(currentEmployeeId);
+          loadAllEmployees();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal mengunggah berkas: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> <span>Unggah Berkas LPTI</span>`;
+      }
+    }
+
+    // 7. Preview & Buka Modal E-Sertifikat
+    async function openCertificateModal() {
+      try {
+        const res = await fetch(`/api/employees/${currentEmployeeId}/certificate`);
+        const data = await res.json();
+        if (data.success && data.certificate) {
+          const cert = data.certificate;
+
+          document.getElementById('certModalNumber').textContent = `Nomor: ${cert.number}`;
+          document.getElementById('certModalName').textContent = cert.employeeName;
+          document.getElementById('certModalNip').textContent = `NIP: ${cert.employeeNip}`;
+          document.getElementById('certModalJabatanInstansi').textContent = `${cert.employeeJabatan} • ${cert.employeeInstansi}`;
+          document.getElementById('certModalEventTitle').textContent = `"${cert.eventTitle}"`;
+          document.getElementById('certModalSchedule').textContent = cert.eventSchedule;
+          document.getElementById('certModalJp').textContent = `${cert.eventJp} Jam Pelajaran (JP)`;
+          document.getElementById('certModalQr').src = cert.qrVerification;
+          document.getElementById('certModalVerifier').textContent = cert.verifier;
+
+          const d = new Date(cert.issuedAt);
+          document.getElementById('certModalIssueDate').textContent = `Ditetapkan pada: ${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+          document.getElementById('certificateModal').classList.remove('hidden');
+        } else {
+          showToast(data.message || 'Gagal memuat sertifikat.', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal memuat data sertifikat: ' + err.message, 'error');
+      }
+    }
+
+    function closeCertificateModal() {
+      document.getElementById('certificateModal').classList.add('hidden');
+    }
+
+    // Polling Real-time Sinkronisasi Status Verifikasi Setiap 3 Detik
+    setInterval(() => {
+      if (currentEmployeeId) {
+        loadEmployeeProfile(currentEmployeeId);
+      }
+    }, 3000);
+
+    // Initial Load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllEmployees();
+    });
+  </script>
+</body>
+</html>
+

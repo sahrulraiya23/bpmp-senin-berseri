@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin Kepegawaian - Presensi & Verifikasi LPTI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-ring { animation: pulse-ring 2s infinite ease-in-out; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen selection:bg-emerald-500 selection:text-white pb-16">
+
+  <!-- Admin Top Navigation -->
+  <header class="bg-white sticky top-0 z-30 border-b border-emerald-100 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="/" class="p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition" title="Kembali ke Portal Utama">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        </a>
+        <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-sm shadow-emerald-600/30">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 block">Dashboard Pengelola</span>
+          <h1 class="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">Admin Kepegawaian & Verifikasi LPTI</h1>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <a href="/pegawai" target="_blank" class="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Buka Portal Pegawai ↗
+        </a>
+        <button onclick="resetDemoData()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition flex items-center" title="Kembalikan data ke awal untuk pengujian">
+          <svg class="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Reset Data
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="fixed top-20 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+
+    <!-- KPI / Statistics Ribbon -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white p-5 rounded-2xl border border-emerald-100/90 shadow-sm flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 font-semibold block">Total Peserta</span>
+          <span id="statTotal" class="text-2xl font-black text-slate-900">0</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-emerald-100/90 shadow-sm flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 font-semibold block">Presensi Hadir</span>
+          <span id="statHadir" class="text-2xl font-black text-emerald-700">0</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 font-semibold block">Menunggu Verifikasi</span>
+          <span id="statPending" class="text-2xl font-black text-amber-600">0</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-emerald-100/90 shadow-sm flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm shadow-emerald-600/30">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 font-semibold block">Sertifikat Terbit</span>
+          <span id="statApproved" class="text-2xl font-black text-emerald-800">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 Column Top Area: Event Setup & Dynamic QR Projector -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+
+      <!-- FITUR 1: FORM PEMBUATAN EVENT (5 Cols) -->
+      <section class="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+            <div class="flex items-center space-x-2">
+              <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">1</span>
+              <div>
+                <h2 class="text-base font-extrabold text-slate-900">Form Pembuatan Event</h2>
+                <p class="text-xs text-slate-500">Konfigurasi materi & alokasi JP terintegrasi</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 uppercase tracking-wide border border-emerald-200">
+              Sinkron Otomatis
+            </span>
+          </div>
+
+          <form id="eventForm" onsubmit="handleSaveEvent(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Judul Kegiatan Pelatihan <span class="text-red-500">*</span>
+              </label>
+              <textarea id="eventTitle" rows="2" required placeholder="Contoh: Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition placeholder:text-slate-400"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Nilai JP (1 - 120) <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <input type="number" id="eventJp" required min="1" max="120" placeholder="32" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-bold text-emerald-700 transition">
+                  <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">JP</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Wajib angka 1 s/d 120 Jam Pelajaran.</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Kategori Pelatihan
+                </label>
+                <select id="eventCategory" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 bg-white">
+                  <option value="Teknis & Manajerial Kepegawaian">Teknis & Manajerial Kepegawaian</option>
+                  <option value="Kompetensi Manajerial ASN">Kompetensi Manajerial ASN</option>
+                  <option value="Fungsional Keahlian Digital">Fungsional Keahlian Digital</option>
+                  <option value="Pelatihan Kepemimpinan Pengawas">Pelatihan Kepemimpinan Pengawas</option>
+                  <option value="Sosialisasi & Workshop Kebijakan">Sosialisasi & Workshop Kebijakan</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Jadwal & Waktu Pelaksanaan
+              </label>
+              <input type="text" id="eventSchedule" placeholder="Contoh: 18 - 20 November 2026, 08:00 - 16:30 WIB" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Tempat / Metode Pelaksanaan
+              </label>
+              <input type="text" id="eventLocation" placeholder="Contoh: Auditorium Sasana Praja BKPSDM & Hybrid Zoom" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition">
+            </div>
+
+            <div class="pt-2">
+              <button type="submit" id="btnSaveEvent" class="w-full inline-flex items-center justify-center px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all text-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                <span>Simpan & Sinkronkan Event</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- FITUR 2: LAYAR PROYEKTOR DYNAMIC QR CODE (7 Cols) -->
+      <section class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        
+        <!-- Header Layar Proyektor -->
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+          <div class="flex items-center space-x-2">
+            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">2</span>
+            <div>
+              <h2 class="text-base font-extrabold text-slate-900">Layar Proyektor Dynamic QR Code</h2>
+              <p class="text-xs text-slate-500">Logika Anti-Titip Presensi Aula (Rotasi 30 Detik)</p>
+            </div>
+          </div>
+
+          <button onclick="openProjectorModal()" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-emerald-700 transition shadow-sm">
+            <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            Mode Proyektor Aula
+          </button>
+        </div>
+
+        <!-- Proyektor Visual Display Card -->
+        <div class="bg-gradient-to-b from-emerald-50/70 to-slate-50 rounded-2xl p-6 border border-emerald-100 text-center flex flex-col items-center justify-center relative">
+          
+          <!-- Anti Titip Security Banner -->
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100/80 text-emerald-800 text-[11px] font-bold uppercase tracking-wider mb-4 border border-emerald-200">
+            <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            <span>Anti-Titip Presensi: Token Berganti Tiap 30 Detik</span>
+          </div>
+
+          <!-- QR Code Container & Frame -->
+          <div class="relative bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-500/80 mb-4 inline-block">
+            <img id="adminQrImage" src="" alt="Dynamic QR Presensi" class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-lg">
+            <div id="qrLoadingOverlay" class="absolute inset-0 bg-white/90 rounded-2xl flex flex-col items-center justify-center hidden">
+              <svg class="w-8 h-8 text-emerald-600 animate-spin mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+              <span class="text-xs font-bold text-emerald-700">Memperbarui Token...</span>
+            </div>
+          </div>
+
+          <!-- Countdown Timer & Token Info -->
+          <div class="w-full max-w-sm mx-auto space-y-3">
+            
+            <!-- Countdown Progress Bar -->
+            <div class="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+              <span class="flex items-center text-emerald-700">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span>
+                Siklus Token Aktif
+              </span>
+              <span id="countdownText" class="text-emerald-700 font-mono text-sm font-extrabold">30 detik</span>
+            </div>
+            
+            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+              <div id="countdownBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+            </div>
+
+            <!-- Current Token Display Box -->
+            <div class="bg-white rounded-xl p-2.5 border border-slate-200 flex items-center justify-between">
+              <span class="text-[11px] text-slate-400 font-medium">Token Server:</span>
+              <span id="currentTokenLabel" class="font-mono font-black text-emerald-800 text-sm tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                LPTI-......
+              </span>
+              <button onclick="copyCurrentToken()" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold px-2 py-1 rounded hover:bg-emerald-50 transition" title="Salin kode token untuk uji coba mandiri">
+                Salin Token
+              </button>
+            </div>
+
+            <p class="text-[11px] text-slate-500 text-center leading-relaxed">
+              💡 Foto barcode yang dikirim via WhatsApp akan kadaluarsa dalam hitungan detik sehingga tidak dapat digunakan oleh pegawai yang tidak berada di lokasi.
+            </p>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- FITUR 3: PANEL PEMERIKSAAN MANUAL BERKAS LPTI (Full Width) -->
+    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm">
+      
+      <!-- Panel Header & Filter -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100">
+        <div class="flex items-center space-x-3">
+          <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base">3</span>
+          <div>
+            <h2 class="text-lg font-black text-slate-900">Panel Pemeriksaan Manual Berkas LPTI</h2>
+            <p class="text-xs text-slate-500">Verifikasi dokumen PDF asli peserta, terbitkan nomor sertifikat resmi atau kirim catatan perbaikan</p>
+          </div>
+        </div>
+
+        <!-- Filter & Search Controls -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="relative">
+            <input type="text" id="searchEmployee" oninput="renderTable()" placeholder="Cari Nama / NIP..." class="pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-44 sm:w-56 font-medium">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+
+          <div class="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+            <button onclick="setFilter('all')" id="filterAll" class="px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition">Semua</button>
+            <button onclick="setFilter('pending')" id="filterPending" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center">
+              <span>Menunggu</span>
+              <span id="badgePendingCount" class="ml-1.5 px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[10px] font-bold">0</span>
+            </button>
+            <button onclick="setFilter('approved')" id="filterApproved" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Disetujui</button>
+            <button onclick="setFilter('revision')" id="filterRevision" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Revisi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employees Verification Table -->
+      <div class="overflow-x-auto rounded-2xl border border-slate-100">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200/80">
+              <th class="py-3.5 px-4">Pegawai / NIP</th>
+              <th class="py-3.5 px-4 text-center">Presensi Aula</th>
+              <th class="py-3.5 px-4">Status Berkas LPTI</th>
+              <th class="py-3.5 px-4">Dokumen Asli</th>
+              <th class="py-3.5 px-4">E-Sertifikat Resmi</th>
+              <th class="py-3.5 px-4 text-center">Aksi Kepegawaian</th>
+            </tr>
+          </thead>
+          <tbody id="employeeTableBody" class="divide-y divide-slate-100 text-sm">
+            <!-- Render via JavaScript -->
+            <tr>
+              <td colspan="6" class="py-12 text-center text-slate-400">
+                <svg class="w-8 h-8 mx-auto animate-spin text-emerald-600 mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                Memuat data peserta & berkas LPTI...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL: CATATAN REVISI LPTI -->
+  <div id="revisionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+        <div class="flex items-center space-x-2 text-rose-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <h3 class="text-base font-bold text-slate-900">Minta Revisi Berkas LPTI</h3>
+        </div>
+        <button onclick="closeRevisionModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="mb-4 bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs">
+        <span class="text-slate-400 block mb-0.5">Pegawai Yang Direvisi:</span>
+        <span id="modalEmployeeName" class="font-bold text-slate-800 text-sm">Nama Pegawai</span>
+        <span id="modalEmployeeNip" class="font-mono text-slate-500 block">NIP: -</span>
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Catatan Perbaikan dari Admin Kepegawaian <span class="text-red-500">*</span>
+        </label>
+        <textarea id="revisionNotesInput" rows="4" required placeholder="Contoh: Bab 3 Rencana Tindak Lanjut belum ditandatangani atasan langsung. Mohon upload ulang dengan lembar pengesahan." class="w-full p-3.5 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-slate-800 placeholder:text-slate-400"></textarea>
+        <p class="text-[11px] text-slate-400 mt-1">Catatan ini akan langsung tampil dengan banner merah pada portal pegawai terkait.</p>
+      </div>
+
+      <div class="flex items-center justify-end space-x-3">
+        <button onclick="closeRevisionModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+          Batal
+        </button>
+        <button onclick="submitRevision()" id="btnSubmitRevision" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 transition flex items-center">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          Kirim Catatan Revisi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MODE PROYEKTOR AULA FULLSCREEN -->
+  <div id="projectorModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 hidden">
+    <button onclick="closeProjectorModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white p-3 rounded-2xl bg-white/10 hover:bg-white/20 transition">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+
+    <div class="max-w-2xl w-full text-center text-white">
+      <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-4">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>Layar Proyektor Aula Pelatihan Resmi</span>
+      </div>
+
+      <h1 id="modalProjectorTitle" class="text-2xl sm:text-3xl font-black mb-2 text-white">
+        Pelatihan Transformasi Digital & Manajemen Kepegawaian
+      </h1>
+      <p id="modalProjectorJp" class="text-emerald-400 font-bold text-sm mb-8">
+        Alokasi Bobot: 32 Jam Pelajaran (JP) &bull; BKPSDM 2026
+      </p>
+
+      <!-- Huge QR Box -->
+      <div class="bg-white p-6 rounded-3xl inline-block shadow-2xl border-4 border-emerald-400 mb-6">
+        <img id="modalProjectorQr" src="" alt="Dynamic QR Fullscreen" class="w-72 h-72 sm:w-80 sm:h-80 mx-auto object-contain">
+      </div>
+
+      <!-- Large Countdown Timer -->
+      <div class="max-w-md mx-auto space-y-3">
+        <div class="flex items-center justify-between text-sm font-bold text-slate-300">
+          <span>Token Anti-Titip Kedaluwarsa dalam:</span>
+          <span id="modalProjectorCountdown" class="text-emerald-400 font-mono text-xl font-black">30s</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+          <div id="modalProjectorBar" class="bg-gradient-to-r from-emerald-400 to-teal-300 h-3 rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+        </div>
+        <div class="pt-2 text-xs text-slate-400">
+          Token Dinamis: <span id="modalProjectorToken" class="font-mono font-bold text-emerald-300 bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-700/50">LPTI-......</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let employeesData = [];
+    let eventData = {};
+    let currentFilter = 'all';
+    let targetEmployeeForRevision = null;
+    let qrPollInterval = null;
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const isSuccess = (type === 'success');
+      const isError = (type === 'error');
+
+      toast.className = `pointer-events-auto flex items-center p-4 rounded-2xl shadow-xl border text-sm font-semibold transition-all transform duration-300 translate-y-2 opacity-0 ${
+        isSuccess ? 'bg-emerald-800 text-white border-emerald-600' :
+        isError ? 'bg-rose-800 text-white border-rose-600' : 'bg-slate-900 text-white border-slate-700'
+      }`;
+
+      toast.innerHTML = `
+        <div class="mr-3">
+          ${isSuccess ? '<svg class="w-5 h-5 text-emerald-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' :
+            '<svg class="w-5 h-5 text-rose-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>'
+          }
+        </div>
+        <div class="flex-grow">${message}</div>
+      `;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // 1. Fetch & Sinkronkan Event
+    async function loadEventData() {
+      try {
+        const res = await fetch('/api/event');
+        const data = await res.json();
+        if (data.success && data.event) {
+          eventData = data.event;
+          document.getElementById('eventTitle').value = eventData.title || '';
+          document.getElementById('eventJp').value = eventData.jp || 32;
+          document.getElementById('eventCategory').value = eventData.category || 'Teknis & Manajerial Kepegawaian';
+          document.getElementById('eventSchedule').value = eventData.schedule || '';
+          document.getElementById('eventLocation').value = eventData.location || '';
+
+          // Update Projector modal texts
+          document.getElementById('modalProjectorTitle').textContent = eventData.title;
+          document.getElementById('modalProjectorJp').textContent = `Alokasi Bobot: ${eventData.jp} Jam Pelajaran (JP) • ${eventData.organizer || 'BKPSDM 2026'}`;
+        }
+      } catch (err) {
+        console.error('Error load event:', err);
+      }
+    }
+
+    async function handleSaveEvent(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveEvent');
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Menyimpan...`;
+
+      const payload = {
+        title: document.getElementById('eventTitle').value,
+        jp: document.getElementById('eventJp').value,
+        category: document.getElementById('eventCategory').value,
+        schedule: document.getElementById('eventSchedule').value,
+        location: document.getElementById('eventLocation').value
+      };
+
+      try {
+        const res = await fetch('/api/event', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          loadEventData();
+          loadEmployees();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyimpan event: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg> <span>Simpan & Sinkronkan Event</span>`;
+      }
+    }
+
+    // 2. Fetch & Handle Dynamic QR Code (30s Countdown)
+    let currentToken = '';
+    async function updateDynamicQr() {
+      try {
+        const res = await fetch('/api/qr/current');
+        const data = await res.json();
+        if (data.success) {
+          currentToken = data.token;
+          const qrImg = document.getElementById('adminQrImage');
+          const modalQrImg = document.getElementById('modalProjectorQr');
+
+          qrImg.src = data.qrImage;
+          modalQrImg.src = data.qrImage;
+
+          document.getElementById('currentTokenLabel').textContent = data.token;
+          document.getElementById('modalProjectorToken').textContent = data.token;
+
+          // Hitung countdown
+          const remaining = data.remainingSeconds || 30;
+          const pct = (remaining / 30) * 100;
+
+          document.getElementById('countdownText').textContent = `${remaining} detik`;
+          document.getElementById('countdownBar').style.width = `${pct}%`;
+
+          document.getElementById('modalProjectorCountdown').textContent = `${remaining}s`;
+          document.getElementById('modalProjectorBar').style.width = `${pct}%`;
+        }
+      } catch (err) {
+        console.error('Error QR poll:', err);
+      }
+    }
+
+    function copyCurrentToken() {
+      if (currentToken) {
+        navigator.clipboard.writeText(currentToken);
+        showToast(`Token "${currentToken}" disalin! Gunakan untuk presensi di portal pegawai.`, 'success');
+      }
+    }
+
+    // 3. Fetch Employees & Table Render
+    async function loadEmployees() {
+      try {
+        const res = await fetch('/api/employees');
+        const data = await res.json();
+        if (data.success) {
+          employeesData = data.employees || [];
+          updateKPIs();
+          renderTable();
+        }
+      } catch (err) {
+        console.error('Error load employees:', err);
+      }
+    }
+
+    function updateKPIs() {
+      const total = employeesData.length;
+      const hadir = employeesData.filter(e => e.attended).length;
+      const pending = employeesData.filter(e => e.lpti && e.lpti.status === 'pending').length;
+      const approved = employeesData.filter(e => e.certificate).length;
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statHadir').textContent = hadir;
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statApproved').textContent = approved;
+      document.getElementById('badgePendingCount').textContent = pending;
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      ['all', 'pending', 'approved', 'revision'].forEach(f => {
+        const btn = document.getElementById('filter' + f.charAt(0).toUpperCase() + f.slice(1));
+        if (f === filter) {
+          btn.className = 'px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition flex items-center font-bold';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center';
+        }
+      });
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('employeeTableBody');
+      const search = (document.getElementById('searchEmployee').value || '').toLowerCase().trim();
+
+      let filtered = employeesData.filter(emp => {
+        const matchesSearch = emp.name.toLowerCase().includes(search) || emp.nip.includes(search);
+        if (!matchesSearch) return false;
+
+        if (currentFilter === 'pending') return emp.lpti?.status === 'pending';
+        if (currentFilter === 'approved') return emp.lpti?.status === 'approved';
+        if (currentFilter === 'revision') return emp.lpti?.status === 'revision';
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400">
+              <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Tidak ada data pegawai yang sesuai dengan filter.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(emp => {
+        const lpti = emp.lpti || {};
+        const status = lpti.status || 'none';
+        const hasPdf = Boolean(lpti.filePath);
+
+        // Status Badge UI
+        let statusBadge = '';
+        if (status === 'none') {
+          statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Belum Diunggah</span>';
+        } else if (status === 'pending') {
+          statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5 animate-pulse"></span>Menunggu Review</span>';
+        } else if (status === 'revision') {
+          statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">Perlu Revisi</span>';
+        } else if (status === 'approved') {
+          statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Disetujui ✓</span>';
+        }
+
+        // Tombol PDF Asli
+        let pdfAction = '';
+        if (hasPdf) {
+          pdfAction = `
+            <a href="${lpti.filePath}" target="_blank" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 transition" title="Buka dan baca file PDF asli di tab baru">
+              <span class="mr-1">👁️</span> Cek PDF
+            </a>
+          `;
+        } else {
+          pdfAction = '<span class="text-xs text-slate-400 italic">- Belum ada file -</span>';
+        }
+
+        // Sertifikat Info
+        let certInfo = '';
+        if (emp.certificate) {
+          certInfo = `
+            <div>
+              <span class="font-mono text-xs font-bold text-emerald-700 block">${emp.certificate.number}</span>
+              <span class="text-[10px] text-slate-400 block">${new Date(emp.certificate.issuedAt).toLocaleDateString('id-ID')}</span>
+            </div>
+          `;
+        } else {
+          certInfo = '<span class="text-xs text-slate-400 italic">Terkunci / Belum Terbit</span>';
+        }
+
+        // Tombol Aksi Verifikasi
+        let actionButtons = '';
+        if (hasPdf && (status === 'pending' || status === 'revision')) {
+          actionButtons = `
+            <div class="flex items-center justify-center space-x-1.5">
+              <button onclick="approveLpti('${emp.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="Setujui dan terbitkan e-sertifikat">
+                ✓ Cocok / Setujui
+              </button>
+              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 transition" title="Minta perbaikan berkas LPTI">
+                ✕ Minta Revisi
+              </button>
+            </div>
+          `;
+        } else if (status === 'approved') {
+          actionButtons = `
+            <div class="flex items-center justify-center space-x-1">
+              <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Tuntas Disetujui
+              </span>
+              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="text-[11px] text-slate-400 hover:text-rose-600 underline ml-1" title="Batalkan dan minta revisi kembali">
+                Koreksi
+              </button>
+            </div>
+          `;
+        } else {
+          actionButtons = '<span class="text-xs text-slate-400 italic">Menunggu Peserta</span>';
+        }
+
+        return `
+          <tr class="hover:bg-emerald-50/30 transition">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-slate-900">${emp.name}</div>
+              <div class="font-mono text-xs text-slate-500">${emp.nip}</div>
+              <div class="text-[11px] text-slate-400">${emp.jabatan} &bull; ${emp.instansi}</div>
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              ${emp.attended 
+                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">HADIR</span>' 
+                : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">BELUM</span>'
+              }
+            </td>
+            <td class="py-3.5 px-4">
+              ${statusBadge}
+              ${lpti.revisionNote ? `<div class="mt-1 text-[11px] text-rose-600 bg-rose-50 p-1.5 rounded-lg border border-rose-100 line-clamp-2" title="${lpti.revisionNote}">Catatan: ${lpti.revisionNote}</div>` : ''}
+            </td>
+            <td class="py-3.5 px-4">
+              ${pdfAction}
+              ${lpti.fileOriginalName ? `<div class="text-[10px] text-slate-400 mt-0.5 max-w-[140px] truncate" title="${lpti.fileOriginalName}">${lpti.fileOriginalName}</div>` : ''}
+            </td>
+            <td class="py-3.5 px-4">
+              ${certInfo}
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              ${actionButtons}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 4. Verifikasi LPTI (Approve / Revisi)
+    async function approveLpti(employeeId) {
+      try {
+        const res = await fetch(`/api/employees/${employeeId}/verify-lpti`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          loadEmployees();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal memproses persetujuan: ' + err.message, 'error');
+      }
+    }
+
+    function openRevisionModal(employeeId, name, nip) {
+      targetEmployeeForRevision = employeeId;
+      document.getElementById('modalEmployeeName').textContent = name;
+      document.getElementById('modalEmployeeNip').textContent = `NIP: ${nip}`;
+      document.getElementById('revisionNotesInput').value = '';
+      document.getElementById('revisionModal').classList.remove('hidden');
+    }
+
+    function closeRevisionModal() {
+      targetEmployeeForRevision = null;
+      document.getElementById('revisionModal').classList.add('hidden');
+    }
+
+    async function submitRevision() {
+      if (!targetEmployeeForRevision) return;
+      const notes = document.getElementById('revisionNotesInput').value.trim();
+      if (!notes) {
+        showToast('Harap masukkan catatan perbaikan untuk pegawai!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitRevision');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/employees/${targetEmployeeForRevision}/verify-lpti`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'revise', revisionNote: notes })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          closeRevisionModal();
+          loadEmployees();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal mengirim revisi: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // 5. Projector Modal Handlers
+    function openProjectorModal() {
+      document.getElementById('projectorModal').classList.remove('hidden');
+      updateDynamicQr();
+    }
+    function closeProjectorModal() {
+      document.getElementById('projectorModal').classList.add('hidden');
+    }
+
+    // 6. Reset Demo Data
+    async function resetDemoData() {
+      if (!confirm('Apakah Anda yakin ingin mengembalikan data demonstrasi ke kondisi awal?')) return;
+      try {
+        const res = await fetch('/api/reset-data', { method: 'POST' });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          loadEventData();
+          loadEmployees();
+          updateDynamicQr();
+        }
+      } catch (err) {
+        showToast('Gagal mereset data: ' + err.message, 'error');
+      }
+    }
+
+    // Init Lifecycles
+    document.addEventListener('DOMContentLoaded', () => {
+      loadEventData();
+      loadEmployees();
+      updateDynamicQr();
+
+      // Poll QR Code setiap detik untuk kelancaran visual countdown
+      setInterval(updateDynamicQr, 1000);
+
+      // Refresh data tabel berkala setiap 5 detik
+      setInterval(loadEmployees, 5000);
+    });
+  </script>
+</body>
+</html>
+
