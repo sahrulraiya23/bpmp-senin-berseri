@@ -98,183 +98,223 @@
       </div>
     </div>
 
-    <!-- 2 Column Top Area: Event Setup & Dynamic QR Projector -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+    <!-- WORKFLOW KONFIGURASI EVENT & QR CODE -->
+    <!-- ALUR: 1. Form harus di-submit dulu -> 2. Baru lihat Event Resmi -> 3. Disitu QR Codenya terbit -->
+    <div id="eventWorkflowWrapper" class="mb-10">
 
-      <!-- FITUR 1: FORM PEMBUATAN EVENT (5 Cols) -->
-      <section class="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-sm flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
-            <div class="flex items-center space-x-2">
-              <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">1</span>
-              <div>
-                <h2 class="text-base font-extrabold text-slate-900">Form Pembuatan Event</h2>
-                <p class="text-xs text-slate-500">Konfigurasi materi & alokasi JP terintegrasi</p>
-              </div>
-            </div>
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 uppercase tracking-wide border border-emerald-200">
-              Sinkron Otomatis
-            </span>
+      <!-- ============================================================== -->
+      <!-- TAHAP 1: FORMULIR PEMBUATAN EVENT (TAMPIL AWAL SEBELUM SUBMIT) -->
+      <!-- ============================================================== -->
+      <section id="step1FormSection" class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-9 border-2 border-emerald-100 shadow-sm transition-all duration-300">
+        <div class="text-center max-w-xl mx-auto mb-6">
+          <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3 border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Langkah 1: Wajib Isi Formulir Event</span>
+          </div>
+          <h2 class="text-2xl font-black text-slate-900 mb-2">Formulir Pembuatan Event Pelatihan</h2>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Silakan submit formulir kegiatan pelatihan ini terlebih dahulu. Setelah Anda mengklik <strong>"Simpan & Terbitkan Event"</strong>, sistem akan menampilkan data event resmi dan menerbitkan Dynamic QR Code presensi aula di dalamnya.
+          </p>
+        </div>
+
+        <form id="eventForm" onsubmit="handleSaveEvent(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Judul Kegiatan Pelatihan <span class="text-red-500">*</span>
+            </label>
+            <textarea id="eventTitle" rows="2" required placeholder="Contoh: Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-semibold text-slate-800 transition placeholder:font-normal placeholder:text-slate-400"></textarea>
           </div>
 
-          <form id="eventForm" onsubmit="handleSaveEvent(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Judul Kegiatan Pelatihan <span class="text-red-500">*</span>
+                Alokasi Jam Pelajaran (1 - 120 JP) <span class="text-red-500">*</span>
               </label>
-              <textarea id="eventTitle" rows="2" required placeholder="Contoh: Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition placeholder:text-slate-400"></textarea>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Nilai JP (1 - 120) <span class="text-red-500">*</span>
-                </label>
-                <div class="relative">
-                  <input type="number" id="eventJp" required min="1" max="120" placeholder="32" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-bold text-emerald-700 transition">
-                  <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">JP</span>
-                </div>
-                <p class="text-[11px] text-slate-400 mt-1">Wajib angka 1 s/d 120 Jam Pelajaran.</p>
+              <div class="relative">
+                <input type="number" id="eventJp" required min="1" max="120" placeholder="32" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-black text-emerald-700 transition">
+                <span class="absolute right-4 top-2.5 text-xs font-bold text-slate-400">JP</span>
               </div>
-
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Kategori Pelatihan
-                </label>
-                <select id="eventCategory" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 bg-white">
-                  <option value="Teknis & Manajerial Kepegawaian">Teknis & Manajerial Kepegawaian</option>
-                  <option value="Kompetensi Manajerial ASN">Kompetensi Manajerial ASN</option>
-                  <option value="Fungsional Keahlian Digital">Fungsional Keahlian Digital</option>
-                  <option value="Pelatihan Kepemimpinan Pengawas">Pelatihan Kepemimpinan Pengawas</option>
-                  <option value="Sosialisasi & Workshop Kebijakan">Sosialisasi & Workshop Kebijakan</option>
-                </select>
-              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Wajib angka 1 s/d 120 Jam Pelajaran.</p>
             </div>
 
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Jadwal & Waktu Pelaksanaan
+                Kategori Pelatihan
               </label>
-              <input type="text" id="eventSchedule" placeholder="Contoh: 18 - 20 November 2026, 08:00 - 16:30 WIB" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition">
+              <select id="eventCategory" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-semibold text-slate-800 bg-white">
+                <option value="Teknis & Manajerial Kepegawaian">Teknis & Manajerial Kepegawaian</option>
+                <option value="Kompetensi Manajerial ASN">Kompetensi Manajerial ASN</option>
+                <option value="Fungsional Keahlian Digital">Fungsional Keahlian Digital</option>
+                <option value="Pelatihan Kepemimpinan Pengawas">Pelatihan Kepemimpinan Pengawas</option>
+                <option value="Sosialisasi & Workshop Kebijakan">Sosialisasi & Workshop Kebijakan</option>
+              </select>
             </div>
+          </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Tempat / Metode Pelaksanaan
-              </label>
-              <input type="text" id="eventLocation" placeholder="Contoh: Auditorium Sasana Praja BKPSDM & Hybrid Zoom" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition">
-            </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Jadwal & Waktu Pelaksanaan
+            </label>
+            <input type="text" id="eventSchedule" placeholder="Contoh: 18 - 20 November 2026, 08:00 - 16:30 WIB" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition">
+          </div>
 
-            <div class="pt-2">
-              <button type="submit" id="btnSaveEvent" class="w-full inline-flex items-center justify-center px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all text-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                <span>Simpan & Sinkronkan Event</span>
-              </button>
-            </div>
-          </form>
-        </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Tempat / Metode Pelaksanaan
+            </label>
+            <input type="text" id="eventLocation" placeholder="Contoh: Auditorium Sasana Praja BKPSDM & Hybrid Zoom" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition">
+          </div>
+
+          <div class="pt-3">
+            <button type="submit" id="btnSaveEvent" class="w-full inline-flex items-center justify-center px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-600/25 transition-all text-sm group">
+              <span>Simpan & Terbitkan Event Pelatihan (Buka QR Code)</span>
+              <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+          </div>
+        </form>
       </section>
 
-      <!-- FITUR 2: LAYAR PROYEKTOR DYNAMIC QR CODE (7 Cols) -->
-      <section class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
+      <!-- ========================================================================= -->
+      <!-- TAHAP 2: LIHAT EVENT RESMI & LAYAR DYNAMIC QR (BARU MUNCUL SETELAH SUBMIT) -->
+      <!-- ========================================================================= -->
+      <section id="step2ActiveSection" class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-200 shadow-sm hidden transition-all duration-300">
         
-        <!-- Header Layar Proyektor -->
-        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-          <div class="flex items-center space-x-2">
-            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">2</span>
+        <!-- Header Panel Event Aktif -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-slate-100 gap-3">
+          <div class="flex items-center space-x-3">
+            <span class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-emerald-600/30">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </span>
             <div>
-              <h2 class="text-base font-extrabold text-slate-900">Layar Proyektor Dynamic QR Code</h2>
-              <p class="text-xs text-slate-500">Logika Anti-Titip Presensi Aula (Rotasi 30 Detik)</p>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Langkah 2: Event Berhasil Diterbitkan</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  SESI RESMI AKTIF
+                </span>
+              </div>
+              <h2 class="text-base font-extrabold text-slate-900 leading-tight">Layar Event Pelatihan & Dynamic QR Code Presensi</h2>
             </div>
           </div>
 
           <div class="flex items-center space-x-2">
-            <button id="btnToggleEventStatus" onclick="toggleEventStatus()" class="hidden sm:inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Buka / Jeda Sesi Presensi">
-              <span id="btnToggleEventLabel">Jeda Presensi</span>
+            <button onclick="editCurrentEvent()" class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Buka kembali form untuk mengubah event">
+              <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              <span>Ubah Event</span>
             </button>
-            <button onclick="openProjectorModal()" id="btnProjectorModal" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-emerald-700 transition shadow-sm">
+            <button onclick="openProjectorModal()" class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-emerald-700 transition shadow-sm">
               <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-              Mode Proyektor Aula
+              <span>Mode Proyektor Aula</span>
             </button>
           </div>
         </div>
 
-        <!-- TAMPILAN A: KETIKA EVENT BELUM DI-INPUT / TIDAK AKTIF -->
-        <div id="qrInactiveNotice" class="bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl p-8 border-2 border-dashed border-emerald-200 text-center flex flex-col items-center justify-center min-h-[380px] hidden">
-          <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4 shadow-sm">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-          </div>
-          <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 uppercase tracking-wide mb-2">Menunggu Input Event</span>
-          <h3 class="text-lg font-bold text-slate-800 mb-2">QR Code Presensi Belum Terbit</h3>
-          <p class="text-xs text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
-            Sesuai aturan kepegawaian, Dynamic QR Code hanya akan diterbitkan setelah Panitia mengisi dan menyimpan data kegiatan pelatihan pada formulir di sebelah kiri.
-          </p>
-          <button onclick="document.getElementById('eventTitle').focus()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-600/20 transition flex items-center">
-            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            <span>Isi & Simpan Event Sekarang</span>
-          </button>
-        </div>
-
-        <!-- TAMPILAN B: KETIKA EVENT AKTIF & QR TERBIT -->
-        <div id="qrActiveDisplay" class="bg-gradient-to-b from-emerald-50/70 to-slate-50 rounded-2xl p-6 border border-emerald-100 text-center flex flex-col items-center justify-center relative">
+        <!-- 2 Kolom: Detail Event yang Baru Di-Submit + Layar QR Code yang Terbit -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          <!-- Anti Titip Security Banner -->
-          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-[11px] font-bold uppercase tracking-wider mb-3 border border-emerald-200">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            <span>QR Terbit & Aktif: Berganti Tiap 30 Detik</span>
-          </div>
-
-          <p class="text-xs font-semibold text-emerald-950 mb-3 max-w-sm">
-            📸 Arahkan kamera smartphone ke QR Code ini untuk scan presensi langsung di HP Anda!
-          </p>
-
-          <!-- QR Code Container & Frame -->
-          <div class="relative bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-500/80 mb-3 inline-block">
-            <img id="adminQrImage" src="" alt="Dynamic QR Presensi" class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-lg">
-            <div id="qrLoadingOverlay" class="absolute inset-0 bg-white/90 rounded-2xl flex flex-col items-center justify-center hidden">
-              <svg class="w-8 h-8 text-emerald-600 animate-spin mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-              <span class="text-xs font-bold text-emerald-700">Memperbarui Token...</span>
+          <!-- Kiri: Detail Event yang Telah Diterbitkan (5 Cols) -->
+          <div class="lg:col-span-5 bg-gradient-to-br from-emerald-50/70 via-slate-50 to-white p-6 rounded-2xl border border-emerald-100 space-y-4">
+            <div>
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Kegiatan Pelatihan Yang Diterbitkan:</span>
+              <h3 id="displayActiveTitle" class="text-lg sm:text-xl font-black text-slate-900 leading-snug">
+                Pelatihan Transformasi Digital & Manajemen Kepegawaian
+              </h3>
             </div>
-          </div>
 
-          <!-- Countdown Timer & Token Info -->
-          <div class="w-full max-w-sm mx-auto space-y-3">
-            
-            <!-- Countdown Progress Bar -->
-            <div class="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
-              <span class="flex items-center text-emerald-700">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span>
-                Siklus Token Aktif
+            <div class="flex flex-wrap items-center gap-2">
+              <span id="displayActiveJp" class="px-3 py-1 bg-emerald-600 text-white text-xs font-black rounded-lg shadow-sm">
+                32 Jam Pelajaran (JP)
               </span>
-              <span id="countdownText" class="text-emerald-700 font-mono text-sm font-extrabold">30 detik</span>
-            </div>
-            
-            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-              <div id="countdownBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+              <span id="displayActiveCategory" class="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
+                Teknis & Manajerial Kepegawaian
+              </span>
             </div>
 
-            <!-- Current Token Display Box -->
-            <div class="bg-white rounded-xl p-2.5 border border-slate-200 flex items-center justify-between">
-              <span class="text-[11px] text-slate-400 font-medium">Token Server:</span>
-              <span id="currentTokenLabel" class="font-mono font-black text-emerald-800 text-sm tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                LPTI-......
-              </span>
-              <button onclick="copyCurrentToken()" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold px-2 py-1 rounded hover:bg-emerald-50 transition" title="Salin kode token untuk uji coba mandiri">
-                Salin Token
+            <div class="space-y-2.5 text-xs text-slate-600 border-t border-slate-200/80 pt-4">
+              <div class="flex items-start space-x-2">
+                <svg class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <div>
+                  <span class="text-slate-400 block text-[10px] font-semibold uppercase">Jadwal:</span>
+                  <span id="displayActiveSchedule" class="font-bold text-slate-800">18 - 20 November 2026</span>
+                </div>
+              </div>
+              <div class="flex items-start space-x-2">
+                <svg class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <div>
+                  <span class="text-slate-400 block text-[10px] font-semibold uppercase">Tempat / Metode:</span>
+                  <span id="displayActiveLocation" class="font-bold text-slate-800">Auditorium BKPSDM & Hybrid</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-200/80 flex items-center justify-between">
+              <span class="text-[11px] text-slate-500">Status Presensi:</span>
+              <button onclick="toggleEventStatus()" id="btnToggleEventStatus" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition">
+                <span id="btnToggleEventLabel">⏸️ Jeda Presensi</span>
               </button>
             </div>
+          </div>
 
-            <!-- Tautan Scan HP Langsung -->
-            <div class="bg-slate-100/90 rounded-xl p-2 border border-slate-200 flex items-center justify-between text-xs">
-              <span class="text-[10px] text-slate-500 font-mono truncate max-w-[200px]" id="scanUrlDisplay">http://...</span>
-              <button onclick="copyScanUrl()" class="text-[11px] text-emerald-700 font-bold hover:underline px-2 py-0.5 bg-white rounded shadow-xs flex-shrink-0">
-                Salin Link HP ↗
-              </button>
+          <!-- Kanan: Layar Dynamic QR Code Yang Terbit (7 Cols) -->
+          <div class="lg:col-span-7 bg-gradient-to-b from-emerald-50/70 to-slate-50 rounded-2xl p-6 border border-emerald-100 text-center flex flex-col items-center justify-center relative">
+            
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-[11px] font-bold uppercase tracking-wider mb-2 border border-emerald-200">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>QR Code Resmi Terbit: Rotasi Tiap 30 Detik</span>
             </div>
 
-            <p class="text-[11px] text-slate-500 text-center leading-relaxed">
-              💡 Foto barcode yang dikirim via WhatsApp akan kadaluarsa dalam hitungan detik sehingga tidak dapat digunakan oleh pegawai yang tidak berada di lokasi.
+            <p class="text-xs font-semibold text-emerald-950 mb-3 max-w-sm">
+              📸 Peserta dapat mengarahkan kamera smartphone ke QR Code ini untuk absensi langsung di HP!
             </p>
+
+            <!-- QR Code Container & Frame -->
+            <div class="relative bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-500/80 mb-3 inline-block">
+              <img id="adminQrImage" src="" alt="Dynamic QR Presensi" class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-lg">
+              <div id="qrLoadingOverlay" class="absolute inset-0 bg-white/90 rounded-2xl flex flex-col items-center justify-center hidden">
+                <svg class="w-8 h-8 text-emerald-600 animate-spin mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <span class="text-xs font-bold text-emerald-700">Memperbarui Token...</span>
+              </div>
+            </div>
+
+            <!-- Countdown Timer & Token Info -->
+            <div class="w-full max-w-sm mx-auto space-y-3">
+              
+              <!-- Countdown Progress Bar -->
+              <div class="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                <span class="flex items-center text-emerald-700">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span>
+                  Siklus Token Anti-Titip
+                </span>
+                <span id="countdownText" class="text-emerald-700 font-mono text-sm font-extrabold">30 detik</span>
+              </div>
+              
+              <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div id="countdownBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+              </div>
+
+              <!-- Current Token Display Box -->
+              <div class="bg-white rounded-xl p-2.5 border border-slate-200 flex items-center justify-between">
+                <span class="text-[11px] text-slate-400 font-medium">Token Server:</span>
+                <span id="currentTokenLabel" class="font-mono font-black text-emerald-800 text-sm tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                  LPTI-......
+                </span>
+                <button onclick="copyCurrentToken()" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold px-2 py-1 rounded hover:bg-emerald-50 transition" title="Salin kode token untuk uji coba mandiri">
+                  Salin Token
+                </button>
+              </div>
+
+              <!-- Tautan Scan HP Langsung -->
+              <div class="bg-slate-100/90 rounded-xl p-2 border border-slate-200 flex items-center justify-between text-xs">
+                <span class="text-[10px] text-slate-500 font-mono truncate max-w-[200px]" id="scanUrlDisplay">http://...</span>
+                <button onclick="copyScanUrl()" class="text-[11px] text-emerald-700 font-bold hover:underline px-2 py-0.5 bg-white rounded shadow-xs flex-shrink-0">
+                  Salin Link HP ↗
+                </button>
+              </div>
+
+              <p class="text-[11px] text-slate-500 text-center leading-relaxed">
+                💡 Token berganti tiap 30s di server untuk mencegah foto barcode via WhatsApp digunakan oleh teman di rumah.
+              </p>
+            </div>
+
           </div>
 
         </div>
@@ -464,6 +504,45 @@
       }, 4000);
     }
 
+    // Pengatur Tampilan Alur Kerja (Step 1: Form -> Step 2: Event Aktif & QR)
+    function setWorkflowView(isActive, evt = {}) {
+      const step1 = document.getElementById('step1FormSection');
+      const step2 = document.getElementById('step2ActiveSection');
+      const btnToggleLabel = document.getElementById('btnToggleEventLabel');
+
+      if (!isActive) {
+        // TAHAP 1: Form Harus Di-submit Dulu (QR Belum Muncul)
+        step1.classList.remove('hidden');
+        step2.classList.add('hidden');
+      } else {
+        // TAHAP 2: Form Sudah Di-submit -> Baru Lihat Event & Disitu QR Codenya!
+        step1.classList.add('hidden');
+        step2.classList.remove('hidden');
+
+        // Isi data detail event yang baru saja disubmit
+        document.getElementById('displayActiveTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
+        document.getElementById('displayActiveJp').textContent = `${evt.jp || 32} Jam Pelajaran (JP)`;
+        document.getElementById('displayActiveCategory').textContent = evt.category || 'Teknis & Manajerial';
+        document.getElementById('displayActiveSchedule').textContent = evt.schedule || 'Jadwal Ditentukan';
+        document.getElementById('displayActiveLocation').textContent = evt.location || 'Auditorium BKPSDM & Hybrid';
+
+        // Update Projector modal texts
+        document.getElementById('modalProjectorTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
+        document.getElementById('modalProjectorJp').textContent = `Alokasi Bobot: ${evt.jp || 32} Jam Pelajaran (JP) • ${evt.organizer || 'BKPSDM 2026'}`;
+        
+        if (btnToggleLabel) btnToggleLabel.textContent = '⏸️ Jeda Presensi';
+      }
+    }
+
+    function editCurrentEvent() {
+      // Kembali ke form jika admin ingin mengedit atau membuat event baru
+      const step1 = document.getElementById('step1FormSection');
+      const step2 = document.getElementById('step2ActiveSection');
+      step1.classList.remove('hidden');
+      step2.classList.add('hidden');
+      step1.scrollIntoView({ behavior: 'smooth' });
+    }
+
     // 1. Fetch & Sinkronkan Event
     async function loadEventData() {
       try {
@@ -477,9 +556,8 @@
           document.getElementById('eventSchedule').value = eventData.schedule || '';
           document.getElementById('eventLocation').value = eventData.location || '';
 
-          // Update Projector modal texts
-          document.getElementById('modalProjectorTitle').textContent = eventData.title;
-          document.getElementById('modalProjectorJp').textContent = `Alokasi Bobot: ${eventData.jp} Jam Pelajaran (JP) • ${eventData.organizer || 'BKPSDM 2026'}`;
+          // Atur tampilan: jika event sudah aktif -> tampilkan event + QR; jika belum -> tampilkan Form
+          setWorkflowView(Boolean(eventData.active), eventData);
         }
       } catch (err) {
         console.error('Error load event:', err);
@@ -490,7 +568,7 @@
       e.preventDefault();
       const btn = document.getElementById('btnSaveEvent');
       btn.disabled = true;
-      btn.innerHTML = `<svg class="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Menyimpan...`;
+      btn.innerHTML = `<svg class="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Menyimpan & Menerbitkan Event...`;
 
       const payload = {
         title: document.getElementById('eventTitle').value,
@@ -509,8 +587,13 @@
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
-          loadEventData();
+          eventData = result.event;
+          
+          // LANGKAH PENTING: Beralih ke Tampilan Event Aktif & Munculkan QR Codenya
+          setWorkflowView(true, eventData);
+          updateDynamicQr();
           loadEmployees();
+          document.getElementById('step2ActiveSection').scrollIntoView({ behavior: 'smooth' });
         } else {
           showToast(result.message, 'error');
         }
@@ -518,7 +601,7 @@
         showToast('Gagal menyimpan event: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg> <span>Simpan & Sinkronkan Event</span>`;
+        btn.innerHTML = `<span>Simpan & Terbitkan Event Pelatihan (Buka QR Code)</span> <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>`;
       }
     }
 
@@ -531,25 +614,16 @@
       try {
         const res = await fetch('/api/qr/current');
         const data = await res.json();
-        
-        const inactiveNotice = document.getElementById('qrInactiveNotice');
-        const activeDisplay = document.getElementById('qrActiveDisplay');
         const btnToggleLabel = document.getElementById('btnToggleEventLabel');
 
         if (!data.active) {
-          // Event belum diinput / presensi tidak aktif
           isEventCurrentlyActive = false;
-          inactiveNotice.classList.remove('hidden');
-          activeDisplay.classList.add('hidden');
-          if (btnToggleLabel) btnToggleLabel.textContent = 'Buka Presensi';
+          if (btnToggleLabel) btnToggleLabel.textContent = '▶️ Buka Presensi';
           return;
         }
 
-        // Event aktif -> Tampilkan QR Code & Countdown
         isEventCurrentlyActive = true;
-        inactiveNotice.classList.add('hidden');
-        activeDisplay.classList.remove('hidden');
-        if (btnToggleLabel) btnToggleLabel.textContent = 'Jeda Presensi';
+        if (btnToggleLabel) btnToggleLabel.textContent = '⏸️ Jeda Presensi';
 
         currentToken = data.token;
         currentScanUrl = data.scanUrl;
@@ -584,7 +658,12 @@
         const data = await res.json();
         if (data.success) {
           showToast(data.message, 'success');
-          updateDynamicQr();
+          if (!data.active) {
+            setWorkflowView(false, eventData);
+          } else {
+            setWorkflowView(true, eventData);
+            updateDynamicQr();
+          }
         }
       } catch (err) {
         showToast('Gagal mengubah status event: ' + err.message, 'error');
