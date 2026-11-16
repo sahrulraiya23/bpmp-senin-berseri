@@ -1,14 +1,14 @@
 {
   "event": {
     "id": "EVT-2026-001",
-    "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern",
+    "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern 2026",
     "jp": 32,
     "category": "Teknis & Manajerial Kepegawaian",
-    "schedule": "18 - 20 November 2026, 08:00 - 16:30 WIB",
-    "location": "Auditorium Sasana Praja BKPSDM & Hybrid Zoom",
-    "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia (BKPSDM)",
-    "targetAudience": "Aparatur Sipil Negara (ASN) Pelaksana & Fungsional",
-    "updatedAt": "2026-11-16T12:00:00.000Z"
+    "schedule": "18 - 20 November 2026",
+    "location": "Auditorium Sasana Praja BKPSDM",
+    "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia",
+    "active": true,
+    "updatedAt": "2026-11-16T13:36:02.212Z"
   },
   "employees": [
     {

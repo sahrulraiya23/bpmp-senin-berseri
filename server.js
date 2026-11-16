@@ -14,29 +14,59 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Path Setup
-const DB_PATH = path.join(__dirname, 'db.json');
-const UPLOAD_DIR = path.join(__dirname, 'uploads', 'lpti');
-const PUBLIC_DIR = path.join(__dirname, 'public');
+// ========================================================
+// PATH SETUP (KOMPATIBILITAS VERCEL SERVERLESS & LOKAL)
+// ========================================================
+const IS_VERCEL = Boolean(process.env.VERCEL);
+const BASE_DIR = __dirname;
+const PUBLIC_DIR = path.join(BASE_DIR, 'public');
 
-// Pastikan folder uploads/lpti tersedia
+// Pada Vercel Serverless, hanya folder /tmp yang dapat ditulis
+const DATA_DIR = IS_VERCEL ? '/tmp' : BASE_DIR;
+const DB_PATH = path.join(DATA_DIR, 'db.json');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'lpti');
+const BUNDLED_UPLOAD_DIR = path.join(BASE_DIR, 'uploads', 'lpti');
+
+// Pastikan folder uploads tersedia
 if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  try {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  } catch (e) {
+    console.warn('Gagal membuat folder upload:', e.message);
+  }
 }
 
-// Static File Serving
-app.use('/uploads/lpti', express.static(UPLOAD_DIR));
-app.use(express.static(PUBLIC_DIR));
+// Inisialisasi db.json di /tmp jika di Vercel
+if (IS_VERCEL && !fs.existsSync(DB_PATH)) {
+  try {
+    const bundledDbPath = path.join(BASE_DIR, 'db.json');
+    if (fs.existsSync(bundledDbPath)) {
+      fs.copyFileSync(bundledDbPath, DB_PATH);
+    }
+  } catch (e) {
+    console.warn('Gagal menyalin db.json awal ke /tmp:', e.message);
+  }
+}
 
 // Helper: Membaca & Menulis db.json
 function readDb() {
   try {
-    const raw = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(raw);
+    if (fs.existsSync(DB_PATH)) {
+      const raw = fs.readFileSync(DB_PATH, 'utf8');
+      return JSON.parse(raw);
+    }
+    const bundledPath = path.join(BASE_DIR, 'db.json');
+    if (fs.existsSync(bundledPath)) {
+      return JSON.parse(fs.readFileSync(bundledPath, 'utf8'));
+    }
   } catch (err) {
     console.error('Error reading db.json:', err.message);
-    return { event: {}, employees: [], system: { certPrefix: "800.1.3/SERT-LPTI/2026", certCounter: 1 } };
   }
+  return {
+    event: { active: false },
+    employees: [],
+    system: { certPrefix: "800.1.3/SERT-LPTI/2026", certCounter: 1 }
+  };
 }
 
 function writeDb(data) {
@@ -49,9 +79,28 @@ function writeDb(data) {
   }
 }
 
+// Static File Serving
+app.use(express.static(PUBLIC_DIR));
+
+// Handler Serving File PDF LPTI (Mendukung upload lokal & Vercel /tmp)
+app.use('/uploads/lpti', (req, res, next) => {
+  const filePath1 = path.join(UPLOAD_DIR, req.path);
+  if (fs.existsSync(filePath1)) {
+    return res.sendFile(filePath1);
+  }
+  const filePath2 = path.join(BUNDLED_UPLOAD_DIR, req.path);
+  if (fs.existsSync(filePath2)) {
+    return res.sendFile(filePath2);
+  }
+  next();
+});
+
 // Konfigurasi Multer untuk Upload PDF Asli LPTI
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    if (!fs.existsSync(UPLOAD_DIR)) {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
     cb(null, UPLOAD_DIR);
   },
   filename: function (req, file, cb) {
@@ -63,9 +112,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: {
-    fileSize: 15 * 1024 * 1024 // Maksimum 15MB
-  },
+  limits: { fileSize: 15 * 1024 * 1024 }, // Maksimum 15MB
   fileFilter: function (req, file, cb) {
     if (file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf') {
       cb(null, true);
@@ -75,70 +122,88 @@ const upload = multer({
   }
 });
 
-// ==========================================
-// DYNAMIC QR CODE TOKEN ENGINE (ANTI-TITIP)
-// ==========================================
-// Token berganti secara otomatis setiap 30 detik di server.
-// Token lama hanya ditoleransi dalam grace period 5 detik untuk mengatasi lag transmisi.
+// ========================================================
+// STATELESS DYNAMIC QR CODE ENGINE (TOTP / SERVERLESS-READY)
+// ========================================================
+// Algoritma berbasis jendela waktu (Time-Window) 30 detik.
+// Bekerja 100% konsisten baik di server lokal maupun di Vercel Serverless
+// tanpa membutuhkan background process/interval yang dibekukan di cloud.
 const TOKEN_WINDOW_SECONDS = 30;
-let currentQrSession = {
-  token: '',
-  previousToken: '',
-  createdAt: Date.now(),
-  expiresAt: Date.now() + (TOKEN_WINDOW_SECONDS * 1000)
-};
 
-function generateSecureToken() {
-  return 'LPTI-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+function getTokenForTimeWindow(windowIndex, eventId = 'EVT-001') {
+  const secretKey = 'BKPSDM-LPTI-KEY-' + (eventId || 'EVT-DEFAULT');
+  const hmac = crypto.createHmac('sha256', secretKey);
+  hmac.update(String(windowIndex));
+  const hash = hmac.digest('hex').toUpperCase();
+  return 'LPTI-' + hash.substring(0, 6);
 }
 
-function rotateQrToken() {
+function getCurrentQrState(eventId = 'EVT-001') {
   const now = Date.now();
-  currentQrSession.previousToken = currentQrSession.token;
-  currentQrSession.token = generateSecureToken();
-  currentQrSession.createdAt = now;
-  currentQrSession.expiresAt = now + (TOKEN_WINDOW_SECONDS * 1000);
-}
+  const currentWindow = Math.floor(now / (TOKEN_WINDOW_SECONDS * 1000));
+  const remainingSeconds = Math.max(0, TOKEN_WINDOW_SECONDS - Math.floor((now % (TOKEN_WINDOW_SECONDS * 1000)) / 1000));
+  const validUntil = (currentWindow + 1) * (TOKEN_WINDOW_SECONDS * 1000);
 
-// Inisialisasi token awal & rotasi setiap 30 detik
-rotateQrToken();
-setInterval(() => {
-  rotateQrToken();
-}, TOKEN_WINDOW_SECONDS * 1000);
+  const token = getTokenForTimeWindow(currentWindow, eventId);
+  const previousToken = getTokenForTimeWindow(currentWindow - 1, eventId);
+
+  return {
+    token,
+    previousToken,
+    remainingSeconds,
+    validUntil,
+    duration: TOKEN_WINDOW_SECONDS
+  };
+}
 
 // Endpoint Mendapatkan Status & Gambar Dynamic QR Code Terkini
 app.get('/api/qr/current', async (req, res) => {
   try {
-    const now = Date.now();
-    const remainingSeconds = Math.max(0, Math.ceil((currentQrSession.expiresAt - now) / 1000));
     const db = readDb();
     const event = db.event || {};
 
-    const qrPayload = JSON.stringify({
-      token: currentQrSession.token,
-      eventId: event.id || 'EVT-001',
-      validUntil: currentQrSession.expiresAt
-    });
+    // SYARAT KHUSUS: QR Code HANYA TERBIT JIKA EVENT SUDAH DI-INPUT & AKTIF
+    const isEventActive = Boolean(event.active && event.title && event.title.trim());
 
-    // Generate base64 Data URL untuk QR Code
-    const qrDataUrl = await QRCode.toDataURL(qrPayload, {
+    if (!isEventActive) {
+      return res.json({
+        success: true,
+        active: false,
+        message: 'Belum ada event aktif. Silakan isi dan simpan Formulir Pembuatan Event terlebih dahulu untuk menerbitkan QR Code Presensi.',
+        event: event
+      });
+    }
+
+    const qrState = getCurrentQrState(event.id || 'EVT-001');
+
+    // Mendapatkan URL Asli Host (agar bisa dipindai langsung dari kamera HP)
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
+    
+    // Tautan Langsung Presensi yang Dibuka saat Kamera HP Memindai QR
+    const scanUrl = `${protocol}://${host}/pegawai?token=${qrState.token}&event=${event.id || 'EVT-001'}&action=presensi`;
+
+    // Buat QR Code Gambar (Base64)
+    const qrDataUrl = await QRCode.toDataURL(scanUrl, {
       errorCorrectionLevel: 'M',
       margin: 2,
-      width: 320,
+      width: 340,
       color: {
-        dark: '#064e3b', // Deep Emerald Green
+        dark: '#064e3b', // Deep Emerald
         light: '#ffffff'
       }
     });
 
     res.json({
       success: true,
-      token: currentQrSession.token,
-      duration: TOKEN_WINDOW_SECONDS,
-      remainingSeconds: remainingSeconds,
-      validUntil: currentQrSession.expiresAt,
-      eventTitle: event.title || 'Pelatihan Kepegawaian',
-      qrPayload: qrPayload,
+      active: true,
+      token: qrState.token,
+      duration: qrState.duration,
+      remainingSeconds: qrState.remainingSeconds,
+      validUntil: qrState.validUntil,
+      eventTitle: event.title,
+      eventJp: event.jp,
+      scanUrl: scanUrl,
       qrImage: qrDataUrl
     });
   } catch (error) {
@@ -146,31 +211,42 @@ app.get('/api/qr/current', async (req, res) => {
   }
 });
 
-// Endpoint Verifikasi & Validasi Token Presensi
+// Endpoint Verifikasi & Validasi Token Presensi (Dari Web atau Scan HP)
 app.post('/api/presensi/verify-token', (req, res) => {
   const { employeeId, token } = req.body;
 
   if (!employeeId || !token) {
-    return res.status(400).json({ success: false, message: 'ID Pegawai dan Token QR wajib diisi!' });
+    return res.status(400).json({ success: false, message: 'Identitas Pegawai dan Kode Token QR wajib diisi!' });
   }
 
-  const cleanToken = token.trim().toUpperCase();
-  const isCurrentValid = (cleanToken === currentQrSession.token);
-  // Toleransi 5 detik untuk token yang baru saja berganti
-  const isPreviousValid = (cleanToken === currentQrSession.previousToken && (Date.now() - currentQrSession.createdAt) <= 5000);
+  const db = readDb();
+  const event = db.event || {};
 
-  if (!isCurrentValid && !isPreviousValid) {
+  // Validasi Event Harus Aktif
+  if (!event.active || !event.title) {
+    return res.status(400).json({
+      success: false,
+      message: 'Presensi ditolak: Belum ada event kegiatan pelatihan yang aktif!'
+    });
+  }
+
+  const qrState = getCurrentQrState(event.id || 'EVT-001');
+  const cleanToken = token.trim().toUpperCase();
+
+  // Validasi Token Jendela Saat Ini atau Jendela Sebelumnya (Toleransi network latency)
+  const isValid = (cleanToken === qrState.token || cleanToken === qrState.previousToken);
+
+  if (!isValid) {
     return res.status(400).json({
       success: false,
       message: 'Token QR tidak valid atau telah kedaluwarsa (>30 detik). Silakan scan langsung dari layar proyektor aula!'
     });
   }
 
-  const db = readDb();
   const employee = db.employees.find(e => e.id === employeeId || e.nip === employeeId);
 
   if (!employee) {
-    return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem!' });
+    return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
   }
 
   if (employee.attended) {
@@ -189,19 +265,20 @@ app.post('/api/presensi/verify-token', (req, res) => {
 
   return res.json({
     success: true,
-    message: `Presensi Berhasil! Status kehadiran ${employee.name} kini resmi HADIR.`,
+    message: `Presensi Berhasil! Status kehadiran ${employee.name} kini resmi HADIR pada kegiatan "${event.title}".`,
     employee: employee
   });
 });
 
-// ==========================================
+// ========================================================
 // EVENT MANAGEMENT API
-// ==========================================
+// ========================================================
 app.get('/api/event', (req, res) => {
   const db = readDb();
   res.json({ success: true, event: db.event });
 });
 
+// Simpan & Aktifkan Event (Menerbitkan QR Code)
 app.put('/api/event', (req, res) => {
   const { title, jp, category, schedule, location, organizer } = req.body;
 
@@ -221,8 +298,9 @@ app.put('/api/event', (req, res) => {
     jp: parsedJp,
     category: (category || 'Teknis & Manajerial Kepegawaian').trim(),
     schedule: (schedule || 'Jadwal Ditentukan').trim(),
-    location: (location || 'Auditorium BKPSDM & Hybrid').trim(),
+    location: (location || 'Auditorium Sasana Praja BKPSDM & Hybrid').trim(),
     organizer: (organizer || 'Badan Kepegawaian dan Pengembangan Sumber Daya Manusia').trim(),
+    active: true, // EVENT RESMI AKTIF -> QR CODE OTOMATIS TERBIT
     updatedAt: new Date().toISOString()
   };
 
@@ -230,14 +308,29 @@ app.put('/api/event', (req, res) => {
 
   res.json({
     success: true,
-    message: 'Data event pelatihan berhasil disimpan dan disinkronkan ke seluruh sistem!',
+    message: 'Event pelatihan berhasil disimpan & diaktifkan! Dynamic QR Code presensi kini telah terbit.',
     event: db.event
   });
 });
 
-// ==========================================
+// Toggle Status Event (Buka / Tutup Presensi)
+app.post('/api/event/toggle-status', (req, res) => {
+  const db = readDb();
+  if (!db.event) db.event = {};
+  db.event.active = !db.event.active;
+  db.event.updatedAt = new Date().toISOString();
+  writeDb(db);
+
+  res.json({
+    success: true,
+    active: db.event.active,
+    message: db.event.active ? 'Sesi presensi event resmi DIBUKA & QR Code diterbitkan!' : 'Sesi presensi event DITUTUP sementara.'
+  });
+});
+
+// ========================================================
 // EMPLOYEES & PORTAL PEGAWAI API
-// ==========================================
+// ========================================================
 app.get('/api/employees', (req, res) => {
   const db = readDb();
   res.json({ success: true, employees: db.employees, event: db.event });
@@ -252,49 +345,9 @@ app.get('/api/employees/:id', (req, res) => {
   res.json({ success: true, employee: emp, event: db.event });
 });
 
-// Tambah / Buat Pegawai Baru (Simulasi mandiri)
-app.post('/api/employees', (req, res) => {
-  const { nip, name, jabatan, instansi } = req.body;
-  if (!nip || !name) {
-    return res.status(400).json({ success: false, message: 'NIP dan Nama Pegawai wajib diisi!' });
-  }
-
-  const db = readDb();
-  const existing = db.employees.find(e => e.nip === nip.trim());
-  if (existing) {
-    return res.status(400).json({ success: false, message: 'NIP sudah terdaftar dalam sistem!' });
-  }
-
-  const newEmp = {
-    id: 'EMP-' + String(db.employees.length + 1).padStart(3, '0'),
-    nip: nip.trim(),
-    name: name.trim(),
-    jabatan: (jabatan || 'Aparatur Sipil Negara').trim(),
-    instansi: (instansi || 'Pemerintah Daerah').trim(),
-    attended: false,
-    attendedAt: null,
-    accumulatedJp: 0,
-    lpti: {
-      status: 'none',
-      fileName: null,
-      fileOriginalName: null,
-      filePath: null,
-      fileSize: 0,
-      uploadedAt: null,
-      revisionNote: ''
-    },
-    certificate: null
-  };
-
-  db.employees.push(newEmp);
-  writeDb(db);
-
-  res.status(201).json({ success: true, message: 'Pegawai baru berhasil ditambahkan!', employee: newEmp });
-});
-
-// ==========================================
-// FORM UNGGAH BERKAS LPTI (MULTER PDF)
-// ==========================================
+// ========================================================
+// UNGGAH BERKAS LPTI (MULTER PDF)
+// ========================================================
 app.post('/api/employees/:id/upload-lpti', (req, res) => {
   upload.single('lptiFile')(req, res, function (err) {
     if (err instanceof multer.MulterError) {
@@ -314,13 +367,12 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
     const employee = db.employees.find(e => e.id === req.params.id || e.nip === req.params.id);
 
     if (!employee) {
-      // Hapus file yang baru diunggah jika pegawai tidak ditemukan
-      fs.unlink(req.file.path, () => {});
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
     }
 
     if (!employee.attended) {
-      fs.unlink(req.file.path, () => {});
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       return res.status(400).json({
         success: false,
         message: 'Anda belum melakukan Presensi Kehadiran. Silakan scan Dynamic QR Code di layar proyektor terlebih dahulu!'
@@ -329,18 +381,16 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
 
     // Perbarui data LPTI
     employee.lpti = {
-      status: 'pending', // Masuk status Menunggu Persetujuan Kepegawaian (Kuning animasi)
+      status: 'pending',
       fileName: req.file.filename,
       fileOriginalName: req.file.originalname,
       filePath: `/uploads/lpti/${req.file.filename}`,
       fileSize: req.file.size,
       uploadedAt: new Date().toISOString(),
-      revisionNote: '' // Reset catatan revisi sebelumnya saat mengunggah ulang
+      revisionNote: ''
     };
 
-    // Jika sebelumnya ada sertifikat dan file direvisi/reupload, kunci kembali sertifikat
-    employee.certificate = null;
-
+    employee.certificate = null; // Kunci sertifikat jika re-upload
     writeDb(db);
 
     res.json({
@@ -351,12 +401,11 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
   });
 });
 
-// ==========================================
+// ========================================================
 // VERIFIKASI MANUAL LPTI OLEH ADMIN
-// ==========================================
+// ========================================================
 app.post('/api/employees/:id/verify-lpti', (req, res) => {
   const { action, revisionNote } = req.body;
-  // action: 'approve' atau 'revise'
 
   if (!action || !['approve', 'revise'].includes(action)) {
     return res.status(400).json({ success: false, message: 'Aksi verifikasi harus "approve" atau "revise".' });
@@ -369,20 +418,15 @@ app.post('/api/employees/:id/verify-lpti', (req, res) => {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
   }
 
-  if (!employee.lpti || !employee.lpti.fileName) {
-    return res.status(400).json({ success: false, message: 'Pegawai ini belum mengunggah berkas LPTI.' });
-  }
-
   if (action === 'approve') {
     employee.lpti.status = 'approved';
     employee.lpti.revisionNote = '';
 
-    // Terbitkan Nomor Sertifikat Resmi Otomatis jika belum ada
     if (!employee.certificate) {
       const counter = db.system?.certCounter || 1;
       const certYear = new Date().getFullYear();
       const certNumber = `${db.system?.certPrefix || '800.1.3/SERT-LPTI/' + certYear}/${String(counter).padStart(3, '0')}`;
-      
+
       employee.certificate = {
         number: certNumber,
         issuedAt: new Date().toISOString(),
@@ -390,11 +434,9 @@ app.post('/api/employees/:id/verify-lpti', (req, res) => {
         verifierTitle: 'Kepala Badan Kepegawaian dan Pengembangan SDM'
       };
 
-      // Tambahkan akumulasi JP
       const eventJp = db.event?.jp || 32;
       employee.accumulatedJp = (employee.accumulatedJp || 0) + eventJp;
 
-      // Update counter di database
       if (!db.system) db.system = {};
       db.system.certCounter = counter + 1;
     }
@@ -407,13 +449,13 @@ app.post('/api/employees/:id/verify-lpti', (req, res) => {
       employee: employee
     });
   } else if (action === 'revise') {
-    const note = (revisionNote && revisionNote.trim()) 
-      ? revisionNote.trim() 
+    const note = (revisionNote && revisionNote.trim())
+      ? revisionNote.trim()
       : 'Berkas LPTI belum memenuhi format standar. Harap lengkapi lembar pengesahan dan rencana tindak lanjut lalu unggah kembali.';
 
     employee.lpti.status = 'revision';
     employee.lpti.revisionNote = note;
-    employee.certificate = null; // Kunci akses sertifikat jika ada revisi
+    employee.certificate = null;
 
     writeDb(db);
 
@@ -425,9 +467,9 @@ app.post('/api/employees/:id/verify-lpti', (req, res) => {
   }
 });
 
-// ==========================================
-// DATA E-SERTIFIKAT RESMI
-// ==========================================
+// ========================================================
+// DATA E-SERTIFIKAT RESMI & QR CODE KEABSAHAN
+// ========================================================
 app.get('/api/employees/:id/certificate', async (req, res) => {
   const db = readDb();
   const employee = db.employees.find(e => e.id === req.params.id || e.nip === req.params.id);
@@ -443,8 +485,10 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
     });
   }
 
-  // Buat QR Code Keabsahan Digital Sertifikat
-  const verifyUrl = `${req.protocol}://${req.get('host')}/api/verify-cert/${encodeURIComponent(employee.certificate.number)}`;
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
+  const verifyUrl = `${protocol}://${host}/api/verify-cert/${encodeURIComponent(employee.certificate.number)}`;
+
   const certQrDataUrl = await QRCode.toDataURL(verifyUrl, {
     margin: 1,
     width: 140,
@@ -476,7 +520,7 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
   });
 });
 
-// Verifikasi Publik Keabsahan Sertifikat
+// Verifikasi Publik Keabsahan Sertifikat (Dapat diakses HP)
 app.get('/api/verify-cert/:certNumber', (req, res) => {
   const db = readDb();
   const certNumber = decodeURIComponent(req.params.certNumber);
@@ -484,10 +528,17 @@ app.get('/api/verify-cert/:certNumber', (req, res) => {
 
   if (!employee) {
     return res.status(404).send(`
-      <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-        <h1 style="color: #dc2626;">SERTIFIKAT TIDAK DITEMUKAN</h1>
-        <p>Nomor sertifikat <strong>${certNumber}</strong> tidak terdaftar dalam pangkalan data resmi kepegawaian.</p>
-      </div>
+      <!DOCTYPE html>
+      <html lang="id">
+      <head><meta charset="UTF-8"><title>Sertifikat Tidak Ditemukan</title><script src="https://cdn.tailwindcss.com"></script></head>
+      <body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-red-200 text-center">
+          <h1 class="text-xl font-bold text-red-600 mb-2">SERTIFIKAT TIDAK DITEMUKAN</h1>
+          <p class="text-sm text-slate-600 mb-4">Nomor <strong>${certNumber}</strong> tidak terdaftar dalam pangkalan data resmi kepegawaian.</p>
+          <a href="/" class="text-xs font-bold text-emerald-700 underline">Kembali ke Portal</a>
+        </div>
+      </body>
+      </html>
     `);
   }
 
@@ -496,27 +547,28 @@ app.get('/api/verify-cert/:certNumber', (req, res) => {
     <html lang="id">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Verifikasi Keabsahan E-Sertifikat Kepegawaian</title>
       <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-emerald-50 min-h-screen flex items-center justify-center p-4">
-      <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-emerald-200 text-center">
-        <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div class="max-w-md w-full bg-white rounded-3xl shadow-xl p-6 sm:p-8 border border-emerald-200 text-center">
+        <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
         </div>
-        <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full uppercase tracking-wider mb-2">Terverifikasi Sah & Asli</span>
-        <h2 class="text-xl font-bold text-gray-900 mb-1">E-Sertifikat Kepegawaian Resmi</h2>
-        <p class="text-sm text-gray-500 mb-6 font-mono">${employee.certificate.number}</p>
+        <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2">Terverifikasi Sah & Asli</span>
+        <h2 class="text-xl font-extrabold text-slate-900 mb-1">E-Sertifikat Kepegawaian Resmi</h2>
+        <p class="text-xs text-slate-500 mb-6 font-mono">${employee.certificate.number}</p>
         
-        <div class="text-left bg-gray-50 rounded-xl p-4 space-y-3 text-sm border border-gray-100 mb-6">
-          <div><span class="text-gray-500 block text-xs">Nama Pegawai</span><span class="font-semibold text-gray-800">${employee.name}</span></div>
-          <div><span class="text-gray-500 block text-xs">NIP</span><span class="font-semibold text-gray-800">${employee.nip}</span></div>
-          <div><span class="text-gray-500 block text-xs">Kegiatan Pelatihan</span><span class="font-semibold text-gray-800">${db.event.title}</span></div>
-          <div><span class="text-gray-500 block text-xs">Bobot Jam Pelajaran</span><span class="font-semibold text-emerald-700">${db.event.jp} Jam Pelajaran (JP)</span></div>
-          <div><span class="text-gray-500 block text-xs">Tanggal Terbit</span><span class="text-gray-700">${new Date(employee.certificate.issuedAt).toLocaleDateString('id-ID', { dateStyle: 'full' })}</span></div>
+        <div class="text-left bg-slate-50 rounded-2xl p-4 space-y-3 text-xs border border-slate-100 mb-6">
+          <div><span class="text-slate-400 block">Nama Pegawai</span><span class="font-bold text-slate-800 text-sm">${employee.name}</span></div>
+          <div><span class="text-slate-400 block">NIP</span><span class="font-mono font-semibold text-slate-800">${employee.nip}</span></div>
+          <div><span class="text-slate-400 block">Kegiatan Pelatihan</span><span class="font-bold text-slate-800">${db.event.title}</span></div>
+          <div><span class="text-slate-400 block">Bobot Pelatihan</span><span class="font-bold text-emerald-700">${db.event.jp} Jam Pelajaran (JP)</span></div>
+          <div><span class="text-slate-400 block">Tanggal Terbit</span><span class="text-slate-700">${new Date(employee.certificate.issuedAt).toLocaleDateString('id-ID', { dateStyle: 'full' })}</span></div>
         </div>
 
-        <a href="/pegawai" class="inline-block w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition text-sm">Buka Portal Pegawai</a>
+        <a href="/pegawai" class="inline-block w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition text-xs shadow-md shadow-emerald-600/20">Buka Portal Pegawai</a>
       </div>
     </body>
     </html>
@@ -532,9 +584,10 @@ app.post('/api/reset-data', (req, res) => {
       jp: 32,
       category: "Teknis & Manajerial Kepegawaian",
       schedule: "18 - 20 November 2026, 08:00 - 16:30 WIB",
-      location: "Auditorium Sasana Praja BKPSDM & Hybrid",
-      organizer: "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia",
+      location: "Auditorium Sasana Praja BKPSDM & Hybrid Zoom",
+      organizer: "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia (BKPSDM)",
       targetAudience: "Aparatur Sipil Negara (ASN) Pelaksana & Fungsional",
+      active: true, // Default aktif untuk sampel
       updatedAt: new Date().toISOString()
     },
     employees: [
@@ -559,7 +612,8 @@ app.post('/api/reset-data', (req, res) => {
         certificate: {
           number: "800.1.3/SERT-LPTI/2026/001",
           issuedAt: new Date(Date.now() - 900000).toISOString(),
-          verifier: "Drs. H. Hendrawan, M.Si (Kepala BKPSDM)"
+          verifier: "Drs. H. Hendrawan, M.Si",
+          verifierTitle: "Kepala Badan Kepegawaian dan Pengembangan SDM"
         }
       },
       {
@@ -653,27 +707,24 @@ app.post('/api/reset-data', (req, res) => {
   res.json({ success: true, message: 'Data demonstrasi sistem berhasil di-reset!' });
 });
 
-// Route Navigasi Halaman Utama
-app.get('/', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
-});
+// Routing Halaman Utama
+app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
+app.get('/pegawai', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'pegawai.html')));
 
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
-});
+// Export app untuk Vercel Serverless Function (@vercel/node)
+module.exports = app;
 
-app.get('/pegawai', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'pegawai.html'));
-});
-
-// Start Server
-app.listen(PORT, () => {
-  console.log(`=====================================================`);
-  console.log(` SISTEM PRESENSI, VERIFIKASI LPTI & E-SERTIFIKAT`);
-  console.log(` Server berjalan aktif pada port http://localhost:${PORT}`);
-  console.log(` - Portal Utama:   http://localhost:${PORT}/`);
-  console.log(` - Admin Board:    http://localhost:${PORT}/admin`);
-  console.log(` - Portal Pegawai: http://localhost:${PORT}/pegawai`);
-  console.log(`=====================================================`);
-});
-
+// Jalankan server jika dieksekusi langsung secara lokal
+if (require.main === module || !IS_VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`=====================================================`);
+    console.log(` SISTEM PRESENSI, VERIFIKASI LPTI & E-SERTIFIKAT`);
+    console.log(` Server berjalan aktif pada port http://localhost:${PORT}`);
+    console.log(` - Portal Utama:   http://localhost:${PORT}/`);
+    console.log(` - Admin Board:    http://localhost:${PORT}/admin`);
+    console.log(` - Portal Pegawai: http://localhost:${PORT}/pegawai`);
+    console.log(` Mode Server:      ${IS_VERCEL ? 'Vercel Serverless' : 'Local Node.js'}`);
+    console.log(`=====================================================`);
+  });
+}

@@ -112,7 +112,52 @@ sequenceDiagram
 
 ---
 
-## 🚀 Panduan Memulai Cepat (Quick Start)
+## ☁️ Panduan Deploy ke Vercel (Gratis & Siap Pakai)
+
+Aplikasi ini sudah dilengkapi arsitektur **Vercel Serverless-Ready** (`vercel.json`, stateless TOTP dynamic QR, serta adaptasi filesystem `/tmp`).
+
+### Opsi A: Deploy Otomatis via GitHub (Sangat Direkomendasikan)
+1. Buat repository baru di akun GitHub Anda (misal: `sistem-presensi-lpti`).
+2. Push seluruh file proyek ke GitHub:
+   ```bash
+   git init
+   git add .
+   git commit -m "feat: inisialisasi sistem presensi lpti dan e-sertifikat"
+   git branch -M main
+   git remote add origin https://github.com/USERNAME/NAMA-REPO.git
+   git push -u origin main
+   ```
+3. Buka [Vercel Dashboard](https://vercel.com/dashboard) -> Klik **"Add New"** -> **"Project"**.
+4. Pilih repository GitHub Anda, lalu klik **"Deploy"**.
+5. Vercel akan otomatis membaca file `vercel.json` dan menyajikan aplikasi Anda dengan domain HTTPS gratis (contoh: `https://sistem-presensi-lpti.vercel.app`).
+
+### Opsi B: Deploy Langsung via Vercel CLI di Terminal
+```bash
+# Jalankan perintah deploy Vercel
+npx vercel
+
+# Ikuti instruksi di terminal (tekan Enter untuk pilihan default)
+# Untuk deploy versi production:
+npx vercel --prod
+```
+
+---
+
+## 📱 Cara Uji Coba Absensi di HP Anda (Scan Kamera HP)
+
+1. Buka **Dashboard Admin (`/admin`)** di laptop atau komputer.
+2. **Penting**: Pastikan Anda sudah menginput & menyimpan event di Form Pembuatan Event. Begitu disimpan, **Dynamic QR Code langsung terbit**.
+3. Buka aplikasi **Kamera** pada HP Android atau iPhone Anda.
+4. Arahkan kamera HP ke gambar QR Code yang tampil di layar proyektor / laptop.
+5. HP akan otomatis memunculkan tautan kuning/banner:
+   `Buka ".../pegawai?token=LPTI-XXXXXX&action=presensi"`
+6. Tap tautan tersebut -> Halaman Portal Pegawai terbuka langsung di HP dengan modal konfirmasi:
+   `"📸 Scan Kamera HP Terdeteksi: Token LPTI-XXXXXX"`.
+7. Pilih akun pegawai Anda lalu tap **"Konfirmasi Hadir"**. Status kehadiran langsung resmi **HADIR** secara real-time!
+
+---
+
+## 🚀 Panduan Memulai Cepat Secara Lokal (Quick Start)
 
 ### 1. Prasyarat Sistem
 * [Node.js](https://nodejs.org/) versi 18.0.0 atau lebih baru.

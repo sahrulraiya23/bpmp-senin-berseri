@@ -451,6 +451,41 @@
     </div>
   </div>
 
+  <!-- MODAL: DETEKSI SCAN DARI KAMERA HP -->
+  <div id="mobileScanModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center shadow-2xl border border-emerald-200 animate-in fade-in zoom-in-95">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3 shadow-sm">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+      </div>
+      <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full uppercase tracking-wider mb-2">Scan Kamera HP Terdeteksi</span>
+      <h3 class="text-base font-extrabold text-slate-900 mb-1">Konfirmasi Kehadiran Aula</h3>
+      <p class="text-xs text-slate-500 mb-4">Token dynamic presensi berhasil dipindai langsung dari layar proyektor.</p>
+
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 mb-4 text-left">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-[11px] text-slate-400 font-medium">Token Terdeteksi:</span>
+          <span id="mobileDetectedToken" class="font-mono font-black text-emerald-800 text-sm bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100">LPTI-......</span>
+        </div>
+        <div>
+          <label class="text-[11px] text-slate-500 font-semibold block mb-1">Presensi Sebagai Pegawai:</label>
+          <select id="mobileScanEmployeeSelect" onchange="switchEmployee(this.value)" class="w-full text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-emerald-500">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+      </div>
+
+      <div class="flex space-x-2">
+        <button onclick="closeMobileScanModal()" class="w-1/3 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 transition">
+          Batal
+        </button>
+        <button onclick="confirmMobilePresence()" id="btnConfirmMobilePresence" class="w-2/3 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition flex items-center justify-center">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Konfirmasi Hadir
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT LOGIC -->
   <script>
     let currentEmployeeId = 'EMP-001';
@@ -507,6 +542,7 @@
     function populateEmployeeDropdown() {
       const selectDesktop = document.getElementById('employeeSelect');
       const selectMobile = document.getElementById('employeeSelectMobile');
+      const selectModal = document.getElementById('mobileScanEmployeeSelect');
 
       const optionsHtml = employeesList.map(e => `
         <option value="${e.id}" ${e.id === currentEmployeeId ? 'selected' : ''}>
@@ -514,8 +550,9 @@
         </option>
       `).join('');
 
-      selectDesktop.innerHTML = optionsHtml;
-      selectMobile.innerHTML = optionsHtml;
+      if (selectDesktop) selectDesktop.innerHTML = optionsHtml;
+      if (selectMobile) selectMobile.innerHTML = optionsHtml;
+      if (selectModal) selectModal.innerHTML = optionsHtml;
     }
 
     function switchEmployee(id) {
@@ -809,6 +846,38 @@
       document.getElementById('certificateModal').classList.add('hidden');
     }
 
+    // 8. Mobile Phone Scan Support (Dari Hasil Pindai Kamera HP)
+    function openMobileScanModal(token) {
+      document.getElementById('mobileDetectedToken').textContent = token;
+      const modal = document.getElementById('mobileScanModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeMobileScanModal() {
+      const modal = document.getElementById('mobileScanModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function confirmMobilePresence() {
+      closeMobileScanModal();
+      await submitPresenceToken();
+    }
+
+    function checkUrlParameters() {
+      const params = new URLSearchParams(window.location.search);
+      const tokenParam = params.get('token');
+      const actionParam = params.get('action');
+
+      if (tokenParam) {
+        const cleanToken = tokenParam.trim().toUpperCase();
+        const inputField = document.getElementById('inputPresenceToken');
+        if (inputField) inputField.value = cleanToken;
+
+        openMobileScanModal(cleanToken);
+        showToast(`📸 Kode token presensi ${cleanToken} terdeteksi dari hasil scan kamera HP!`, 'success');
+      }
+    }
+
     // Polling Real-time Sinkronisasi Status Verifikasi Setiap 3 Detik
     setInterval(() => {
       if (currentEmployeeId) {
@@ -817,8 +886,9 @@
     }, 3000);
 
     // Initial Load
-    document.addEventListener('DOMContentLoaded', () => {
-      loadAllEmployees();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadAllEmployees();
+      checkUrlParameters();
     });
   </script>
 </body>

@@ -188,23 +188,48 @@
             </div>
           </div>
 
-          <button onclick="openProjectorModal()" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-emerald-700 transition shadow-sm">
-            <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-            Mode Proyektor Aula
+          <div class="flex items-center space-x-2">
+            <button id="btnToggleEventStatus" onclick="toggleEventStatus()" class="hidden sm:inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Buka / Jeda Sesi Presensi">
+              <span id="btnToggleEventLabel">Jeda Presensi</span>
+            </button>
+            <button onclick="openProjectorModal()" id="btnProjectorModal" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-emerald-700 transition shadow-sm">
+              <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+              Mode Proyektor Aula
+            </button>
+          </div>
+        </div>
+
+        <!-- TAMPILAN A: KETIKA EVENT BELUM DI-INPUT / TIDAK AKTIF -->
+        <div id="qrInactiveNotice" class="bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl p-8 border-2 border-dashed border-emerald-200 text-center flex flex-col items-center justify-center min-h-[380px] hidden">
+          <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4 shadow-sm">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </div>
+          <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 uppercase tracking-wide mb-2">Menunggu Input Event</span>
+          <h3 class="text-lg font-bold text-slate-800 mb-2">QR Code Presensi Belum Terbit</h3>
+          <p class="text-xs text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+            Sesuai aturan kepegawaian, Dynamic QR Code hanya akan diterbitkan setelah Panitia mengisi dan menyimpan data kegiatan pelatihan pada formulir di sebelah kiri.
+          </p>
+          <button onclick="document.getElementById('eventTitle').focus()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-600/20 transition flex items-center">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <span>Isi & Simpan Event Sekarang</span>
           </button>
         </div>
 
-        <!-- Proyektor Visual Display Card -->
-        <div class="bg-gradient-to-b from-emerald-50/70 to-slate-50 rounded-2xl p-6 border border-emerald-100 text-center flex flex-col items-center justify-center relative">
+        <!-- TAMPILAN B: KETIKA EVENT AKTIF & QR TERBIT -->
+        <div id="qrActiveDisplay" class="bg-gradient-to-b from-emerald-50/70 to-slate-50 rounded-2xl p-6 border border-emerald-100 text-center flex flex-col items-center justify-center relative">
           
           <!-- Anti Titip Security Banner -->
-          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100/80 text-emerald-800 text-[11px] font-bold uppercase tracking-wider mb-4 border border-emerald-200">
-            <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-            <span>Anti-Titip Presensi: Token Berganti Tiap 30 Detik</span>
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-[11px] font-bold uppercase tracking-wider mb-3 border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span>QR Terbit & Aktif: Berganti Tiap 30 Detik</span>
           </div>
 
+          <p class="text-xs font-semibold text-emerald-950 mb-3 max-w-sm">
+            📸 Arahkan kamera smartphone ke QR Code ini untuk scan presensi langsung di HP Anda!
+          </p>
+
           <!-- QR Code Container & Frame -->
-          <div class="relative bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-500/80 mb-4 inline-block">
+          <div class="relative bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-500/80 mb-3 inline-block">
             <img id="adminQrImage" src="" alt="Dynamic QR Presensi" class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-lg">
             <div id="qrLoadingOverlay" class="absolute inset-0 bg-white/90 rounded-2xl flex flex-col items-center justify-center hidden">
               <svg class="w-8 h-8 text-emerald-600 animate-spin mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
@@ -236,6 +261,14 @@
               </span>
               <button onclick="copyCurrentToken()" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold px-2 py-1 rounded hover:bg-emerald-50 transition" title="Salin kode token untuk uji coba mandiri">
                 Salin Token
+              </button>
+            </div>
+
+            <!-- Tautan Scan HP Langsung -->
+            <div class="bg-slate-100/90 rounded-xl p-2 border border-slate-200 flex items-center justify-between text-xs">
+              <span class="text-[10px] text-slate-500 font-mono truncate max-w-[200px]" id="scanUrlDisplay">http://...</span>
+              <button onclick="copyScanUrl()" class="text-[11px] text-emerald-700 font-bold hover:underline px-2 py-0.5 bg-white rounded shadow-xs flex-shrink-0">
+                Salin Link HP ↗
               </button>
             </div>
 
@@ -491,33 +524,77 @@
 
     // 2. Fetch & Handle Dynamic QR Code (30s Countdown)
     let currentToken = '';
+    let currentScanUrl = '';
+    let isEventCurrentlyActive = false;
+
     async function updateDynamicQr() {
       try {
         const res = await fetch('/api/qr/current');
         const data = await res.json();
-        if (data.success) {
-          currentToken = data.token;
-          const qrImg = document.getElementById('adminQrImage');
-          const modalQrImg = document.getElementById('modalProjectorQr');
+        
+        const inactiveNotice = document.getElementById('qrInactiveNotice');
+        const activeDisplay = document.getElementById('qrActiveDisplay');
+        const btnToggleLabel = document.getElementById('btnToggleEventLabel');
 
-          qrImg.src = data.qrImage;
-          modalQrImg.src = data.qrImage;
-
-          document.getElementById('currentTokenLabel').textContent = data.token;
-          document.getElementById('modalProjectorToken').textContent = data.token;
-
-          // Hitung countdown
-          const remaining = data.remainingSeconds || 30;
-          const pct = (remaining / 30) * 100;
-
-          document.getElementById('countdownText').textContent = `${remaining} detik`;
-          document.getElementById('countdownBar').style.width = `${pct}%`;
-
-          document.getElementById('modalProjectorCountdown').textContent = `${remaining}s`;
-          document.getElementById('modalProjectorBar').style.width = `${pct}%`;
+        if (!data.active) {
+          // Event belum diinput / presensi tidak aktif
+          isEventCurrentlyActive = false;
+          inactiveNotice.classList.remove('hidden');
+          activeDisplay.classList.add('hidden');
+          if (btnToggleLabel) btnToggleLabel.textContent = 'Buka Presensi';
+          return;
         }
+
+        // Event aktif -> Tampilkan QR Code & Countdown
+        isEventCurrentlyActive = true;
+        inactiveNotice.classList.add('hidden');
+        activeDisplay.classList.remove('hidden');
+        if (btnToggleLabel) btnToggleLabel.textContent = 'Jeda Presensi';
+
+        currentToken = data.token;
+        currentScanUrl = data.scanUrl;
+
+        const qrImg = document.getElementById('adminQrImage');
+        const modalQrImg = document.getElementById('modalProjectorQr');
+
+        qrImg.src = data.qrImage;
+        modalQrImg.src = data.qrImage;
+
+        document.getElementById('currentTokenLabel').textContent = data.token;
+        document.getElementById('modalProjectorToken').textContent = data.token;
+        document.getElementById('scanUrlDisplay').textContent = data.scanUrl;
+
+        // Hitung countdown
+        const remaining = data.remainingSeconds || 30;
+        const pct = (remaining / 30) * 100;
+
+        document.getElementById('countdownText').textContent = `${remaining} detik`;
+        document.getElementById('countdownBar').style.width = `${pct}%`;
+
+        document.getElementById('modalProjectorCountdown').textContent = `${remaining}s`;
+        document.getElementById('modalProjectorBar').style.width = `${pct}%`;
       } catch (err) {
         console.error('Error QR poll:', err);
+      }
+    }
+
+    async function toggleEventStatus() {
+      try {
+        const res = await fetch('/api/event/toggle-status', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          updateDynamicQr();
+        }
+      } catch (err) {
+        showToast('Gagal mengubah status event: ' + err.message, 'error');
+      }
+    }
+
+    function copyScanUrl() {
+      if (currentScanUrl) {
+        navigator.clipboard.writeText(currentScanUrl);
+        showToast('Tautan presensi untuk HP disalin ke clipboard!', 'success');
       }
     }
 
