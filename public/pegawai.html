@@ -183,38 +183,6 @@
           </div>
         </form>
 
-        <!-- Quick Demo Accounts (Uji Coba Cepat 1-Klik) -->
-        <div class="mt-6 pt-5 border-t border-slate-100">
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2 text-center">
-            ⚡ Klik Cepat untuk Uji Coba:
-          </span>
-          <div class="space-y-1.5 text-xs">
-            <button onclick="fillQuickAccount('197606122002121004', 'Bpmp2026!')" class="w-full text-left px-3 py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 transition flex items-center justify-between">
-              <div>
-                <span class="font-bold block text-slate-800">Junaiddin Pagala, ST, M.T.</span>
-                <span class="text-[10px] text-slate-500 font-mono">Kepala BPMP • 197606122002121004</span>
-              </div>
-              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded">Pilih</span>
-            </button>
-
-            <button onclick="fillQuickAccount('198106022006042001', 'Bpmp2026!')" class="w-full text-left px-3 py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 transition flex items-center justify-between">
-              <div>
-                <span class="font-bold block text-slate-800">Rika Ernita Mekuo, S.Si. M.Si.</span>
-                <span class="text-[10px] text-slate-500 font-mono">Kasubbag Umum • 198106022006042001</span>
-              </div>
-              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded">Pilih</span>
-            </button>
-
-            <button onclick="fillQuickAccount('197112311997021007', 'Bpmp2026!')" class="w-full text-left px-3 py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 transition flex items-center justify-between">
-              <div>
-                <span class="font-bold block text-slate-800">La Siara, S.Pd, M.Pd.</span>
-                <span class="text-[10px] text-slate-500 font-mono">Ka Timker SD • 197112311997021007</span>
-              </div>
-              <span class="text-[10px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded">Belum Hadir</span>
-            </button>
-          </div>
-        </div>
-
       </div>
 
     </section>
@@ -654,13 +622,6 @@
       const pwInput = document.getElementById('inputPassword');
       const isPassword = (pwInput.type === 'password');
       pwInput.type = isPassword ? 'text' : 'password';
-    }
-
-    // Quick Fill Demo Accounts
-    function fillQuickAccount(nip, password) {
-      document.getElementById('inputNip').value = nip;
-      document.getElementById('inputPassword').value = password;
-      showToast(`Data NIP ${nip} diisikan ke formulir login!`, 'success');
     }
 
     // 1. Otentikasi Login (POST /api/auth/login)
