@@ -1,26 +1,26 @@
 {
   "event": {
     "id": "EVT-2026-001",
-    "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN 2026",
+    "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra",
     "jp": 32,
     "category": "Teknis & Manajerial Kepegawaian",
-    "schedule": "18 - 20 November 2026, 08:00 - 16:30 WITA",
-    "location": "Auditorium BPMP Provinsi Sulawesi Tenggara",
+    "schedule": "18 - 20 November 2026",
+    "location": "Auditorium BPMP Sultra",
     "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia",
     "active": true,
-    "updatedAt": "2026-11-17T00:17:12.208Z"
+    "updatedAt": "2026-11-17T00:33:41.281Z"
   },
   "events": [
     {
       "id": "EVT-2026-001",
-      "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN 2026",
+      "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra",
       "jp": 32,
       "category": "Teknis & Manajerial Kepegawaian",
-      "schedule": "18 - 20 November 2026, 08:00 - 16:30 WITA",
-      "location": "Auditorium BPMP Provinsi Sulawesi Tenggara",
+      "schedule": "18 - 20 November 2026",
+      "location": "Auditorium BPMP Sultra",
       "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia",
       "active": true,
-      "updatedAt": "2026-11-17T00:17:12.208Z"
+      "updatedAt": "2026-11-17T00:33:41.213Z"
     },
     {
       "id": "EVT-2026-002",

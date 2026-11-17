@@ -330,8 +330,8 @@ app.get('/api/events', (req, res) => {
   res.json({ success: true, events: events, currentEvent: db.event });
 });
 
-// Simpan & Aktifkan Event (Menerbitkan QR Code)
-app.put('/api/event', (req, res) => {
+// Simpan & Aktifkan Event (Menerbitkan QR Code) - Mendukung PUT & POST
+const handleSaveEvent = (req, res) => {
   const { title, jp, category, schedule, location, organizer } = req.body;
 
   if (!title || !title.trim()) {
@@ -375,7 +375,10 @@ app.put('/api/event', (req, res) => {
     event: db.event,
     events: db.events
   });
-});
+};
+
+app.put('/api/event', handleSaveEvent);
+app.post('/api/event', handleSaveEvent);
 
 // Toggle Status Event (Buka / Tutup Presensi)
 app.post('/api/event/toggle-status', (req, res) => {

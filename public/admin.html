@@ -165,10 +165,13 @@
             <input type="text" id="eventLocation" placeholder="Contoh: Auditorium Sasana Praja BKPSDM & Hybrid Zoom" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 transition">
           </div>
 
-          <div class="pt-3">
+          <div class="pt-3 flex flex-col sm:flex-row gap-3">
             <button type="submit" id="btnSaveEvent" class="w-full inline-flex items-center justify-center px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-600/25 transition-all text-sm group">
               <span>Simpan & Terbitkan Event Pelatihan (Buka QR Code)</span>
               <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+            <button type="button" id="btnQuickActivate" onclick="quickActivateCurrentEvent()" class="hidden sm:inline-flex items-center justify-center px-5 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-2xl border border-emerald-300 transition text-sm flex-shrink-0" title="Buka dan aktifkan langsung event yang sudah tersimpan">
+              <span>⚡ Aktifkan & Buka Sesi</span>
             </button>
           </div>
         </form>
@@ -568,11 +571,37 @@
           document.getElementById('eventSchedule').value = eventData.schedule || '';
           document.getElementById('eventLocation').value = eventData.location || '';
 
+          // Tampilkan tombol aktifkan cepat jika sudah ada data event
+          const quickBtn = document.getElementById('btnQuickActivate');
+          if (quickBtn && eventData.title) {
+            quickBtn.classList.remove('hidden');
+          }
+
           // Atur tampilan: jika event sudah aktif -> tampilkan event + QR; jika belum -> tampilkan Form
           setWorkflowView(Boolean(eventData.active), eventData);
         }
       } catch (err) {
         console.error('Error load event:', err);
+      }
+    }
+
+    async function quickActivateCurrentEvent() {
+      const title = document.getElementById('eventTitle').value.trim();
+      if (!title) {
+        showToast('Silakan isi judul kegiatan pelatihan terlebih dahulu!', 'error');
+        return;
+      }
+      // Jika event sudah ada di DB, panggil toggle status untuk mengaktifkannya
+      if (eventData && eventData.title) {
+        if (!eventData.active) {
+          await toggleEventStatus();
+        } else {
+          setWorkflowView(true, eventData);
+          updateDynamicQr();
+        }
+      } else {
+        // Jika belum ada, submit form
+        document.getElementById('eventForm').requestSubmit();
       }
     }
 
@@ -886,62 +915,6 @@
                   📌 ${emp.eventTitle || 'Pelatihan Kepegawaian'}
                 </span>
               </div>
-            </td>
-            <td class="py-3.5 px-4 text-center">
-              ${emp.attended 
-                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">HADIR</span>' 
-                : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">BELUM</span>'
-              }
-            </td>
-            <td class="py-3.5 px-4">
-              ${statusBadge}
-              ${lpti.revisionNote ? `<div class="mt-1 text-[11px] text-rose-600 bg-rose-50 p-1.5 rounded-lg border border-rose-100 line-clamp-2" title="${lpti.revisionNote}">Catatan: ${lpti.revisionNote}</div>` : ''}
-            </td>
-            <td class="py-3.5 px-4">
-              ${pdfAction}
-              ${lpti.fileOriginalName ? `<div class="text-[10px] text-slate-400 mt-0.5 max-w-[140px] truncate" title="${lpti.fileOriginalName}">${lpti.fileOriginalName}</div>` : ''}
-            </td>
-            <td class="py-3.5 px-4">
-              ${certInfo}
-            </td>
-            <td class="py-3.5 px-4 text-center">
-              ${actionButtons}
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-          actionButtons = `
-            <div class="flex items-center justify-center space-x-1.5">
-              <button onclick="approveLpti('${emp.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="Setujui dan terbitkan e-sertifikat">
-                ✓ Cocok / Setujui
-              </button>
-              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 transition" title="Minta perbaikan berkas LPTI">
-                ✕ Minta Revisi
-              </button>
-            </div>
-          `;
-        } else if (status === 'approved') {
-          actionButtons = `
-            <div class="flex items-center justify-center space-x-1">
-              <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Tuntas Disetujui
-              </span>
-              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="text-[11px] text-slate-400 hover:text-rose-600 underline ml-1" title="Batalkan dan minta revisi kembali">
-                Koreksi
-              </button>
-            </div>
-          `;
-        } else {
-          actionButtons = '<span class="text-xs text-slate-400 italic">Menunggu Peserta</span>';
-        }
-
-        return `
-          <tr class="hover:bg-emerald-50/30 transition">
-            <td class="py-3.5 px-4">
-              <div class="font-bold text-slate-900">${emp.name}</div>
-              <div class="font-mono text-xs text-slate-500">${emp.nip}</div>
-              <div class="text-[11px] text-slate-400">${emp.jabatan} &bull; ${emp.instansi}</div>
             </td>
             <td class="py-3.5 px-4 text-center">
               ${emp.attended 
