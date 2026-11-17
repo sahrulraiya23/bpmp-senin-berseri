@@ -381,7 +381,7 @@ app.get('/api/events', (req, res) => {
 
 // Simpan & Aktifkan Event (Menerbitkan QR Code) - Mendukung PUT & POST
 const handleSaveEvent = (req, res) => {
-  const { title, jp, category, schedule, location, organizer } = req.body;
+  const { id, title, jp, category, schedule, location, organizer, isNew } = req.body;
 
   if (!title || !title.trim()) {
     return res.status(400).json({ success: false, message: 'Judul kegiatan pelatihan wajib diisi!' });
@@ -393,7 +393,19 @@ const handleSaveEvent = (req, res) => {
   }
 
   const db = readDb();
-  const eventId = db.event?.id || `EVT-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`;
+  if (!db.events) db.events = [];
+
+  // Tentukan eventId: jika edit event lama gunakan ID-nya, jika baru buat ID baru
+  let eventId = id;
+  if (!eventId || eventId === 'new' || isNew) {
+    const nextNum = db.events.length + 1;
+    eventId = `EVT-2026-${String(nextNum).padStart(3, '0')}`;
+  }
+
+  // Nonaktifkan event lain jika event ini diaktifkan
+  db.events.forEach(e => {
+    e.active = false;
+  });
   
   db.event = {
     id: eventId,
@@ -407,10 +419,12 @@ const handleSaveEvent = (req, res) => {
     updatedAt: new Date().toISOString()
   };
 
-  // Simpan / Perbarui juga di daftar db.events
-  if (!db.events) db.events = [];
-  const existingIdx = db.events.findIndex(e => e.id === eventId || e.title.toLowerCase() === title.trim().toLowerCase());
+  const existingIdx = db.events.findIndex(e => e.id === eventId);
   if (existingIdx >= 0) {
+    // Preserve template jika sudah pernah diunggah
+    if (db.events[existingIdx].certificateTemplate) {
+      db.event.certificateTemplate = db.events[existingIdx].certificateTemplate;
+    }
     db.events[existingIdx] = db.event;
   } else {
     db.events.unshift(db.event);
@@ -420,7 +434,7 @@ const handleSaveEvent = (req, res) => {
 
   res.json({
     success: true,
-    message: 'Event pelatihan berhasil disimpan & diaktifkan! Dynamic QR Code presensi kini telah terbit.',
+    message: `Event "${db.event.title}" (${db.event.id}) berhasil disimpan & diaktifkan sebagai sesi resmi!`,
     event: db.event,
     events: db.events
   });
@@ -428,6 +442,59 @@ const handleSaveEvent = (req, res) => {
 
 app.put('/api/event', handleSaveEvent);
 app.post('/api/event', handleSaveEvent);
+
+// Mengaktifkan Event dari Daftar Riwayat Event
+app.post('/api/events/:id/activate', (req, res) => {
+  const db = readDb();
+  if (!db.events || db.events.length === 0) {
+    return res.status(404).json({ success: false, message: 'Daftar riwayat event kosong.' });
+  }
+  const targetEvent = db.events.find(e => e.id === req.params.id);
+  if (!targetEvent) {
+    return res.status(404).json({ success: false, message: 'Event tidak ditemukan dalam daftar.' });
+  }
+
+  db.events.forEach(e => {
+    e.active = (e.id === targetEvent.id);
+  });
+
+  targetEvent.active = true;
+  targetEvent.updatedAt = new Date().toISOString();
+  db.event = { ...targetEvent };
+
+  writeDb(db);
+  res.json({
+    success: true,
+    message: `Event "${targetEvent.title}" (${targetEvent.id}) kini telah diaktifkan kembali sebagai sesi presensi aula!`,
+    event: db.event,
+    events: db.events
+  });
+});
+
+// Menghapus Event dari Riwayat
+app.delete('/api/events/:id', (req, res) => {
+  const db = readDb();
+  if (!db.events) return res.status(404).json({ success: false, message: 'Event tidak ditemukan.' });
+  const idx = db.events.findIndex(e => e.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ success: false, message: 'Event tidak ditemukan.' });
+  
+  const deleted = db.events.splice(idx, 1)[0];
+  if (db.event?.id === deleted.id) {
+    if (db.events.length > 0) {
+      db.events[0].active = true;
+      db.event = { ...db.events[0] };
+    } else {
+      db.event = { active: false };
+    }
+  }
+  writeDb(db);
+  res.json({
+    success: true,
+    message: `Event "${deleted.title}" berhasil dihapus dari sistem.`,
+    event: db.event,
+    events: db.events
+  });
+});
 
 // Toggle Status Event (Buka / Tutup Presensi)
 app.post('/api/event/toggle-status', (req, res) => {
