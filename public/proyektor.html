@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layar Proyektor Dynamic QR Presensi Aula - BPMP Sultra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white overflow-x-hidden">
+
+  <!-- ========================================== -->
+  <!-- TOP BAR NAVIGASI PROYEKTOR                 -->
+  <!-- ========================================== -->
+  <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      
+      <!-- Identitas Lembaga & Sesi -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold text-emerald-400 tracking-wider uppercase block">BPMP PROVINSI SULAWESI TENGGARA</span>
+          <h1 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+            <span>Layar Presensi Mandiri Aula Pelatihan</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-ping"></span>
+              LIVE ROTASI 30S
+            </span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- KUNCI: TOMBOL KEMBALI KE DASHBOARD ADMIN -->
+      <div class="flex items-center space-x-3">
+        <button onclick="toggleFullScreen()" class="hidden sm:inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+          <span id="fullscreenBtnText">Layar Penuh (F11)</span>
+        </button>
+
+        <a href="/admin" class="inline-flex items-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all hover:scale-105 group">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span>Kembali ke Dashboard Admin</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- KONDISI A: EVENT AKTIF (TAMPILAN PROYEKTOR)-->
+  <!-- ========================================== -->
+  <main id="activeEventView" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 flex-grow flex flex-col justify-center items-center w-full text-center">
+
+    <!-- Header Event Pelatihan (Besar & Jelas Terbaca Jarak Jauh) -->
+    <div class="max-w-3xl mx-auto mb-6 sm:mb-8">
+      <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-3 shadow-inner">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="eventCategoryBadge">Teknis & Manajerial Kepegawaian</span>
+      </div>
+
+      <h2 id="eventTitleDisplay" class="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight mb-3">
+        Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern
+      </h2>
+
+      <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400">
+        <span class="inline-flex items-center px-3 py-1 rounded-lg bg-emerald-950 border border-emerald-800/80 text-emerald-300 font-bold" id="eventJpBadge">
+          32 Jam Pelajaran (JP)
+        </span>
+        <span>&bull;</span>
+        <span id="eventScheduleDisplay">18 - 20 November 2026</span>
+        <span>&bull;</span>
+        <span id="eventLocationDisplay">Auditorium BPMP Sultra</span>
+      </div>
+    </div>
+
+    <!-- PANGGUNG UTAMA: DYNAMIC QR CODE RAKSASA & COUNTDOWN -->
+    <div class="bg-gradient-to-b from-slate-900 to-slate-900/90 p-6 sm:p-10 rounded-3xl border-2 border-emerald-500/50 shadow-2xl shadow-emerald-500/10 max-w-xl w-full flex flex-col items-center relative">
+      
+      <!-- Box QR Code Putih Bersih (Kontras Tinggi untuk Scan Kamera HP) -->
+      <div class="bg-white p-5 sm:p-7 rounded-3xl shadow-2xl border-4 border-emerald-400 relative inline-block group transition-transform duration-300 hover:scale-[1.02]">
+        <img id="projectorQrImage" src="" alt="Dynamic QR Presensi Aula" class="w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 object-contain rounded-xl">
+        
+        <!-- Loading Overlay saat pergantian token -->
+        <div id="qrLoadingOverlay" class="absolute inset-0 bg-white/95 rounded-3xl flex flex-col items-center justify-center hidden">
+          <svg class="w-12 h-12 text-emerald-600 animate-spin mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+          <span class="text-sm font-black text-emerald-800">Memperbarui Token...</span>
+        </div>
+      </div>
+
+      <!-- Countdown Timer & Progress Bar Animasi Halus -->
+      <div class="w-full mt-6 space-y-3">
+        <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-300 px-1">
+          <span class="flex items-center text-emerald-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 mr-2 animate-ping"></span>
+            Token Anti-Titip Kedaluwarsa Dalam:
+          </span>
+          <span id="projectorCountdownText" class="text-emerald-300 font-mono text-base sm:text-lg font-black bg-slate-950 px-3 py-0.5 rounded-lg border border-slate-800">
+            30 detik
+          </span>
+        </div>
+
+        <!-- Bar Waktu 30 Detik -->
+        <div class="w-full bg-slate-950 rounded-full h-3.5 p-0.5 border border-slate-800 overflow-hidden">
+          <div id="projectorCountdownBar" class="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+        </div>
+
+        <!-- Token Teks untuk Presensi Manual -->
+        <div class="bg-slate-950/90 rounded-2xl p-3 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+          <span class="text-slate-400">Kode Token Aktif:</span>
+          <span id="projectorTokenCode" class="font-mono font-black text-emerald-400 text-base sm:text-lg tracking-widest bg-emerald-950/60 px-3 py-1 rounded-xl border border-emerald-800">
+            LPTI-......
+          </span>
+          <span class="text-[11px] text-slate-400">Rotasi server tiap 30s</span>
+        </div>
+      </div>
+
+      <!-- Panduan Cepat Scan Kamera HP -->
+      <div class="mt-6 pt-5 border-t border-slate-800 w-full grid grid-cols-3 gap-2 text-center text-[11px] text-slate-300">
+        <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+          <span class="font-bold text-emerald-400 block mb-0.5">1. Buka Kamera HP</span>
+          <span class="text-[10px] text-slate-400">Arahkan ke QR Code</span>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+          <span class="font-bold text-emerald-400 block mb-0.5">2. Tap Notifikasi</span>
+          <span class="text-[10px] text-slate-400">Buka link presensi</span>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+          <span class="font-bold text-emerald-400 block mb-0.5">3. Login NIP</span>
+          <span class="text-[10px] text-slate-400">Hadir otomatis!</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Live Counter Kehadiran Peserta -->
+    <div class="mt-8 flex items-center justify-center gap-3">
+      <div class="inline-flex items-center px-5 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-xs sm:text-sm text-slate-300 shadow-lg">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 mr-2.5 animate-pulse"></span>
+        <span>Peserta Hadir di Aula: <strong id="liveHadirCount" class="text-emerald-400 font-extrabold text-base">0</strong> dari <span id="liveTotalCount">104</span> Pegawai</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- KONDISI B: EVENT SEDANG DIJEDA / BELUM ADA -->
+  <!-- ========================================== -->
+  <main id="inactiveEventView" class="max-w-2xl mx-auto px-4 py-16 flex-grow flex flex-col justify-center items-center w-full text-center hidden">
+    <div class="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-amber-500/10">
+      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    </div>
+
+    <h2 class="text-2xl sm:text-3xl font-black text-white mb-3">Sesi Presensi Aula Sedang Dijeda / Belum Diterbitkan</h2>
+    <p class="text-sm text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
+      Layar QR Code presensi dinonaktifkan sementara oleh panitia kepegawaian. Silakan buka Dashboard Admin untuk menerbitkan atau mengaktifkan kembali kegiatan.
+    </p>
+
+    <a href="/admin" class="inline-flex items-center px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 transition-all hover:scale-105">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      <span>Buka Dashboard Admin Kepegawaian</span>
+    </a>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- FOOTER PROYEKTOR                           -->
+  <!-- ========================================== -->
+  <footer class="bg-slate-900/60 border-t border-slate-800/80 py-4 px-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full gap-2">
+    <span>Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara &copy; 2026</span>
+    <span class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+      Sistem Presensi Anti-Titip Dynamic TOTP 30 Detik
+    </span>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT ENGINE UNTUK LAYAR PROYEKTOR   -->
+  <!-- ========================================== -->
+  <script>
+    let currentEvent = null;
+
+    // 1. Fullscreen Toggle
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn('Gagal masuk fullscreen:', err.message);
+        });
+        document.getElementById('fullscreenBtnText').textContent = 'Keluar Layar Penuh';
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+        document.getElementById('fullscreenBtnText').textContent = 'Layar Penuh (F11)';
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      const btnText = document.getElementById('fullscreenBtnText');
+      if (btnText) {
+        btnText.textContent = document.fullscreenElement ? 'Keluar Layar Penuh' : 'Layar Penuh (F11)';
+      }
+    });
+
+    // 2. Fetch Data Event
+    async function syncEventData() {
+      try {
+        const res = await fetch('/api/event');
+        const data = await res.json();
+        if (data.success && data.event) {
+          currentEvent = data.event;
+          
+          const activeView = document.getElementById('activeEventView');
+          const inactiveView = document.getElementById('inactiveEventView');
+
+          if (!currentEvent.active || !currentEvent.title) {
+            activeView.classList.add('hidden');
+            inactiveView.classList.remove('hidden');
+            return;
+          }
+
+          activeView.classList.remove('hidden');
+          inactiveView.classList.add('hidden');
+
+          document.getElementById('eventTitleDisplay').textContent = currentEvent.title;
+          document.getElementById('eventJpBadge').textContent = `${currentEvent.jp || 32} Jam Pelajaran (JP)`;
+          document.getElementById('eventCategoryBadge').textContent = currentEvent.category || 'Teknis & Manajerial Kepegawaian';
+          document.getElementById('eventScheduleDisplay').textContent = currentEvent.schedule || 'Tahun 2026';
+          document.getElementById('eventLocationDisplay').textContent = currentEvent.location || 'Auditorium BPMP Sultra';
+        }
+      } catch (err) {
+        console.error('Error sync event:', err);
+      }
+    }
+
+    // 3. Fetch Dynamic QR Code (Setiap 1 detik untuk countdown halus)
+    async function syncDynamicQr() {
+      try {
+        const res = await fetch('/api/qr/current');
+        const data = await res.json();
+
+        const activeView = document.getElementById('activeEventView');
+        const inactiveView = document.getElementById('inactiveEventView');
+
+        if (!data.active) {
+          activeView.classList.add('hidden');
+          inactiveView.classList.remove('hidden');
+          return;
+        }
+
+        activeView.classList.remove('hidden');
+        inactiveView.classList.add('hidden');
+
+        // Update QR Image jika berubah
+        const qrImg = document.getElementById('projectorQrImage');
+        if (data.qrImage && qrImg.src !== data.qrImage) {
+          qrImg.src = data.qrImage;
+        }
+
+        // Update Token Text
+        document.getElementById('projectorTokenCode').textContent = data.token || 'LPTI-......';
+
+        // Update Countdown
+        const remaining = data.remainingSeconds || 30;
+        const pct = (remaining / 30) * 100;
+
+        document.getElementById('projectorCountdownText').textContent = `${remaining} detik`;
+        document.getElementById('projectorCountdownBar').style.width = `${pct}%`;
+      } catch (err) {
+        console.error('Error sync QR:', err);
+      }
+    }
+
+    // 4. Fetch Counter Kehadiran Peserta
+    async function syncAttendanceCount() {
+      try {
+        const res = await fetch('/api/employees');
+        const data = await res.json();
+        if (data.success && data.employees) {
+          const emps = data.employees;
+          const hadirCount = emps.filter(e => e.attended).length;
+          document.getElementById('liveHadirCount').textContent = hadirCount;
+          document.getElementById('liveTotalCount').textContent = emps.length;
+        }
+      } catch (err) {
+        console.error('Error sync attendance:', err);
+      }
+    }
+
+    // Initial Load & Intervals
+    document.addEventListener('DOMContentLoaded', () => {
+      syncEventData();
+      syncDynamicQr();
+      syncAttendanceCount();
+
+      // Poll QR code tiap detik
+      setInterval(syncDynamicQr, 1000);
+      // Poll data event tiap 5 detik
+      setInterval(syncEventData, 5000);
+      // Poll counter kehadiran tiap 4 detik
+      setInterval(syncAttendanceCount, 4000);
+    });
+  </script>
+</body>
+</html>

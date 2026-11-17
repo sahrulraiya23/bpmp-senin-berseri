@@ -204,6 +204,7 @@ node server.js
 ### 4. Buka di Peramban
 * 🏠 **Portal Navigasi Utama**: [http://localhost:3000/](http://localhost:3000/)
 * 👨‍💼 **Dashboard Admin Kepegawaian**: [http://localhost:3000/admin](http://localhost:3000/admin)
+* 📽️ **Layar Proyektor Dynamic QR Presensi**: [http://localhost:3000/proyektor](http://localhost:3000/proyektor) (atau `/qr`)
 * 👨‍💻 **Portal Mandiri Pegawai**: [http://localhost:3000/pegawai](http://localhost:3000/pegawai)
 
 ---

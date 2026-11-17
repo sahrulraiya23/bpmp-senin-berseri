@@ -79,90 +79,132 @@
       </div>
     </div>
 
-    <!-- 2 Navigation Roles Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto w-full">
+    <!-- 3 Navigation Roles Cards (Pisah antara Admin, Proyektor QR, dan Pegawai) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
       
       <!-- Card 1: Admin Kepegawaian -->
-      <div class="group relative bg-white rounded-3xl p-8 border-2 border-slate-200/90 hover:border-emerald-500 shadow-sm hover:shadow-xl hover:shadow-emerald-600/10 transition-all duration-300 flex flex-col justify-between">
-        <div class="absolute -top-3 right-6">
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-900 text-white tracking-wide uppercase shadow-sm">
-            Role Panitia
+      <div class="group relative bg-white rounded-3xl p-7 border-2 border-slate-200/90 hover:border-emerald-500 shadow-sm hover:shadow-xl hover:shadow-emerald-600/10 transition-all duration-300 flex flex-col justify-between">
+        <div class="absolute -top-3 right-5">
+          <span class="px-3 py-0.5 rounded-full text-[11px] font-bold bg-slate-900 text-white tracking-wide uppercase shadow-sm">
+            Panitia
           </span>
         </div>
 
         <div>
-          <div class="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center mb-6 group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 shadow-sm">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
           </div>
 
-          <h3 class="text-2xl font-bold text-slate-900 mb-2">Dashboard Admin Kepegawaian</h3>
-          <p class="text-sm text-slate-600 mb-6 leading-relaxed">
-            Pusat kendali panitia: formulir penyesuaian event & bobot JP, proyektor Dynamic QR Code rotasi 30 detik (anti-titip presensi), serta panel kurasi & persetujuan berkas LPTI PDF asli.
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Dashboard Admin Kepegawaian</h3>
+          <p class="text-xs text-slate-600 mb-5 leading-relaxed">
+            Pusat kendali panitia: formulir penyesuaian event & bobot JP, pengaturan template e-sertifikat (Foto/PDF), serta kurasi & persetujuan berkas LPTI 104 pegawai.
           </p>
 
-          <ul class="space-y-2.5 text-xs text-slate-600 mb-8 border-t border-slate-100 pt-5">
+          <ul class="space-y-2 text-xs text-slate-600 mb-6 border-t border-slate-100 pt-4">
             <li class="flex items-center">
-              <svg class="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Setup Event & Alokasi Nilai Jam Pelajaran (1-120 JP)</span>
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Setup Event & Bobot JP (1-120)</span>
             </li>
             <li class="flex items-center">
-              <svg class="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Proyektor QR Dinamis 30s Anti-Foto WhatsApp</span>
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Upload Template Foto / Dokumen PDF</span>
             </li>
             <li class="flex items-center">
-              <svg class="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Buka Baca PDF Asli & Aksi Setujui / Minta Revisi</span>
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Cek Berkas LPTI & Aksi Setujui / Revisi</span>
             </li>
           </ul>
         </div>
 
-        <a href="/admin" class="w-full inline-flex items-center justify-center px-6 py-3.5 bg-slate-900 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-md hover:shadow-emerald-600/30 transition-all duration-200 group-hover:translate-x-1">
-          <span>Masuk Dashboard Admin</span>
-          <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        <a href="/admin" class="w-full inline-flex items-center justify-center px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all duration-200 group-hover:translate-x-0.5 text-xs">
+          <span>Buka Dashboard Admin</span>
+          <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </a>
       </div>
 
-      <!-- Card 2: Portal Pegawai / Peserta -->
-      <div class="group relative bg-white rounded-3xl p-8 border-2 border-emerald-200/90 hover:border-emerald-600 shadow-sm hover:shadow-xl hover:shadow-emerald-600/15 transition-all duration-300 flex flex-col justify-between">
-        <div class="absolute -top-3 right-6">
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white tracking-wide uppercase shadow-sm">
-            Role Peserta
+      <!-- Card 2: Layar Proyektor QR Aula (Khusus Layar Besar) -->
+      <div class="group relative bg-white rounded-3xl p-7 border-2 border-emerald-500/80 shadow-md hover:shadow-xl hover:shadow-emerald-600/15 transition-all duration-300 flex flex-col justify-between">
+        <div class="absolute -top-3 right-5">
+          <span class="px-3 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white tracking-wide uppercase shadow-sm">
+            Layar Aula
           </span>
         </div>
 
         <div>
-          <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center mb-6 group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mb-5 group-hover:scale-105 shadow-md shadow-emerald-600/30 transition-all duration-300">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
             </svg>
           </div>
 
-          <h3 class="text-2xl font-bold text-slate-900 mb-2">Portal Mandiri Pegawai</h3>
-          <p class="text-sm text-slate-600 mb-6 leading-relaxed">
-            Akses mandiri aparatur sipil negara: validasi kehadiran di aula, unggah file PDF asli Laporan Pasca Pelatihan (LPTI), pantau status kurasi secara real-time, dan unduh sertifikat resmi.
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Layar QR Presensi Aula</h3>
+          <p class="text-xs text-slate-600 mb-5 leading-relaxed">
+            Tampilan khusus proyektor LCD aula: Dynamic QR Code rotasi 30 detik (anti-titip presensi), countdown timer besar, dan counter kehadiran peserta secara live.
           </p>
 
-          <ul class="space-y-2.5 text-xs text-slate-600 mb-8 border-t border-slate-100 pt-5">
+          <ul class="space-y-2 text-xs text-slate-600 mb-6 border-t border-slate-100 pt-4">
             <li class="flex items-center">
-              <svg class="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Scan / Masukkan Dynamic Token Presensi di Lokasi</span>
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Dynamic QR Code Resolusi Tinggi</span>
             </li>
             <li class="flex items-center">
-              <svg class="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Unggah Berkas Nyata LPTI Asli (.pdf multipart)</span>
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Rotasi Token Otomatis Tiap 30 Detik</span>
             </li>
             <li class="flex items-center">
-              <svg class="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Status 4 Tahap & Tombol E-Sertifikat Otomatis Terbuka</span>
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Tombol Kembali ke Admin & Fullscreen</span>
             </li>
           </ul>
         </div>
 
-        <a href="/pegawai" class="w-full inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-md shadow-emerald-600/30 hover:shadow-lg transition-all duration-200 group-hover:translate-x-1">
+        <a href="/proyektor" class="w-full inline-flex items-center justify-center px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-600/30 transition-all duration-200 group-hover:translate-x-0.5 text-xs">
+          <span>Buka Layar Proyektor Aula</span>
+          <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+      </div>
+
+      <!-- Card 3: Portal Pegawai / Peserta -->
+      <div class="group relative bg-white rounded-3xl p-7 border-2 border-slate-200/90 hover:border-emerald-600 shadow-sm hover:shadow-xl hover:shadow-emerald-600/15 transition-all duration-300 flex flex-col justify-between">
+        <div class="absolute -top-3 right-5">
+          <span class="px-3 py-0.5 rounded-full text-[11px] font-bold bg-teal-600 text-white tracking-wide uppercase shadow-sm">
+            Peserta
+          </span>
+        </div>
+
+        <div>
+          <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300 shadow-sm">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Portal Mandiri Pegawai</h3>
+          <p class="text-xs text-slate-600 mb-5 leading-relaxed">
+            Akses mandiri aparatur sipil negara: validasi kehadiran di aula via NIP & password, unggah file PDF asli LPTI, pantau status kurasi, dan unduh sertifikat resmi.
+          </p>
+
+          <ul class="space-y-2 text-xs text-slate-600 mb-6 border-t border-slate-100 pt-4">
+            <li class="flex items-center">
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Scan Kamera HP & Login 104 NIP</span>
+            </li>
+            <li class="flex items-center">
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Unggah Laporan Asli LPTI (PDF)</span>
+            </li>
+            <li class="flex items-center">
+              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Unduh File Asli PDF E-Sertifikat</span>
+            </li>
+          </ul>
+        </div>
+
+        <a href="/pegawai" class="w-full inline-flex items-center justify-center px-5 py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl shadow-md shadow-teal-700/20 transition-all duration-200 group-hover:translate-x-0.5 text-xs">
           <span>Masuk Portal Pegawai</span>
-          <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </a>
       </div>
 

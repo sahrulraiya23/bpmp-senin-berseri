@@ -37,6 +37,10 @@
       </div>
 
       <div class="flex items-center space-x-2 sm:space-x-3">
+        <a href="/proyektor" target="_blank" class="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-slate-900 hover:bg-emerald-700 text-white shadow-sm transition">
+          <svg class="w-4 h-4 mr-1.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span>Layar QR Proyektor ↗</span>
+        </a>
         <a href="/pegawai" target="_blank" class="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition">
           <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
           Buka Portal Pegawai ↗
@@ -98,9 +102,36 @@
       </div>
     </div>
 
-    <!-- WORKFLOW KONFIGURASI EVENT & QR CODE -->
-    <!-- ALUR: 1. Form harus di-submit dulu -> 2. Baru lihat Event Resmi -> 3. Disitu QR Codenya terbit -->
-    <div id="eventWorkflowWrapper" class="mb-10">
+    <!-- ============================================================== -->
+    <!-- TAB NAVIGASI UTAMA: PISAH ANTARA DASHBOARD & LAYAR QR          -->
+    <!-- ============================================================== -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 pb-4 border-b border-slate-200">
+      <div class="flex items-center space-x-2 bg-slate-200/80 p-1.5 rounded-2xl w-full sm:w-auto">
+        <button id="tabBtnDashboard" onclick="switchMainTab('dashboard')" class="flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-white text-slate-900 shadow-sm transition">
+          <svg class="w-4 h-4 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <span>Dashboard Kepegawaian & Verifikasi</span>
+        </button>
+        <button id="tabBtnQr" onclick="switchMainTab('qr')" class="flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition">
+          <svg class="w-4 h-4 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+          <span>Layar QR Presensi Aula (30s)</span>
+        </button>
+      </div>
+
+      <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+        <a href="/proyektor" target="_blank" class="inline-flex items-center px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition">
+          <svg class="w-4 h-4 mr-1.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span>Buka Proyektor di Tab Baru ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- BAGIAN 1: DASHBOARD UTAMA KEPEGAWAIAN (EVENT, TEMPLATE, TABEL) -->
+    <!-- ============================================================== -->
+    <div id="viewDashboardSection">
+
+      <!-- WORKFLOW KONFIGURASI EVENT -->
+      <div id="eventWorkflowWrapper" class="mb-10">
 
       <!-- ============================================================== -->
       <!-- TAHAP 1: FORMULIR PEMBUATAN EVENT (TAMPIL AWAL SEBELUM SUBMIT) -->
@@ -211,115 +242,70 @@
           </div>
         </div>
 
-        <!-- 2 Kolom: Detail Event yang Baru Di-Submit + Layar QR Code yang Terbit -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          <!-- Kiri: Detail Event yang Telah Diterbitkan (5 Cols) -->
-          <div class="lg:col-span-5 bg-gradient-to-br from-emerald-50/70 via-slate-50 to-white p-6 rounded-2xl border border-emerald-100 space-y-4">
-            <div>
-              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Kegiatan Pelatihan Yang Diterbitkan:</span>
-              <h3 id="displayActiveTitle" class="text-lg sm:text-xl font-black text-slate-900 leading-snug">
+        <!-- KARTU RINGKASAN EVENT AKTIF & KONTROL (BERSIH & FOKUS KEPEGAWAIAN) -->
+        <div class="bg-gradient-to-br from-emerald-50/70 via-slate-50 to-white p-6 sm:p-7 rounded-2xl border border-emerald-100 shadow-xs mb-8">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            
+            <!-- Detail Informasi Event -->
+            <div class="space-y-3 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="displayActiveJp" class="px-3 py-1 bg-emerald-600 text-white text-xs font-black rounded-lg shadow-sm">
+                  32 Jam Pelajaran (JP)
+                </span>
+                <span id="displayActiveCategory" class="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
+                  Teknis & Manajerial Kepegawaian
+                </span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                  Sesi Presensi Aktif
+                </span>
+              </div>
+
+              <h3 id="displayActiveTitle" class="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
                 Pelatihan Transformasi Digital & Manajemen Kepegawaian
               </h3>
-            </div>
 
-            <div class="flex flex-wrap items-center gap-2">
-              <span id="displayActiveJp" class="px-3 py-1 bg-emerald-600 text-white text-xs font-black rounded-lg shadow-sm">
-                32 Jam Pelajaran (JP)
-              </span>
-              <span id="displayActiveCategory" class="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
-                Teknis & Manajerial Kepegawaian
-              </span>
-            </div>
-
-            <div class="space-y-2.5 text-xs text-slate-600 border-t border-slate-200/80 pt-4">
-              <div class="flex items-start space-x-2">
-                <svg class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                <div>
-                  <span class="text-slate-400 block text-[10px] font-semibold uppercase">Jadwal:</span>
-                  <span id="displayActiveSchedule" class="font-bold text-slate-800">18 - 20 November 2026</span>
+              <div class="flex flex-wrap items-center gap-4 text-xs text-slate-600 pt-1">
+                <div class="flex items-center space-x-1.5">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span>Jadwal: <strong id="displayActiveSchedule" class="text-slate-800">18 - 20 November 2026</strong></span>
+                </div>
+                <span>&bull;</span>
+                <div class="flex items-center space-x-1.5">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <span>Tempat: <strong id="displayActiveLocation" class="text-slate-800">Auditorium BKPSDM & Hybrid</strong></span>
                 </div>
               </div>
-              <div class="flex items-start space-x-2">
-                <svg class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <div>
-                  <span class="text-slate-400 block text-[10px] font-semibold uppercase">Tempat / Metode:</span>
-                  <span id="displayActiveLocation" class="font-bold text-slate-800">Auditorium BKPSDM & Hybrid</span>
-                </div>
-              </div>
-            </div>
 
-            <div class="pt-2 border-t border-slate-200/80 flex items-center justify-between">
-              <span class="text-[11px] text-slate-500">Status Presensi:</span>
-              <button onclick="toggleEventStatus()" id="btnToggleEventStatus" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition">
-                <span id="btnToggleEventLabel">⏸️ Jeda Presensi</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Kanan: Layar Dynamic QR Code Yang Terbit (7 Cols) -->
-          <div class="lg:col-span-7 bg-gradient-to-b from-emerald-50/70 to-slate-50 rounded-2xl p-6 border border-emerald-100 text-center flex flex-col items-center justify-center relative">
-            
-            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-[11px] font-bold uppercase tracking-wider mb-2 border border-emerald-200">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-              <span>QR Code Resmi Terbit: Rotasi Tiap 30 Detik</span>
-            </div>
-
-            <p class="text-xs font-semibold text-emerald-950 mb-3 max-w-sm">
-              📸 Peserta dapat mengarahkan kamera smartphone ke QR Code ini untuk absensi langsung di HP!
-            </p>
-
-            <!-- QR Code Container & Frame -->
-            <div class="relative bg-white p-4 rounded-2xl shadow-md border-2 border-emerald-500/80 mb-3 inline-block">
-              <img id="adminQrImage" src="" alt="Dynamic QR Presensi" class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-lg">
-              <div id="qrLoadingOverlay" class="absolute inset-0 bg-white/90 rounded-2xl flex flex-col items-center justify-center hidden">
-                <svg class="w-8 h-8 text-emerald-600 animate-spin mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                <span class="text-xs font-bold text-emerald-700">Memperbarui Token...</span>
-              </div>
-            </div>
-
-            <!-- Countdown Timer & Token Info -->
-            <div class="w-full max-w-sm mx-auto space-y-3">
-              
-              <!-- Countdown Progress Bar -->
-              <div class="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
-                <span class="flex items-center text-emerald-700">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span>
-                  Siklus Token Anti-Titip
-                </span>
-                <span id="countdownText" class="text-emerald-700 font-mono text-sm font-extrabold">30 detik</span>
-              </div>
-              
-              <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-                <div id="countdownBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
-              </div>
-
-              <!-- Current Token Display Box -->
-              <div class="bg-white rounded-xl p-2.5 border border-slate-200 flex items-center justify-between">
-                <span class="text-[11px] text-slate-400 font-medium">Token Server:</span>
-                <span id="currentTokenLabel" class="font-mono font-black text-emerald-800 text-sm tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+              <!-- Mini Status Token Server -->
+              <div class="inline-flex items-center space-x-2 pt-1 text-xs">
+                <span class="text-slate-500 font-medium">Token Server Saat Ini:</span>
+                <span id="dashboardMiniToken" class="font-mono font-black text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-lg border border-emerald-300">
                   LPTI-......
                 </span>
-                <button onclick="copyCurrentToken()" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold px-2 py-1 rounded hover:bg-emerald-50 transition" title="Salin kode token untuk uji coba mandiri">
-                  Salin Token
+                <span class="text-slate-400 text-[11px]">(Rotasi otomatis tiap 30 detik)</span>
+              </div>
+            </div>
+
+            <!-- Tombol Aksi Cepat Buka QR Presensi -->
+            <div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 flex-shrink-0">
+              <button onclick="switchMainTab('qr')" class="inline-flex items-center justify-center px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/30 hover:shadow-xl transition-all hover:scale-[1.02] group">
+                <svg class="w-5 h-5 mr-2 text-emerald-200 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                <span>📽️ Tampilkan Layar QR Aula</span>
+              </button>
+              
+              <div class="flex items-center gap-2">
+                <a href="/proyektor" target="_blank" class="flex-1 inline-flex items-center justify-center px-3.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition" title="Buka layar proyektor di tab/layar baru">
+                  <svg class="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  <span>Buka Tab Baru ↗</span>
+                </a>
+                <button onclick="toggleEventStatus()" id="btnToggleEventStatus" class="flex-1 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition text-center">
+                  <span id="btnToggleEventLabel">⏸️ Jeda Presensi</span>
                 </button>
               </div>
-
-              <!-- Tautan Scan HP Langsung -->
-              <div class="bg-slate-100/90 rounded-xl p-2 border border-slate-200 flex items-center justify-between text-xs">
-                <span class="text-[10px] text-slate-500 font-mono truncate max-w-[200px]" id="scanUrlDisplay">http://...</span>
-                <button onclick="copyScanUrl()" class="text-[11px] text-emerald-700 font-bold hover:underline px-2 py-0.5 bg-white rounded shadow-xs flex-shrink-0">
-                  Salin Link HP ↗
-                </button>
-              </div>
-
-              <p class="text-[11px] text-slate-500 text-center leading-relaxed">
-                💡 Token berganti tiap 30s di server untuk mencegah foto barcode via WhatsApp digunakan oleh teman di rumah.
-              </p>
             </div>
 
           </div>
-
         </div>
 
         <!-- ========================================================================= -->
@@ -527,6 +513,119 @@
       </div>
 
     </section>
+    </div> <!-- Akhir viewDashboardSection -->
+
+    <!-- ============================================================== -->
+    <!-- BAGIAN 2: TAMPILAN KHUSUS LAYAR QR PRESENSI AULA               -->
+    <!-- (TERPISAH DARI DASHBOARD UTAMA SESUAI PERMINTAAN USER)         -->
+    <!-- ============================================================== -->
+    <div id="viewQrSection" class="hidden mb-12">
+      
+      <!-- Top Action Bar (Tombol Kembali ke Dashboard Admin & Mode Tab Baru) -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+        <button onclick="switchMainTab('dashboard')" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm shadow-md transition group">
+          <svg class="w-4 h-4 mr-2 text-emerald-400 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span>⬅️ Kembali ke Dashboard Admin</span>
+        </button>
+
+        <div class="text-center sm:text-left">
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 block">Layar Presensi Aula Aktif</span>
+          <h2 class="text-sm sm:text-base font-black text-slate-900">Dynamic QR Code (Anti-Titip 30 Detik)</h2>
+        </div>
+
+        <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+          <a href="/proyektor" target="_blank" class="inline-flex items-center px-4 py-2.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            <span>Buka di Tab/Layar Terpisah ↗</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Main QR Box Card (Desain Panggung Proyektor Bersih & Fokus) -->
+      <div class="bg-gradient-to-b from-white via-slate-50 to-emerald-50/30 rounded-3xl p-6 sm:p-10 border-2 border-emerald-200 shadow-xl max-w-2xl mx-auto text-center flex flex-col items-center">
+        
+        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span>QR CODE RESMI AKTIF &bull; ROTASI TIAP 30 DETIK</span>
+        </div>
+
+        <h3 id="qrViewTitle" class="text-xl sm:text-2xl font-black text-slate-900 mb-2 max-w-lg">
+          Pelatihan Transformasi Digital & Manajemen Kepegawaian
+        </h3>
+        <p class="text-xs text-slate-500 mb-6">
+          Arahkan kamera smartphone ke QR Code di bawah untuk mencatat kehadiran secara mandiri di aula.
+        </p>
+
+        <!-- QR Code Container & Frame -->
+        <div class="relative bg-white p-5 rounded-3xl shadow-xl border-4 border-emerald-500/80 mb-5 inline-block">
+          <img id="adminQrImage" src="" alt="Dynamic QR Presensi" class="w-60 h-60 sm:w-72 sm:h-72 object-contain rounded-xl">
+          <div id="qrLoadingOverlay" class="absolute inset-0 bg-white/95 rounded-3xl flex flex-col items-center justify-center hidden">
+            <svg class="w-10 h-10 text-emerald-600 animate-spin mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <span class="text-xs font-bold text-emerald-700">Memperbarui Token...</span>
+          </div>
+        </div>
+
+        <!-- Countdown Timer & Token Info -->
+        <div class="w-full max-w-md mx-auto space-y-3.5 mb-6">
+          
+          <!-- Countdown Progress Bar -->
+          <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700 px-1">
+            <span class="flex items-center text-emerald-700">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2 animate-ping"></span>
+              Siklus Token Anti-Titip:
+            </span>
+            <span id="countdownText" class="text-emerald-800 font-mono text-sm sm:text-base font-extrabold bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">30 detik</span>
+          </div>
+          
+          <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden p-0.5 border border-slate-300">
+            <div id="countdownBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+          </div>
+
+          <!-- Current Token Display Box -->
+          <div class="bg-white rounded-2xl p-3 border border-slate-200 flex items-center justify-between shadow-xs">
+            <span class="text-xs text-slate-500 font-medium">Token Aktif:</span>
+            <span id="currentTokenLabel" class="font-mono font-black text-emerald-800 text-base sm:text-lg tracking-widest bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+              LPTI-......
+            </span>
+            <button onclick="copyCurrentToken()" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
+              Salin
+            </button>
+          </div>
+
+          <!-- Tautan Scan HP Langsung -->
+          <div class="bg-slate-100/90 rounded-xl p-2.5 border border-slate-200 flex items-center justify-between text-xs">
+            <span class="text-[11px] text-slate-500 font-mono truncate max-w-[260px]" id="scanUrlDisplay">http://...</span>
+            <button onclick="copyScanUrl()" class="text-[11px] text-emerald-700 font-bold hover:underline px-2.5 py-1 bg-white rounded shadow-xs flex-shrink-0">
+              Salin Link HP ↗
+            </button>
+          </div>
+        </div>
+
+        <!-- Panduan Scan HP 3 Langkah -->
+        <div class="w-full max-w-md mx-auto grid grid-cols-3 gap-2 text-center text-[11px] text-slate-600 mb-6 border-t border-slate-200/80 pt-4">
+          <div class="p-2 rounded-xl bg-white border border-slate-200">
+            <span class="font-bold text-emerald-700 block">1. Kamera HP</span>
+            <span class="text-[10px] text-slate-400">Arahkan ke QR</span>
+          </div>
+          <div class="p-2 rounded-xl bg-white border border-slate-200">
+            <span class="font-bold text-emerald-700 block">2. Buka Link</span>
+            <span class="text-[10px] text-slate-400">Tap notifikasi</span>
+          </div>
+          <div class="p-2 rounded-xl bg-white border border-slate-200">
+            <span class="font-bold text-emerald-700 block">3. Login NIP</span>
+            <span class="text-[10px] text-slate-400">Hadir otomatis!</span>
+          </div>
+        </div>
+
+        <!-- Tombol Kembali Besar di Bagian Bawah -->
+        <button onclick="switchMainTab('dashboard')" class="inline-flex items-center px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm shadow-lg transition hover:scale-105 group">
+          <svg class="w-4 h-4 mr-2 text-emerald-400 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span>⬅️ Selesai / Kembali ke Dashboard Admin</span>
+        </button>
+
+      </div>
+
+    </div>
 
   </main>
 
@@ -571,6 +670,12 @@
 
   <!-- MODAL: MODE PROYEKTOR AULA FULLSCREEN -->
   <div id="projectorModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 hidden">
+    <!-- Tombol Kembali di Pojok Kiri Atas Modal -->
+    <button onclick="closeProjectorModal()" class="absolute top-6 left-6 inline-flex items-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm shadow-xl transition hover:scale-105">
+      <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      <span>⬅️ Kembali ke Dashboard Admin</span>
+    </button>
+
     <button onclick="closeProjectorModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white p-3 rounded-2xl bg-white/10 hover:bg-white/20 transition">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
@@ -650,38 +755,70 @@
       }, 4000);
     }
 
-    // Pengatur Tampilan Alur Kerja (Step 1: Form -> Step 2: Event Aktif & QR)
+    // PENGATUR TAB: PISAH ANTARA DASHBOARD ADMIN & LAYAR QR
+    function switchMainTab(tabName) {
+      const tabDashboard = document.getElementById('viewDashboardSection');
+      const tabQr = document.getElementById('viewQrSection');
+      const btnDash = document.getElementById('tabBtnDashboard');
+      const btnQr = document.getElementById('tabBtnQr');
+
+      if (tabName === 'qr') {
+        tabDashboard.classList.add('hidden');
+        tabQr.classList.remove('hidden');
+        if (btnDash) {
+          btnDash.className = 'flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition';
+        }
+        if (btnQr) {
+          btnQr.className = 'flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-emerald-600 text-white shadow-sm transition';
+        }
+        updateDynamicQr();
+        tabQr.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        tabDashboard.classList.remove('hidden');
+        tabQr.classList.add('hidden');
+        if (btnDash) {
+          btnDash.className = 'flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-white text-slate-900 shadow-sm transition';
+        }
+        if (btnQr) {
+          btnQr.className = 'flex-1 sm:flex-initial inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition';
+        }
+        tabDashboard.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // Pengatur Tampilan Alur Kerja (Step 1: Form -> Step 2: Event Aktif)
     function setWorkflowView(isActive, evt = {}) {
       const step1 = document.getElementById('step1FormSection');
       const step2 = document.getElementById('step2ActiveSection');
       const btnToggleLabel = document.getElementById('btnToggleEventLabel');
 
       if (!isActive) {
-        // TAHAP 1: Form Harus Di-submit Dulu (QR Belum Muncul)
         step1.classList.remove('hidden');
         step2.classList.add('hidden');
       } else {
-        // TAHAP 2: Form Sudah Di-submit -> Baru Lihat Event & Disitu QR Codenya!
         step1.classList.add('hidden');
         step2.classList.remove('hidden');
 
-        // Isi data detail event yang baru saja disubmit
         document.getElementById('displayActiveTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
         document.getElementById('displayActiveJp').textContent = `${evt.jp || 32} Jam Pelajaran (JP)`;
         document.getElementById('displayActiveCategory').textContent = evt.category || 'Teknis & Manajerial';
         document.getElementById('displayActiveSchedule').textContent = evt.schedule || 'Jadwal Ditentukan';
         document.getElementById('displayActiveLocation').textContent = evt.location || 'Auditorium BKPSDM & Hybrid';
 
+        if (document.getElementById('qrViewTitle')) {
+          document.getElementById('qrViewTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
+        }
+
         // Update Projector modal texts
         document.getElementById('modalProjectorTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
-        document.getElementById('modalProjectorJp').textContent = `Alokasi Bobot: ${evt.jp || 32} Jam Pelajaran (JP) • ${evt.organizer || 'BKPSDM 2026'}`;
+        document.getElementById('modalProjectorJp').textContent = `Alokasi Bobot: ${evt.jp || 32} Jam Pelajaran (JP) • ${evt.organizer || 'BPMP Sultra'}`;
         
         if (btnToggleLabel) btnToggleLabel.textContent = '⏸️ Jeda Presensi';
       }
     }
 
     function editCurrentEvent() {
-      // Kembali ke form jika admin ingin mengedit atau membuat event baru
+      switchMainTab('dashboard');
       const step1 = document.getElementById('step1FormSection');
       const step2 = document.getElementById('step2ActiveSection');
       step1.classList.remove('hidden');
@@ -953,6 +1090,12 @@
 
         document.getElementById('currentTokenLabel').textContent = data.token;
         document.getElementById('modalProjectorToken').textContent = data.token;
+        if (document.getElementById('dashboardMiniToken')) {
+          document.getElementById('dashboardMiniToken').textContent = data.token;
+        }
+        if (document.getElementById('qrViewTitle') && eventData && eventData.title) {
+          document.getElementById('qrViewTitle').textContent = eventData.title;
+        }
         document.getElementById('scanUrlDisplay').textContent = data.scanUrl;
 
         // Hitung countdown

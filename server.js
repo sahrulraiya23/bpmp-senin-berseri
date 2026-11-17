@@ -1023,6 +1023,8 @@ app.post('/api/reset-data', (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/pegawai', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'pegawai.html')));
+app.get('/proyektor', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'proyektor.html')));
+app.get('/qr', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'proyektor.html')));
 
 // Export app untuk Vercel Serverless Function (@vercel/node)
 module.exports = app;
