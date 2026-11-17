@@ -322,6 +322,137 @@
 
         </div>
 
+        <!-- ========================================================================= -->
+        <!-- FITUR TEMPLATE E-SERTIFIKAT EVENT (BISA FOTO PNG/JPG ATAU DOKUMEN PDF)    -->
+        <!-- ========================================================================= -->
+        <div class="mt-8 pt-6 border-t border-slate-200/90">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">🎨</span>
+              <div>
+                <h3 class="text-sm sm:text-base font-extrabold text-slate-900">Template E-Sertifikat Event (Foto PNG/JPG atau PDF)</h3>
+                <p class="text-xs text-slate-500">Unggah desain piagam polos/kosong. Nomor Surat dan Nama Pegawai akan diisikan otomatis oleh sistem.</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <a href="/api/event/sample-certificate.pdf" target="_blank" class="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs transition">
+                <svg class="w-4 h-4 mr-1.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>🧪 Uji Preview Sampel PDF</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Kiri: Status & Form Upload Template (7 Cols) -->
+            <div class="lg:col-span-7 space-y-4">
+              
+              <!-- Status Template Saat Ini -->
+              <div id="templateStatusBox" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                  <div id="templateTypeIcon" class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    🏛️
+                  </div>
+                  <div class="truncate">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Template Aktif Saat Ini:</span>
+                    <span id="templateStatusLabel" class="text-xs font-extrabold text-slate-800 truncate block">Desain Piagam Standar Resmi BPMP Sultra</span>
+                    <span id="templateFileInfo" class="text-[10px] text-emerald-700 block">Sistem siap mencantumkan Nomor Surat & Nama otomatis</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-1.5 flex-shrink-0">
+                  <a id="btnPreviewTemplate" href="#" target="_blank" class="hidden px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 transition">
+                    👁️ Buka File
+                  </a>
+                  <button id="btnDeleteTemplate" onclick="deleteCustomTemplate()" class="hidden px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition">
+                    Hapus
+                  </button>
+                </div>
+              </div>
+
+              <!-- Upload Area -->
+              <form id="templateUploadForm" onsubmit="handleUploadTemplate(event)" class="space-y-3">
+                <div class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 sm:p-5 text-center transition bg-white cursor-pointer relative" onclick="document.getElementById('templateFileInput').click()">
+                  <input type="file" id="templateFileInput" accept="application/pdf,image/png,image/jpeg,image/jpg" class="hidden" onchange="handleTemplateFileSelected(this)">
+                  
+                  <div id="templatePromptBox">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-2">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    </div>
+                    <p class="text-xs font-bold text-slate-800">Klik untuk Unggah Template Sertifikat Baru</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Mendukung format Foto (.PNG, .JPG) atau Dokumen (.PDF) Maks. 20MB</p>
+                  </div>
+
+                  <div id="templateSelectedBox" class="hidden flex items-center justify-center space-x-3 text-left">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs" id="templateSelectedExt">
+                      FILE
+                    </div>
+                    <div class="overflow-hidden">
+                      <p id="templateSelectedName" class="text-xs font-bold text-slate-900 truncate max-w-xs">template.pdf</p>
+                      <p id="templateSelectedSize" class="text-[10px] text-slate-400 font-mono">0 KB</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" id="btnUploadTemplateSubmit" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                  <span>Terapkan Template Ini untuk Event</span>
+                </button>
+              </form>
+
+            </div>
+
+            <!-- Kanan: Pengaturan Posisi & Format Nomor Surat (5 Cols) -->
+            <div class="lg:col-span-5 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3">
+              <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                ⚙️ Pengaturan Penomoran & Tata Letak
+              </span>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                  Format / Prefix Nomor Surat
+                </label>
+                <input type="text" id="certPrefixInput" placeholder="Contoh: 800.1.3/SERT-LPTI/2026" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                <p class="text-[10px] text-slate-400 mt-0.5">Sistem otomatis menambahkan nomor urut (.../001, /002, dst.).</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                    Posisi Vertikal Nama
+                  </label>
+                  <select id="certNamaYInput" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-800 bg-white">
+                    <option value="0.50">Tengah (50% - Standar)</option>
+                    <option value="0.54">Agak ke Atas (54%)</option>
+                    <option value="0.58">Lebih Tinggi (58%)</option>
+                    <option value="0.46">Agak ke Bawah (46%)</option>
+                    <option value="0.42">Lebih Rendah (42%)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                    Ukuran Huruf Nama
+                  </label>
+                  <select id="certNamaSizeInput" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-800 bg-white">
+                    <option value="26">Besar (26 pt - Standar)</option>
+                    <option value="30">Sangat Besar (30 pt)</option>
+                    <option value="22">Sedang (22 pt)</option>
+                    <option value="18">Kecil (18 pt)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="pt-1">
+                <button onclick="saveCertSettings()" id="btnSaveCertSettings" class="w-full py-2 bg-slate-900 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center">
+                  <span>Simpan Pengaturan Tata Letak</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </section>
 
     </div>
@@ -577,11 +708,156 @@
             quickBtn.classList.remove('hidden');
           }
 
+          // Sinkronkan status template sertifikat
+          renderTemplateStatus(eventData.certificateTemplate, eventData.certSettings || {});
+
           // Atur tampilan: jika event sudah aktif -> tampilkan event + QR; jika belum -> tampilkan Form
           setWorkflowView(Boolean(eventData.active), eventData);
         }
       } catch (err) {
         console.error('Error load event:', err);
+      }
+    }
+
+    // ========================================================
+    // LOGIKA PENGELOLAAN TEMPLATE SERTIFIKAT (FOTO / PDF)
+    // ========================================================
+    function renderTemplateStatus(template, certSettings = {}) {
+      const statusLabel = document.getElementById('templateStatusLabel');
+      const fileInfo = document.getElementById('templateFileInfo');
+      const btnPreview = document.getElementById('btnPreviewTemplate');
+      const btnDelete = document.getElementById('btnDeleteTemplate');
+      const icon = document.getElementById('templateTypeIcon');
+
+      // Isi nilai input pengaturan jika ada
+      if (certSettings.prefix) {
+        document.getElementById('certPrefixInput').value = certSettings.prefix;
+      } else {
+        document.getElementById('certPrefixInput').value = '800.1.3/SERT-LPTI/2026';
+      }
+
+      if (certSettings.namaYRatio) {
+        document.getElementById('certNamaYInput').value = String(certSettings.namaYRatio);
+      }
+      if (certSettings.namaFontSize) {
+        document.getElementById('certNamaSizeInput').value = String(certSettings.namaFontSize);
+      }
+
+      if (template && template.filePath) {
+        const isPdf = template.fileType === 'pdf';
+        icon.textContent = isPdf ? '📄' : '🖼️';
+        statusLabel.textContent = `Template Kustom: ${template.fileOriginalName || template.fileName}`;
+        fileInfo.textContent = `Format ${isPdf ? 'Dokumen PDF' : 'Foto/Gambar'} • Nomor Surat & Nama diisi otomatis`;
+        btnPreview.href = template.filePath;
+        btnPreview.classList.remove('hidden');
+        btnDelete.classList.remove('hidden');
+      } else {
+        icon.textContent = '🏛️';
+        statusLabel.textContent = 'Desain Piagam Standar Resmi BPMP Sultra';
+        fileInfo.textContent = 'Sistem siap mencantumkan Nomor Surat & Nama otomatis';
+        btnPreview.classList.add('hidden');
+        btnDelete.classList.add('hidden');
+      }
+    }
+
+    function handleTemplateFileSelected(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const ext = file.name.split('.').pop().toLowerCase();
+        
+        document.getElementById('templatePromptBox').classList.add('hidden');
+        document.getElementById('templateSelectedBox').classList.remove('hidden');
+        document.getElementById('templateSelectedName').textContent = file.name;
+        document.getElementById('templateSelectedSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+        document.getElementById('templateSelectedExt').textContent = ext.toUpperCase();
+      }
+    }
+
+    async function handleUploadTemplate(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('templateFileInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('Silakan pilih berkas Foto atau Dokumen PDF template terlebih dahulu!', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('templateFile', fileInput.files[0]);
+
+      const btn = document.getElementById('btnUploadTemplateSubmit');
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="w-4 h-4 animate-spin mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Mengunggah Template...`;
+
+      try {
+        const res = await fetch('/api/event/upload-template', {
+          method: 'POST',
+          body: formData
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          document.getElementById('templatePromptBox').classList.remove('hidden');
+          document.getElementById('templateSelectedBox').classList.add('hidden');
+          fileInput.value = '';
+          await loadEventData();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal mengunggah template: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> <span>Terapkan Template Ini untuk Event</span>`;
+      }
+    }
+
+    async function deleteCustomTemplate() {
+      if (!confirm('Hapus template kustom dan kembali ke desain piagam standar?')) return;
+      try {
+        const res = await fetch('/api/event/template', { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          await loadEventData();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menghapus template: ' + err.message, 'error');
+      }
+    }
+
+    async function saveCertSettings() {
+      const prefix = document.getElementById('certPrefixInput').value.trim();
+      const namaYRatio = document.getElementById('certNamaYInput').value;
+      const namaFontSize = document.getElementById('certNamaSizeInput').value;
+
+      const btn = document.getElementById('btnSaveCertSettings');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/event/cert-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prefix,
+            nomorYRatio: 0.72,
+            namaYRatio: parseFloat(namaYRatio),
+            namaFontSize: parseInt(namaFontSize, 10),
+            nomorFontSize: 11
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          await loadEventData();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyimpan pengaturan: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
       }
     }
 

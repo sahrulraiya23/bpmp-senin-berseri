@@ -464,10 +464,16 @@
               <h4 class="text-base font-extrabold text-slate-900 mb-1">E-Sertifikat Resmi Siap Diterbitkan</h4>
               <p id="certNumberBadge" class="text-xs font-mono font-bold text-emerald-700 mb-5">Nomor: 800.1.3/SERT-LPTI/2026/001</p>
 
-              <button onclick="openCertificateModal()" class="inline-flex items-center px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold shadow-lg shadow-emerald-600/30 hover:shadow-xl transition-all hover:scale-[1.02]">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                <span>Klaim & Unduh E-Sertifikat Resmi (PDF)</span>
-              </button>
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button onclick="openCertificateModal()" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 text-sm font-extrabold shadow-sm border border-slate-200 transition-all hover:scale-[1.02]">
+                  <svg class="w-5 h-5 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  <span>Pratinjau Sertifikat</span>
+                </button>
+                <a id="btnDirectDownloadPdf" href="#" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold shadow-lg shadow-emerald-600/30 hover:shadow-xl transition-all hover:scale-[1.02]">
+                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  <span>Unduh File Asli (PDF)</span>
+                </a>
+              </div>
             </div>
 
           </section>
@@ -494,10 +500,14 @@
           <h3 class="text-sm font-bold text-slate-800">Pratinjau E-Sertifikat Resmi Kepegawaian</h3>
         </div>
 
-        <div class="flex items-center space-x-3">
-          <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition">
+        <div class="flex items-center space-x-2">
+          <a id="btnDownloadCertPdf" href="#" target="_blank" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition" title="Unduh file dokumen PDF resmi ber-vektor resolusi tinggi">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Unduh File PDF Asli</span>
+          </a>
+          <button onclick="window.print()" class="inline-flex items-center px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            <span>Cetak / Simpan PDF</span>
+            <span>Cetak</span>
           </button>
           <button onclick="closeCertificateModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -508,26 +518,29 @@
       <!-- AREA CETAK SERTIFIKAT (PRINT AREA) -->
       <div id="certificatePrintArea" class="bg-gradient-to-b from-white via-slate-50 to-emerald-50/20 p-6 sm:p-10 rounded-2xl border-4 border-double border-emerald-800 shadow-inner relative text-center">
         
-        <!-- Ornamen Sudut Sertifikat -->
-        <div class="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-emerald-700"></div>
-        <div class="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-emerald-700"></div>
-        <div class="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-emerald-700"></div>
-        <div class="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-emerald-700"></div>
+        <!-- Ornamen Default (Bisa disembunyikan saat menggunakan foto template kustom) -->
+        <div id="defaultTemplateOrnaments">
+          <!-- Ornamen Sudut Sertifikat -->
+          <div class="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-emerald-700"></div>
+          <div class="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-emerald-700"></div>
+          <div class="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-emerald-700"></div>
+          <div class="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-emerald-700"></div>
 
-        <!-- Kop Lembaga Resmi -->
-        <div class="mb-4">
-          <div class="w-14 h-14 mx-auto mb-2 text-emerald-800 flex items-center justify-center">
-            <svg class="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L9.5 7.5L3.5 8L8 12.5L6.5 18.5L12 15.5L17.5 18.5L16 12.5L20.5 8L14.5 7.5L12 2Z"/>
-            </svg>
+          <!-- Kop Lembaga Resmi -->
+          <div class="mb-4">
+            <div class="w-14 h-14 mx-auto mb-2 text-emerald-800 flex items-center justify-center">
+              <svg class="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L9.5 7.5L3.5 8L8 12.5L6.5 18.5L12 15.5L17.5 18.5L16 12.5L20.5 8L14.5 7.5L12 2Z"/>
+              </svg>
+            </div>
+            <h4 class="text-xs sm:text-sm font-bold tracking-widest text-slate-700 uppercase">KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI</h4>
+            <h5 class="text-xs sm:text-sm font-extrabold tracking-wide text-emerald-900 uppercase">BALAI PENJAMINAN MUTU PENDIDIKAN PROVINSI SULAWESI TENGGARA</h5>
+            <div class="w-24 h-0.5 bg-emerald-700 mx-auto mt-2 mb-3"></div>
           </div>
-          <h4 class="text-xs sm:text-sm font-bold tracking-widest text-slate-700 uppercase">KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI</h4>
-          <h5 class="text-xs sm:text-sm font-extrabold tracking-wide text-emerald-900 uppercase">BALAI PENJAMINAN MUTU PENDIDIKAN PROVINSI SULAWESI TENGGARA</h5>
-          <div class="w-24 h-0.5 bg-emerald-700 mx-auto mt-2 mb-3"></div>
-        </div>
 
-        <!-- Judul Piagam Sertifikat -->
-        <h2 class="font-cert-serif text-2xl sm:text-3xl font-extrabold text-emerald-950 tracking-wider mb-1">SERTIFIKAT KEPEGAWAIAN</h2>
+          <!-- Judul Piagam Sertifikat -->
+          <h2 class="font-cert-serif text-2xl sm:text-3xl font-extrabold text-emerald-950 tracking-wider mb-1">SERTIFIKAT KEPEGAWAIAN</h2>
+        </div>
         <p id="certModalNumber" class="text-xs font-mono font-semibold text-slate-500 mb-6">Nomor: 800.1.3/SERT-LPTI/2026/001</p>
 
         <!-- Teks Penerima -->
@@ -859,6 +872,10 @@
         lockedView.classList.add('hidden');
         unlockedView.classList.remove('hidden');
         document.getElementById('certNumberBadge').textContent = `Nomor Sertifikat: ${emp.certificate.number}`;
+        const directDownloadBtn = document.getElementById('btnDirectDownloadPdf');
+        if (directDownloadBtn) {
+          directDownloadBtn.href = `/api/employees/${emp.nip || emp.id}/certificate.pdf?download=true`;
+        }
       } else {
         lockedView.classList.remove('hidden');
         unlockedView.classList.add('hidden');
@@ -1013,6 +1030,39 @@
 
           const d = new Date(cert.issuedAt);
           document.getElementById('certModalIssueDate').textContent = `Ditetapkan pada: ${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+          // Tombol Unduh PDF Asli
+          const btnDownload = document.getElementById('btnDownloadCertPdf');
+          if (btnDownload) {
+            btnDownload.href = cert.pdfDownloadUrl;
+          }
+
+          // Sesuaikan tampilan template (Foto / PDF / Bawaan)
+          const printArea = document.getElementById('certificatePrintArea');
+          const defaultOrnaments = document.getElementById('defaultTemplateOrnaments');
+
+          if (cert.template && cert.template.filePath) {
+            const ext = (cert.template.fileName || '').split('.').pop().toLowerCase();
+            if (['png', 'jpg', 'jpeg'].includes(ext)) {
+              if (defaultOrnaments) defaultOrnaments.classList.add('hidden');
+              if (printArea) {
+                printArea.style.backgroundImage = `url('${cert.template.filePath}')`;
+                printArea.style.backgroundSize = '100% 100%';
+                printArea.style.backgroundRepeat = 'no-repeat';
+              }
+            } else {
+              // Template format PDF (tampilkan ornamen bawaan sebagai pratinjau web, berkas asli dapat diunduh)
+              if (defaultOrnaments) defaultOrnaments.classList.remove('hidden');
+              if (printArea) {
+                printArea.style.backgroundImage = 'none';
+              }
+            }
+          } else {
+            if (defaultOrnaments) defaultOrnaments.classList.remove('hidden');
+            if (printArea) {
+              printArea.style.backgroundImage = 'none';
+            }
+          }
 
           document.getElementById('certificateModal').classList.remove('hidden');
         } else {

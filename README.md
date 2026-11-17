@@ -47,10 +47,13 @@
 | **Revision** | 🔴 Merah | Memerlukan perbaikan (catatan admin tampil di portal) | 🔒 Terkunci |
 | **Approved** | 🟢 Hijau | Berkas disetujui, nomor sertifikat otomatis diterbitkan | 🔓 **Terbuka** |
 
-### 4. 🎓 Otomasi Penerbitan E-Sertifikat Resmi
-* **Penomoran Otomatis**: Saat Admin klik **"✓ Cocok / Setujui"**, sistem otomatis meng-generate nomor sertifikat resmi (contoh: `800.1.3/SERT-LPTI/2026/001`) dan menambahkan akumulasi Jam Pelajaran (JP) ke profil pegawai.
+### 4. 🎓 Otomasi Penerbitan E-Sertifikat Resmi & Template Kustom
+* **Dukungan Template Kustom Fleksibel (Foto atau PDF)**: Admin dapat mengunggah template piagam baru untuk setiap event dalam format **Foto (`.png`, `.jpg`, `.jpeg`)** maupun **Dokumen PDF (`.pdf`)**.
+* **Injeksi Otomatis Nomor Surat & Nama Pegawai**: Sistem secara cerdas menempatkan **Nomor Surat/Sertifikat** dan **Nama Pegawai (Besar & Tegas)** tepat di atas template yang diunggah, sehingga admin tidak perlu mendesain sertifikat satu per satu.
+* **Pengaturan Posisi & Live Preview**: Admin dapat mengatur letak vertikal teks Nama Pegawai dan ukuran font, serta melihat hasil simulasi secara instan via tombol **"🧪 Uji Preview Sampel PDF"**.
+* **Unduh Dokumen PDF Asli**: Peserta dapat langsung mengunduh berkas PDF asli beresolusi tinggi dengan sekali klik.
 * **QR Code Keabsahan Digital**: Setiap sertifikat memiliki QR Code unik yang dapat dipindai publik untuk memeriksa keaslian data pada endpoint `/api/verify-cert/:certNumber`.
-* **Desain Ornamen Resmi & Presisi Print A4**: Siap langsung dicetak atau disimpan ke file PDF (`window.print()`) dengan CSS `@media print` presisi 1 lembar A4 landscape.
+* **Desain Fallback Resmi BPMP Sultra**: Jika belum mengunggah template baru, sistem secara otomatis menyediakan piagam resmi berstandar tata naskah dinas A4 Landscape.
 
 ---
 
@@ -273,7 +276,12 @@ Buka dua jendela browser berdampingan (kiri: `/admin`, kanan: `/pegawai`) untuk 
 | `GET` | `/api/employees/:id` | Mengambil data detail satu pegawai |
 | `POST` | `/api/employees/:id/upload-lpti` | Mengunggah file PDF asli LPTI menggunakan Multer (multipart) |
 | `POST` | `/api/employees/:id/verify-lpti` | Admin menyetujui (`approve`) atau meminta revisi (`revise`) |
+| `POST` | `/api/event/upload-template` | Unggah file template kustom (Foto PNG/JPG atau PDF) via Multer |
+| `DELETE` | `/api/event/template` | Hapus template kustom dan kembali ke piagam standar BPMP |
+| `POST` | `/api/event/cert-settings` | Simpan konfigurasi prefix nomor & letak vertikal teks nama |
+| `GET` | `/api/event/sample-certificate.pdf` | Live preview streaming sampel sertifikat PDF untuk admin |
 | `GET` | `/api/employees/:id/certificate` | Mengambil data sertifikat resmi & QR verifikasi digital |
+| `GET` | `/api/employees/:id/certificate.pdf` | Mengunduh / membuka berkas asli PDF sertifikat ber-vektor |
 | `GET` | `/api/verify-cert/:certNumber` | Halaman verifikasi publik keabsahan nomor sertifikat |
 | `POST` | `/api/reset-data` | Mengembalikan database demo ke kondisi awal |
 
@@ -285,18 +293,20 @@ Buka dua jendela browser berdampingan (kiri: `/admin`, kanan: `/pegawai`) untuk 
 
 ```text
 senin_berseri/
-├── db.json                     # Database lokal JSON (event, pegawai, counter sertifikat)
-├── package.json                # Dependensi proyek (Express, Multer, Cors, QRCode)
+├── db.json                     # Database lokal JSON (event, 104 pegawai, nomor sertifikat)
+├── package.json                # Dependensi proyek (Express, Multer, Cors, QRCode, PDF-Lib)
+├── certificate-generator.js    # Mesin overlay PDF-Lib (Template Foto/PDF + Nomor & Nama Pegawai)
 ├── server.js                   # Server Express, REST API, Multer Config, Dynamic QR Engine
 ├── public/                     # Static Web Files
 │   ├── index.html              # Halaman Landing Card Minimalis Emerald
-│   ├── admin.html              # Dashboard Admin Kepegawaian & Proyektor QR
-│   └── pegawai.html            # Portal Mandiri Pegawai & Generator Sertifikat
+│   ├── admin.html              # Dashboard Admin Kepegawaian & Pengaturan Template Sertifikat
+│   └── pegawai.html            # Portal Mandiri Pegawai & Unduh E-Sertifikat PDF
 └── uploads/
-    └── lpti/                   # Direktori penyimpanan file asli PDF LPTI yang diunggah
-        ├── LPTI_Budi_Santoso_EVT001.pdf
-        ├── LPTI_Siti_Nurhaliza_EVT001.pdf
-        └── LPTI_Ahmad_Fauzi_EVT001.pdf
+    ├── lpti/                   # Direktori penyimpanan file asli PDF LPTI yang diunggah
+    │   ├── LPTI_Budi_Santoso_EVT001.pdf
+    │   ├── LPTI_Siti_Nurhaliza_EVT001.pdf
+    │   └── LPTI_Ahmad_Fauzi_EVT001.pdf
+    └── templates/              # Direktori penyimpanan template piagam kustom (Foto/PDF)
 ```
 
 ---

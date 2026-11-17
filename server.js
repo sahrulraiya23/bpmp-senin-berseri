@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
+const { generateCertificatePdf } = require('./certificate-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,15 +27,19 @@ const DATA_DIR = IS_VERCEL ? '/tmp' : BASE_DIR;
 const DB_PATH = path.join(DATA_DIR, 'db.json');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'lpti');
 const BUNDLED_UPLOAD_DIR = path.join(BASE_DIR, 'uploads', 'lpti');
+const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
+const BUNDLED_TEMPLATE_DIR = path.join(BASE_DIR, 'uploads', 'templates');
 
 // Pastikan folder uploads tersedia
-if (!fs.existsSync(UPLOAD_DIR)) {
-  try {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  } catch (e) {
-    console.warn('Gagal membuat folder upload:', e.message);
+[UPLOAD_DIR, TEMPLATE_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+    } catch (e) {
+      console.warn('Gagal membuat folder:', dir, e.message);
+    }
   }
-}
+});
 
 // Inisialisasi db.json di /tmp jika di Vercel
 if (IS_VERCEL && !fs.existsSync(DB_PATH)) {
@@ -95,6 +100,19 @@ app.use('/uploads/lpti', (req, res, next) => {
   next();
 });
 
+// Handler Serving File Template Sertifikat (Mendukung PDF & Foto PNG/JPG)
+app.use('/uploads/templates', (req, res, next) => {
+  const filePath1 = path.join(TEMPLATE_DIR, req.path);
+  if (fs.existsSync(filePath1)) {
+    return res.sendFile(filePath1);
+  }
+  const filePath2 = path.join(BUNDLED_TEMPLATE_DIR, req.path);
+  if (fs.existsSync(filePath2)) {
+    return res.sendFile(filePath2);
+  }
+  next();
+});
+
 // Konfigurasi Multer untuk Upload PDF Asli LPTI
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -118,6 +136,37 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Hanya file berformat PDF (.pdf) yang diperbolehkan!'));
+    }
+  }
+});
+
+// Konfigurasi Multer untuk Upload Template Sertifikat Event (Mendukung FOTO JPG/PNG & Dokumen PDF)
+const templateStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    if (!fs.existsSync(TEMPLATE_DIR)) {
+      fs.mkdirSync(TEMPLATE_DIR, { recursive: true });
+    }
+    cb(null, TEMPLATE_DIR);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E6);
+    cb(null, `TEMPLATE-${uniqueSuffix}${ext}`);
+  }
+});
+
+const uploadTemplate = multer({
+  storage: templateStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // Maksimum 20MB
+  fileFilter: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const mime = (file.mimetype || '').toLowerCase();
+    const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (allowedExts.includes(ext) || allowedMimes.includes(mime)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Format file tidak didukung! Harap unggah file template berformat Foto (.JPG, .PNG) atau Dokumen PDF (.PDF).'));
     }
   }
 });
@@ -403,6 +452,154 @@ app.post('/api/event/toggle-status', (req, res) => {
 });
 
 // ========================================================
+// CERTIFICATE TEMPLATE MANAGEMENT API (FOTO PNG/JPG & PDF)
+// ========================================================
+
+// 1. Upload Template Sertifikat Baru untuk Event
+app.post('/api/event/upload-template', (req, res) => {
+  uploadTemplate.single('templateFile')(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Ukuran file template melebihi batas 20MB!' });
+      }
+      return res.status(400).json({ success: false, message: 'Kesalahan unggah: ' + err.message });
+    } else if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Silakan pilih berkas Foto (.PNG, .JPG) atau Dokumen PDF (.PDF) terlebih dahulu!' });
+    }
+
+    const db = readDb();
+    if (!db.event) db.event = {};
+
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const fileType = ext === '.pdf' ? 'pdf' : 'image';
+
+    db.event.certificateTemplate = {
+      hasCustomTemplate: true,
+      fileType: fileType,
+      fileName: req.file.filename,
+      fileOriginalName: req.file.originalname,
+      filePath: `/uploads/templates/${req.file.filename}`,
+      fileSize: req.file.size,
+      uploadedAt: new Date().toISOString()
+    };
+
+    // Sinkronkan ke daftar events jika ada
+    if (db.events) {
+      const ev = db.events.find(e => e.id === db.event.id);
+      if (ev) ev.certificateTemplate = db.event.certificateTemplate;
+    }
+
+    writeDb(db);
+
+    res.json({
+      success: true,
+      message: `Template sertifikat (${fileType === 'pdf' ? 'Dokumen PDF' : 'Foto/Gambar'}) berhasil diunggah & diterapkan!`,
+      template: db.event.certificateTemplate
+    });
+  });
+});
+
+// 2. Hapus Template Kustom & Kembali ke Template Standar
+app.delete('/api/event/template', (req, res) => {
+  const db = readDb();
+  if (db.event) {
+    db.event.certificateTemplate = null;
+    if (db.events) {
+      const ev = db.events.find(e => e.id === db.event.id);
+      if (ev) ev.certificateTemplate = null;
+    }
+    writeDb(db);
+  }
+  res.json({ success: true, message: 'Template kustom berhasil dihapus. Event kembali menggunakan desain piagam standar resmi.' });
+});
+
+// 3. Simpan Pengaturan Format Nomor Surat & Posisi Teks Sertifikat
+app.post('/api/event/cert-settings', (req, res) => {
+  const { prefix, nomorYRatio, namaYRatio, namaFontSize, nomorFontSize } = req.body;
+  const db = readDb();
+
+  if (!db.event) db.event = {};
+  if (!db.system) db.system = {};
+
+  if (prefix && prefix.trim()) {
+    db.system.certPrefix = prefix.trim();
+  }
+
+  db.event.certSettings = {
+    prefix: (prefix || db.system.certPrefix || '800.1.3/SERT-LPTI/2026').trim(),
+    nomorYRatio: parseFloat(nomorYRatio) || 0.72,
+    namaYRatio: parseFloat(namaYRatio) || 0.50,
+    namaFontSize: parseInt(namaFontSize, 10) || 26,
+    nomorFontSize: parseInt(nomorFontSize, 10) || 11
+  };
+
+  if (db.events) {
+    const ev = db.events.find(e => e.id === db.event.id);
+    if (ev) ev.certSettings = db.event.certSettings;
+  }
+
+  writeDb(db);
+
+  res.json({
+    success: true,
+    message: 'Pengaturan penomoran & tata letak teks sertifikat berhasil disimpan!',
+    certSettings: db.event.certSettings
+  });
+});
+
+// 4. Endpoint Streaming Contoh Sertifikat PDF (Live Preview untuk Admin)
+app.get('/api/event/sample-certificate.pdf', async (req, res) => {
+  try {
+    const db = readDb();
+    const event = db.event || {};
+    const certConfig = event.certSettings || {};
+
+    let templatePath = null;
+    if (event.certificateTemplate?.filePath) {
+      const p1 = path.join(DATA_DIR, event.certificateTemplate.filePath.replace(/^\//, ''));
+      const p2 = path.join(BASE_DIR, event.certificateTemplate.filePath.replace(/^\//, ''));
+      if (fs.existsSync(p1)) templatePath = p1;
+      else if (fs.existsSync(p2)) templatePath = p2;
+    }
+
+    const sampleCertNumber = `${certConfig.prefix || db.system?.certPrefix || '800.1.3/SERT-LPTI/2026'}/001`;
+
+    const pdfBuffer = await generateCertificatePdf({
+      templatePath: templatePath,
+      certNumber: sampleCertNumber,
+      employeeName: 'Junaiddin Pagala, ST, M.T.',
+      employeeNip: '197606122002121004',
+      employeeJabatan: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+      employeeInstansi: 'BPMP Provinsi Sulawesi Tenggara',
+      eventTitle: event.title || 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN',
+      eventJp: event.jp || 32,
+      eventSchedule: event.schedule || '18 - 20 November 2026',
+      verifier: 'Junaiddin Pagala, ST, M.T.',
+      verifierTitle: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+      verifierNip: '197606122002121004',
+      issuedAt: new Date().toISOString(),
+      verifyUrl: 'http://localhost:3000/api/verify-cert/' + encodeURIComponent(sampleCertNumber),
+      nomorYRatio: certConfig.nomorYRatio || 0.72,
+      namaYRatio: certConfig.namaYRatio || 0.50,
+      namaFontSize: certConfig.namaFontSize || 26,
+      nomorFontSize: certConfig.nomorFontSize || 11
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="Sample_Certificate_Preview.pdf"');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(Buffer.from(pdfBuffer));
+  } catch (error) {
+    console.error('Error sample cert PDF:', error);
+    res.status(500).send('Gagal menghasilkan preview sample PDF: ' + error.message);
+  }
+});
+
+// ========================================================
 // EMPLOYEES & PORTAL PEGAWAI API
 // ========================================================
 app.get('/api/employees', (req, res) => {
@@ -578,7 +775,7 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
       number: employee.certificate.number,
       issuedAt: employee.certificate.issuedAt,
       verifier: employee.certificate.verifier,
-      verifierTitle: employee.certificate.verifierTitle || 'Kepala Badan Kepegawaian dan Pengembangan SDM',
+      verifierTitle: employee.certificate.verifierTitle || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
       employeeName: employee.name,
       employeeNip: employee.nip,
       employeeJabatan: employee.jabatan,
@@ -589,9 +786,77 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
       eventSchedule: db.event.schedule,
       eventLocation: db.event.location,
       qrVerification: certQrDataUrl,
-      verifyUrl: verifyUrl
+      verifyUrl: verifyUrl,
+      pdfDownloadUrl: `/api/employees/${employee.nip || employee.id}/certificate.pdf?download=true`,
+      pdfPreviewUrl: `/api/employees/${employee.nip || employee.id}/certificate.pdf`,
+      template: db.event?.certificateTemplate || null,
+      certSettings: db.event?.certSettings || null
     }
   });
+});
+
+// Endpoint Unduh / Streaming File Asli PDF E-Sertifikat Pegawai
+app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
+  try {
+    const db = readDb();
+    const employee = (db.employees || []).find(e => e.id === req.params.id || e.nip === req.params.id);
+
+    if (!employee) {
+      return res.status(404).send('Data pegawai tidak ditemukan.');
+    }
+
+    if (employee.lpti?.status !== 'approved' || !employee.certificate) {
+      return res.status(403).send('E-Sertifikat masih terkunci atau belum disetujui admin.');
+    }
+
+    const event = db.event || {};
+    const certConfig = event.certSettings || {};
+
+    let templatePath = null;
+    if (event.certificateTemplate?.filePath) {
+      const p1 = path.join(DATA_DIR, event.certificateTemplate.filePath.replace(/^\//, ''));
+      const p2 = path.join(BASE_DIR, event.certificateTemplate.filePath.replace(/^\//, ''));
+      if (fs.existsSync(p1)) templatePath = p1;
+      else if (fs.existsSync(p2)) templatePath = p2;
+    }
+
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
+    const verifyUrl = `${protocol}://${host}/api/verify-cert/${encodeURIComponent(employee.certificate.number)}`;
+
+    const pdfBuffer = await generateCertificatePdf({
+      templatePath: templatePath,
+      certNumber: employee.certificate.number,
+      employeeName: employee.name,
+      employeeNip: employee.nip,
+      employeeJabatan: employee.jabatan,
+      employeePanggol: employee.panggol,
+      employeeInstansi: employee.instansi,
+      eventTitle: event.title,
+      eventJp: event.jp,
+      eventSchedule: event.schedule,
+      verifier: employee.certificate.verifier,
+      verifierTitle: employee.certificate.verifierTitle,
+      verifierNip: employee.certificate.verifierNip,
+      issuedAt: employee.certificate.issuedAt,
+      verifyUrl: verifyUrl,
+      nomorYRatio: certConfig.nomorYRatio || 0.72,
+      namaYRatio: certConfig.namaYRatio || 0.50,
+      namaFontSize: certConfig.namaFontSize || 26,
+      nomorFontSize: certConfig.nomorFontSize || 11
+    });
+
+    const isDownload = req.query.download === 'true';
+    const cleanFileName = `Sertifikat_${employee.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `${isDownload ? 'attachment' : 'inline'}; filename="${cleanFileName}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(Buffer.from(pdfBuffer));
+  } catch (error) {
+    console.error('Error generating cert PDF:', error);
+    res.status(500).send('Gagal menghasilkan file PDF sertifikat: ' + error.message);
+  }
 });
 
 // Verifikasi Publik Keabsahan Sertifikat (Dapat diakses HP)
