@@ -1,3 +1,4 @@
+const os = require('os');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -16,20 +17,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Paths
+// Paths & Environment
+const IS_VERCEL = Boolean(process.env.VERCEL);
 const BASE_DIR = __dirname;
 const PUBLIC_DIR = path.join(BASE_DIR, 'public');
-const UPLOAD_DIR = path.join(BASE_DIR, 'uploads', 'lpti');
-const TEMPLATE_DIR = path.join(BASE_DIR, 'uploads', 'templates');
+const DATA_DIR = IS_VERCEL ? os.tmpdir() : BASE_DIR;
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'lpti');
+const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
 
 // Ensure upload directories exist
 [UPLOAD_DIR, TEMPLATE_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    try {
-      fs.mkdirSync(dir, { recursive: true });
-    } catch (e) {
-      console.warn('Gagal membuat folder:', dir, e.message);
-    }
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    console.warn('Gagal membuat folder:', dir, e.message);
   }
 });
 
@@ -37,6 +38,10 @@ const TEMPLATE_DIR = path.join(BASE_DIR, 'uploads', 'templates');
 app.use(express.static(PUBLIC_DIR));
 app.use('/uploads/lpti', express.static(UPLOAD_DIR));
 app.use('/uploads/templates', express.static(TEMPLATE_DIR));
+if (IS_VERCEL) {
+  app.use('/uploads/lpti', express.static(path.join(BASE_DIR, 'uploads', 'lpti')));
+  app.use('/uploads/templates', express.static(path.join(BASE_DIR, 'uploads', 'templates')));
+}
 
 // Admin session store (in-memory token map)
 const adminSessions = new Map();
@@ -808,18 +813,23 @@ app.use((req, res) => {
   res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
-// Initialize SQLite DB then start server
-sqliteDb.initDb().then(() => {
-  app.listen(PORT, () => {
-    console.log(`====================================================`);
-    console.log(`🚀 BPMP Sultra - Senin Berseri running on port ${PORT}`);
-    console.log(`💾 Database: SQLite (database.sqlite)`);
-    console.log(`🔐 Admin Login: http://localhost:${PORT}/admin/login`);
-    console.log(`📊 Dashboard Admin: http://localhost:${PORT}/admin`);
-    console.log(`📽️ Layar Proyektor: http://localhost:${PORT}/proyektor`);
-    console.log(`👤 Portal Pegawai: http://localhost:${PORT}/pegawai`);
-    console.log(`====================================================`);
+// Export Express app untuk Vercel Serverless Function (@vercel/node)
+module.exports = app;
+
+// Jalankan standalone server jika file dieksekusi langsung
+if (require.main === module) {
+  sqliteDb.initDb().then(() => {
+    app.listen(PORT, () => {
+      console.log(`====================================================`);
+      console.log(`🚀 BPMP Sultra - Senin Berseri running on port ${PORT}`);
+      console.log(`💾 Storage: ${sqliteDb.useSqlite ? 'SQLite (database.sqlite)' : 'JSON Engine (/tmp/db.json)'}`);
+      console.log(`🔐 Admin Login: http://localhost:${PORT}/admin/login`);
+      console.log(`📊 Dashboard Admin: http://localhost:${PORT}/admin`);
+      console.log(`📽️ Layar Proyektor: http://localhost:${PORT}/proyektor`);
+      console.log(`👤 Portal Pegawai: http://localhost:${PORT}/pegawai`);
+      console.log(`====================================================`);
+    });
+  }).catch(err => {
+    console.error('Fatal: Gagal menginisialisasi database:', err);
   });
-}).catch(err => {
-  console.error('Fatal: Gagal menginisialisasi database SQLite:', err);
-});
+}
