@@ -134,17 +134,23 @@
       <div id="eventWorkflowWrapper" class="mb-10">
 
       <!-- ============================================================== -->
-      <!-- TAHAP 1: FORMULIR PEMBUATAN EVENT (TAMPIL AWAL SEBELUM SUBMIT) -->
+      <!-- TAHAP 1: FORMULIR PEMBUATAN EVENT (TERSEMBUNYI AWAL, MUNCUL JIKA KLIK "+ BUAT EVENT") -->
       <!-- ============================================================== -->
-      <section id="step1FormSection" class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-9 border-2 border-emerald-100 shadow-sm transition-all duration-300">
-        <div class="text-center max-w-xl mx-auto mb-6">
-          <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3 border border-emerald-200">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Langkah 1: Wajib Isi Formulir Event</span>
+      <section id="step1FormSection" class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-9 border-2 border-emerald-200 shadow-lg transition-all duration-300 hidden mb-10">
+        <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-wider border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Langkah 1: Formulir Pembuatan & Penerbitan Event</span>
           </div>
-          <h2 class="text-2xl font-black text-slate-900 mb-2">Formulir Pembuatan Event Pelatihan</h2>
+          <button type="button" onclick="closeEventWorkflow()" class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition">
+            ✕ Batal / Tutup Formulir
+          </button>
+        </div>
+
+        <div class="text-center max-w-xl mx-auto mb-6">
+          <h2 class="text-2xl font-black text-slate-900 mb-2">Formulir Pembuatan Event Pelatihan Baru</h2>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Silakan submit formulir kegiatan pelatihan ini terlebih dahulu. Setelah Anda mengklik <strong>"Simpan & Terbitkan Event"</strong>, sistem akan menampilkan data event resmi dan menerbitkan Dynamic QR Code presensi aula di dalamnya.
+            Isi rincian kegiatan pelatihan di bawah ini. Setelah Anda mengklik <strong>"Simpan & Terbitkan Event"</strong>, sistem akan menyimpan kegiatan ke daftar riwayat dan membuka <strong>Langkah 2: Pengaturan Sesi & Template Sertifikat</strong>.
           </p>
         </div>
 
@@ -209,9 +215,9 @@
       </section>
 
       <!-- ========================================================================= -->
-      <!-- TAHAP 2: LIHAT EVENT RESMI & LAYAR DYNAMIC QR (BARU MUNCUL SETELAH SUBMIT) -->
+      <!-- TAHAP 2: LIHAT EVENT RESMI & LAYAR DYNAMIC QR (BARU MUNCUL JIKA EVENT DI-KLIK DI DASHBOARD) -->
       <!-- ========================================================================= -->
-      <section id="step2ActiveSection" class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-200 shadow-sm hidden transition-all duration-300">
+      <section id="step2ActiveSection" class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-300 shadow-xl hidden transition-all duration-300 mb-10">
         
         <!-- Header Panel Event Aktif -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-6 border-b border-slate-100 gap-3">
@@ -220,24 +226,30 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             </span>
             <div>
-              <div class="flex items-center space-x-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Langkah 2: Event Berhasil Diterbitkan</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Langkah 2: Kelola & Terbitkan Sesi Pelatihan</span>
+                <span id="displayStep2EventId" class="px-2 py-0.5 rounded-md font-mono text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  EVT-2026-001
+                </span>
+                <span id="displayActiveStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
                   SESI RESMI AKTIF
                 </span>
               </div>
-              <h2 class="text-base font-extrabold text-slate-900 leading-tight">Layar Event Pelatihan & Dynamic QR Code Presensi</h2>
+              <h2 class="text-base font-extrabold text-slate-900 leading-tight">Pengaturan Sesi, Dynamic QR Aula & Template E-Sertifikat</h2>
             </div>
           </div>
 
           <div class="flex items-center space-x-2">
-            <button onclick="editCurrentEvent()" class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Buka kembali form untuk mengubah event">
+            <button onclick="editCurrentEvent()" class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Buka kembali form untuk mengubah event ini">
               <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               <span>Ubah Event</span>
             </button>
             <button onclick="openProjectorModal()" class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-emerald-700 transition shadow-sm">
               <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
               <span>Mode Proyektor Aula</span>
+            </button>
+            <button onclick="closeEventWorkflow()" class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Tutup panel ini dan kembali ke daftar event">
+              ✕ Tutup Panel
             </button>
           </div>
         </div>
@@ -254,10 +266,6 @@
                 </span>
                 <span id="displayActiveCategory" class="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
                   Teknis & Manajerial Kepegawaian
-                </span>
-                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                  Sesi Presensi Aktif
                 </span>
               </div>
 
@@ -287,8 +295,13 @@
               </div>
             </div>
 
-            <!-- Tombol Aksi Cepat Buka QR Presensi -->
+            <!-- Tombol Aksi Cepat Buka QR Presensi & Aktifkan -->
             <div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 flex-shrink-0">
+              <button id="btnActivateCurrentEvent" onclick="activateCurrentSelectedEvent()" class="hidden inline-flex items-center justify-center px-5 py-3.5 rounded-2xl bg-slate-900 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md transition group">
+                <svg class="w-4 h-4 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>⚡ Terbitkan Sesi Ini ke Layar Aula</span>
+              </button>
+
               <button onclick="switchMainTab('qr')" class="inline-flex items-center justify-center px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/30 hover:shadow-xl transition-all hover:scale-[1.02] group">
                 <svg class="w-5 h-5 mr-2 text-emerald-200 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                 <span>📽️ Tampilkan Layar QR Aula</span>
@@ -316,12 +329,12 @@
             <div class="flex items-center space-x-2.5">
               <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">🎨</span>
               <div>
-                <h3 class="text-sm sm:text-base font-extrabold text-slate-900">Template E-Sertifikat Event (Foto PNG/JPG atau PDF)</h3>
-                <p class="text-xs text-slate-500">Unggah desain piagam polos/kosong. Nomor Surat dan Nama Pegawai akan diisikan otomatis oleh sistem.</p>
+                <h3 class="text-sm sm:text-base font-extrabold text-slate-900">Template E-Sertifikat Khusus Event Ini (Foto PNG/JPG atau PDF)</h3>
+                <p class="text-xs text-slate-500">Unggah desain piagam khusus untuk kegiatan ini. Nomor Surat dan Nama Pegawai akan diisikan otomatis oleh sistem.</p>
               </div>
             </div>
             <div class="flex items-center space-x-2">
-              <a href="/api/event/sample-certificate.pdf" target="_blank" class="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs transition">
+              <a id="btnPreviewSamplePdf" href="/api/event/sample-certificate.pdf" target="_blank" class="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs transition">
                 <svg class="w-4 h-4 mr-1.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 <span>🧪 Uji Preview Sampel PDF</span>
               </a>
@@ -829,47 +842,109 @@
       }
     }
 
-    // Pengatur Tampilan Alur Kerja (Step 1: Form -> Step 2: Event Aktif)
-    function setWorkflowView(isActive, evt = {}) {
+    let currentSelectedEventId = null;
+
+    // Pengatur Buka Panel Langkah 2 (Hanya Terbuka Jika Di-klik di Dashboard)
+    function openEventDetail(eventId, doScroll = true) {
+      currentSelectedEventId = eventId;
+      const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
+      if (!ev) return;
+
+      switchMainTab('dashboard');
+
+      // Sembunyikan Form Pembuatan Event Langkah 1 jika sedang terbuka
+      const step1 = document.getElementById('step1FormSection');
+      if (step1) step1.classList.add('hidden');
+
+      // Tampilkan Panel Langkah 2
+      const step2 = document.getElementById('step2ActiveSection');
+      if (step2) step2.classList.remove('hidden');
+
+      // Update isi teks rincian event
+      document.getElementById('displayActiveTitle').textContent = ev.title || 'Pelatihan Kepegawaian';
+      document.getElementById('displayActiveJp').textContent = `${ev.jp || 32} Jam Pelajaran (JP)`;
+      document.getElementById('displayActiveCategory').textContent = ev.category || 'Teknis & Manajerial Kepegawaian';
+      document.getElementById('displayActiveSchedule').textContent = ev.schedule || 'Jadwal Ditentukan';
+      document.getElementById('displayActiveLocation').textContent = ev.location || 'Auditorium Sasana Praja BKPSDM & Hybrid';
+
+      const badgeId = document.getElementById('displayStep2EventId');
+      if (badgeId) badgeId.textContent = ev.id || 'EVT';
+
+      // Status Aktif di Aula
+      const isActive = Boolean(ev.active || (eventData && eventData.id === ev.id && eventData.active));
+      const statusBadge = document.getElementById('displayActiveStatusBadge');
+      const btnActivateSession = document.getElementById('btnActivateCurrentEvent');
+
+      if (statusBadge) {
+        if (isActive) {
+          statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center';
+          statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span>SESI RESMI AKTIF DI AULA';
+        } else {
+          statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200';
+          statusBadge.textContent = 'Arsip / Non-Aktif';
+        }
+      }
+
+      if (btnActivateSession) {
+        if (isActive) {
+          btnActivateSession.classList.add('hidden');
+        } else {
+          btnActivateSession.classList.remove('hidden');
+        }
+      }
+
+      if (document.getElementById('qrViewTitle')) {
+        document.getElementById('qrViewTitle').textContent = ev.title || 'Pelatihan Kepegawaian';
+      }
+
+      // Update Projector modal texts
+      document.getElementById('modalProjectorTitle').textContent = ev.title || 'Pelatihan Kepegawaian';
+      document.getElementById('modalProjectorJp').textContent = `Alokasi Bobot: ${ev.jp || 32} Jam Pelajaran (JP) • ${ev.organizer || 'BPMP Sultra'}`;
+
+      // Sinkronkan status template sertifikat khusus event ini
+      renderTemplateStatus(ev.certificateTemplate, ev.certSettings || {});
+
+      // Sinkronkan link preview PDF sample untuk event ini
+      const btnPreview = document.getElementById('btnPreviewSamplePdf');
+      if (btnPreview) {
+        btnPreview.href = `/api/event/sample-certificate.pdf?eventId=${encodeURIComponent(ev.id)}`;
+      }
+
+      if (doScroll && step2) {
+        step2.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function closeEventWorkflow() {
+      currentSelectedEventId = null;
       const step1 = document.getElementById('step1FormSection');
       const step2 = document.getElementById('step2ActiveSection');
-      const btnToggleLabel = document.getElementById('btnToggleEventLabel');
+      if (step1) step1.classList.add('hidden');
+      if (step2) step2.classList.add('hidden');
+      const catalog = document.getElementById('eventsListContainer');
+      if (catalog) {
+        catalog.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
 
-      if (!isActive) {
-        step1.classList.remove('hidden');
-        step2.classList.add('hidden');
-      } else {
-        step1.classList.add('hidden');
-        step2.classList.remove('hidden');
-
-        document.getElementById('displayActiveTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
-        document.getElementById('displayActiveJp').textContent = `${evt.jp || 32} Jam Pelajaran (JP)`;
-        document.getElementById('displayActiveCategory').textContent = evt.category || 'Teknis & Manajerial';
-        document.getElementById('displayActiveSchedule').textContent = evt.schedule || 'Jadwal Ditentukan';
-        document.getElementById('displayActiveLocation').textContent = evt.location || 'Auditorium BKPSDM & Hybrid';
-
-        if (document.getElementById('qrViewTitle')) {
-          document.getElementById('qrViewTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
-        }
-
-        // Update Projector modal texts
-        document.getElementById('modalProjectorTitle').textContent = evt.title || 'Pelatihan Kepegawaian';
-        document.getElementById('modalProjectorJp').textContent = `Alokasi Bobot: ${evt.jp || 32} Jam Pelajaran (JP) • ${evt.organizer || 'BPMP Sultra'}`;
-        
-        if (btnToggleLabel) btnToggleLabel.textContent = '⏸️ Jeda Presensi';
+    async function activateCurrentSelectedEvent() {
+      if (currentSelectedEventId) {
+        await activateEvent(currentSelectedEventId);
+        openEventDetail(currentSelectedEventId, false);
       }
     }
 
     function editCurrentEvent() {
-      if (eventData && eventData.id) {
-        editEventById(eventData.id);
+      const targetId = currentSelectedEventId || eventData.id;
+      if (targetId) {
+        editEventById(targetId);
       } else {
         switchMainTab('dashboard');
         const step1 = document.getElementById('step1FormSection');
         const step2 = document.getElementById('step2ActiveSection');
-        step1.classList.remove('hidden');
-        step2.classList.add('hidden');
-        step1.scrollIntoView({ behavior: 'smooth' });
+        if (step1) step1.classList.remove('hidden');
+        if (step2) step2.classList.add('hidden');
+        if (step1) step1.scrollIntoView({ behavior: 'smooth' });
       }
     }
 
@@ -892,17 +967,17 @@
             quickBtn.classList.remove('hidden');
           }
 
-          // Sinkronkan status template sertifikat
-          renderTemplateStatus(eventData.certificateTemplate, eventData.certSettings || {});
-
-          // Atur tampilan: jika event sudah aktif -> tampilkan event + QR; jika belum -> tampilkan Form
-          setWorkflowView(Boolean(eventData.active), eventData);
-
           // Update seluruh riwayat event & dropdown filter
           if (data.events && data.events.length > 0) {
             allEventsList = data.events;
             populateEventFilterDropdown(allEventsList);
             renderEventsList();
+          }
+
+          // PENTING: Langkah 2 NANTI DULU ("jangan samakan sama yang lain, pas di klik dulu di dashboard nah baru")
+          // Hanya refresh tampilan Langkah 2 jika admin memang sudah mengklik salah satu event sebelumnya
+          if (currentSelectedEventId) {
+            openEventDetail(currentSelectedEventId, false);
           }
         }
       } catch (err) {
@@ -974,6 +1049,9 @@
 
       const formData = new FormData();
       formData.append('templateFile', fileInput.files[0]);
+      if (currentSelectedEventId) {
+        formData.append('eventId', currentSelectedEventId);
+      }
 
       const btn = document.getElementById('btnUploadTemplateSubmit');
       btn.disabled = true;
@@ -991,6 +1069,9 @@
           document.getElementById('templateSelectedBox').classList.add('hidden');
           fileInput.value = '';
           await loadEventData();
+          if (currentSelectedEventId) {
+            openEventDetail(currentSelectedEventId, false);
+          }
         } else {
           showToast(result.message, 'error');
         }
@@ -1005,11 +1086,15 @@
     async function deleteCustomTemplate() {
       if (!confirm('Hapus template kustom dan kembali ke desain piagam standar?')) return;
       try {
-        const res = await fetch('/api/event/template', { method: 'DELETE' });
+        const query = currentSelectedEventId ? `?eventId=${encodeURIComponent(currentSelectedEventId)}` : '';
+        const res = await fetch(`/api/event/template${query}`, { method: 'DELETE' });
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
           await loadEventData();
+          if (currentSelectedEventId) {
+            openEventDetail(currentSelectedEventId, false);
+          }
         } else {
           showToast(result.message, 'error');
         }
@@ -1031,6 +1116,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            eventId: currentSelectedEventId || undefined,
             prefix,
             nomorYRatio: 0.72,
             namaYRatio: parseFloat(namaYRatio),
@@ -1042,6 +1128,9 @@
         if (result.success) {
           showToast(result.message, 'success');
           await loadEventData();
+          if (currentSelectedEventId) {
+            openEventDetail(currentSelectedEventId, false);
+          }
         } else {
           showToast(result.message, 'error');
         }
@@ -1100,12 +1189,11 @@
           eventData = result.event;
           editingEventId = null;
           
-          // LANGKAH PENTING: Beralih ke Tampilan Event Aktif & Munculkan QR Codenya
-          setWorkflowView(true, eventData);
-          updateDynamicQr();
           await loadEventData();
           await loadEmployees();
-          document.getElementById('step2ActiveSection').scrollIntoView({ behavior: 'smooth' });
+          updateDynamicQr();
+          // LANGKAH PENTING: Buka Langkah 2 KHUSUS untuk event yang baru disimpan/diterbitkan ini
+          openEventDetail(eventData.id, true);
         } else {
           showToast(result.message, 'error');
         }
@@ -1317,20 +1405,25 @@
 
             <!-- Action Buttons Footer -->
             <div class="mt-5 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+              <button onclick="openEventDetail('${ev.id}')" class="flex-1 inline-flex items-center justify-center px-3 py-2.5 rounded-xl text-xs font-black ${isActive ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs' : 'bg-slate-900 hover:bg-emerald-700 text-white shadow-xs'} transition group">
+                <svg class="w-3.5 h-3.5 mr-1.5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Buka Sesi (Langkah 2)</span>
+              </button>
+
               ${isActive
-                ? `<button onclick="switchMainTab('qr')" class="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition">
+                ? `<button onclick="switchMainTab('qr')" class="inline-flex items-center justify-center px-3 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs transition" title="Buka layar QR aula">
                     <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                    <span>Layar QR Aula</span>
+                    <span>QR Aula</span>
                   </button>`
-                : `<button onclick="activateEvent('${ev.id}')" class="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-xl text-xs font-black bg-slate-900 hover:bg-emerald-700 text-white shadow-xs transition">
-                    <svg class="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    <span>Aktifkan di Aula</span>
+                : `<button onclick="activateEvent('${ev.id}')" class="inline-flex items-center justify-center px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 border border-slate-200 transition" title="Jadikan event ini aktif di aula">
+                    <svg class="w-3.5 h-3.5 mr-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Aktifkan</span>
                   </button>`
               }
-              <button onclick="filterTableByEvent('${ev.id}')" class="inline-flex items-center justify-center px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-900 border border-slate-200 transition" title="Filter tabel peserta untuk kegiatan ini">
+              <button onclick="filterTableByEvent('${ev.id}')" class="inline-flex items-center justify-center px-2.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-900 border border-slate-200 transition" title="Filter tabel peserta untuk kegiatan ini">
                 <span>🔍 Peserta</span>
               </button>
-              <button onclick="editEventById('${ev.id}')" class="inline-flex items-center justify-center px-2.5 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition" title="Sunting detail event ini">
+              <button onclick="editEventById('${ev.id}')" class="inline-flex items-center justify-center px-2.5 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition" title="Sunting detail event ini">
                 <span>✏️</span>
               </button>
             </div>
@@ -1352,6 +1445,9 @@
           await loadEventData();
           await loadEmployees();
           updateDynamicQr();
+          if (currentSelectedEventId === eventId) {
+            openEventDetail(eventId, false);
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -1379,6 +1475,7 @@
     // Buat Event Baru
     function createNewEventForm() {
       switchMainTab('dashboard');
+      currentSelectedEventId = null;
       editingEventId = 'new';
       document.getElementById('eventTitle').value = '';
       document.getElementById('eventJp').value = 32;
@@ -1388,7 +1485,7 @@
       
       const btn = document.getElementById('btnSaveEvent');
       if (btn) {
-        btn.innerHTML = `<span>+ Terbitkan Event Baru Ini & Buka QR Code</span> <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>`;
+        btn.innerHTML = `<span>+ Simpan & Terbitkan Event Pelatihan Baru</span> <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>`;
       }
       const quickBtn = document.getElementById('btnQuickActivate');
       if (quickBtn) quickBtn.classList.add('hidden');
@@ -1398,12 +1495,13 @@
       step1.classList.remove('hidden');
       step2.classList.add('hidden');
       step1.scrollIntoView({ behavior: 'smooth' });
-      showToast('Silakan isi formulir untuk menerbitkan event pelatihan baru.', 'info');
+      showToast('Silakan isi formulir untuk membuat event pelatihan baru.', 'info');
     }
 
     // Edit Event Berdasarkan ID
     function editEventById(eventId) {
       switchMainTab('dashboard');
+      currentSelectedEventId = eventId;
       const ev = allEventsList.find(e => e.id === eventId) || eventData;
       if (!ev) return;
       editingEventId = ev.id;

@@ -522,7 +522,7 @@ app.post('/api/event/toggle-status', (req, res) => {
 // CERTIFICATE TEMPLATE MANAGEMENT API (FOTO PNG/JPG & PDF)
 // ========================================================
 
-// 1. Upload Template Sertifikat Baru untuk Event
+// 1. Upload Template Sertifikat Baru untuk Event (Per-Event)
 app.post('/api/event/upload-template', (req, res) => {
   uploadTemplate.single('templateFile')(req, res, function (err) {
     if (err instanceof multer.MulterError) {
@@ -539,12 +539,16 @@ app.post('/api/event/upload-template', (req, res) => {
     }
 
     const db = readDb();
+    if (!db.events) db.events = [];
     if (!db.event) db.event = {};
+
+    const targetEventId = req.body?.eventId || req.query?.eventId || db.event?.id;
+    const targetEv = db.events.find(e => e.id === targetEventId) || db.event;
 
     const ext = path.extname(req.file.originalname).toLowerCase();
     const fileType = ext === '.pdf' ? 'pdf' : 'image';
 
-    db.event.certificateTemplate = {
+    const newTemplate = {
       hasCustomTemplate: true,
       fileType: fileType,
       fileName: req.file.filename,
@@ -554,49 +558,53 @@ app.post('/api/event/upload-template', (req, res) => {
       uploadedAt: new Date().toISOString()
     };
 
-    // Sinkronkan ke daftar events jika ada
-    if (db.events) {
-      const ev = db.events.find(e => e.id === db.event.id);
-      if (ev) ev.certificateTemplate = db.event.certificateTemplate;
+    targetEv.certificateTemplate = newTemplate;
+    if (db.event && (db.event.id === targetEventId || !db.event.id)) {
+      db.event.certificateTemplate = newTemplate;
     }
 
     writeDb(db);
 
     res.json({
       success: true,
-      message: `Template sertifikat (${fileType === 'pdf' ? 'Dokumen PDF' : 'Foto/Gambar'}) berhasil diunggah & diterapkan!`,
-      template: db.event.certificateTemplate
+      message: `Template sertifikat (${fileType === 'pdf' ? 'Dokumen PDF' : 'Foto/Gambar'}) berhasil diunggah & diterapkan untuk event ${targetEv.title || targetEv.id}!`,
+      template: newTemplate,
+      eventId: targetEv.id
     });
   });
 });
 
-// 2. Hapus Template Kustom & Kembali ke Template Standar
+// 2. Hapus Template Kustom & Kembali ke Template Standar (Per-Event)
 app.delete('/api/event/template', (req, res) => {
   const db = readDb();
-  if (db.event) {
-    db.event.certificateTemplate = null;
-    if (db.events) {
-      const ev = db.events.find(e => e.id === db.event.id);
-      if (ev) ev.certificateTemplate = null;
-    }
-    writeDb(db);
+  const targetEventId = req.body?.eventId || req.query?.eventId || db.event?.id;
+  if (db.events) {
+    const targetEv = db.events.find(e => e.id === targetEventId);
+    if (targetEv) targetEv.certificateTemplate = null;
   }
+  if (db.event && (db.event.id === targetEventId || !targetEventId)) {
+    db.event.certificateTemplate = null;
+  }
+  writeDb(db);
   res.json({ success: true, message: 'Template kustom berhasil dihapus. Event kembali menggunakan desain piagam standar resmi.' });
 });
 
-// 3. Simpan Pengaturan Format Nomor Surat & Posisi Teks Sertifikat
+// 3. Simpan Pengaturan Format Nomor Surat & Posisi Teks Sertifikat (Per-Event)
 app.post('/api/event/cert-settings', (req, res) => {
-  const { prefix, nomorYRatio, namaYRatio, namaFontSize, nomorFontSize } = req.body;
+  const { eventId, prefix, nomorYRatio, namaYRatio, namaFontSize, nomorFontSize } = req.body;
   const db = readDb();
-
+  if (!db.events) db.events = [];
   if (!db.event) db.event = {};
   if (!db.system) db.system = {};
+
+  const targetEventId = eventId || db.event?.id;
+  const targetEv = db.events.find(e => e.id === targetEventId) || db.event;
 
   if (prefix && prefix.trim()) {
     db.system.certPrefix = prefix.trim();
   }
 
-  db.event.certSettings = {
+  const certSettings = {
     prefix: (prefix || db.system.certPrefix || '800.1.3/SERT-LPTI/2026').trim(),
     nomorYRatio: parseFloat(nomorYRatio) || 0.72,
     namaYRatio: parseFloat(namaYRatio) || 0.50,
@@ -604,26 +612,28 @@ app.post('/api/event/cert-settings', (req, res) => {
     nomorFontSize: parseInt(nomorFontSize, 10) || 11
   };
 
-  if (db.events) {
-    const ev = db.events.find(e => e.id === db.event.id);
-    if (ev) ev.certSettings = db.event.certSettings;
+  targetEv.certSettings = certSettings;
+  if (db.event && (db.event.id === targetEventId || !db.event.id)) {
+    db.event.certSettings = certSettings;
   }
 
   writeDb(db);
 
   res.json({
     success: true,
-    message: 'Pengaturan penomoran & tata letak teks sertifikat berhasil disimpan!',
-    certSettings: db.event.certSettings
+    message: `Pengaturan penomoran & tata letak teks sertifikat berhasil disimpan untuk event ${targetEv.title || targetEv.id}!`,
+    certSettings: certSettings,
+    eventId: targetEv.id
   });
 });
 
-// 4. Endpoint Streaming Contoh Sertifikat PDF (Live Preview untuk Admin)
+// 4. Endpoint Streaming Contoh Sertifikat PDF (Live Preview untuk Admin Per-Event)
 app.get('/api/event/sample-certificate.pdf', async (req, res) => {
   try {
     const db = readDb();
-    const event = db.event || {};
-    const certConfig = event.certSettings || {};
+    const targetEventId = req.query.eventId || db.event?.id;
+    const event = (db.events || []).find(e => e.id === targetEventId) || db.event || {};
+    const certConfig = event.certSettings || db.event?.certSettings || {};
 
     let templatePath = null;
     if (event.certificateTemplate?.filePath) {
@@ -761,9 +771,12 @@ app.post('/api/employees/:id/verify-lpti', (req, res) => {
     employee.lpti.revisionNote = '';
 
     if (!employee.certificate) {
+      const empEvtId = employee.eventId || 'EVT-2026-001';
+      const event = (db.events || []).find(e => e.id === empEvtId) || db.event || {};
       const counter = db.system?.certCounter || 1;
       const certYear = new Date().getFullYear();
-      const certNumber = `${db.system?.certPrefix || '800.1.3/SERT-LPTI/' + certYear}/${String(counter).padStart(3, '0')}`;
+      const prefix = event.certSettings?.prefix || db.system?.certPrefix || '800.1.3/SERT-LPTI/' + certYear;
+      const certNumber = `${prefix}/${String(counter).padStart(3, '0')}`;
 
       employee.certificate = {
         number: certNumber,
@@ -772,7 +785,7 @@ app.post('/api/employees/:id/verify-lpti', (req, res) => {
         verifierTitle: 'Kepala Badan Kepegawaian dan Pengembangan SDM'
       };
 
-      const eventJp = db.event?.jp || 32;
+      const eventJp = event.jp || db.event?.jp || 32;
       employee.accumulatedJp = (employee.accumulatedJp || 0) + eventJp;
 
       if (!db.system) db.system = {};
@@ -836,6 +849,9 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
     }
   });
 
+  const empEvtId = employee.eventId || 'EVT-2026-001';
+  const event = (db.events || []).find(e => e.id === empEvtId) || db.event || {};
+
   res.json({
     success: true,
     certificate: {
@@ -847,17 +863,17 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
       employeeNip: employee.nip,
       employeeJabatan: employee.jabatan,
       employeeInstansi: employee.instansi,
-      eventTitle: db.event.title,
-      eventJp: db.event.jp,
-      eventCategory: db.event.category,
-      eventSchedule: db.event.schedule,
-      eventLocation: db.event.location,
+      eventTitle: event.title || db.event?.title,
+      eventJp: event.jp || db.event?.jp,
+      eventCategory: event.category || db.event?.category,
+      eventSchedule: event.schedule || db.event?.schedule,
+      eventLocation: event.location || db.event?.location,
       qrVerification: certQrDataUrl,
       verifyUrl: verifyUrl,
       pdfDownloadUrl: `/api/employees/${employee.nip || employee.id}/certificate.pdf?download=true`,
       pdfPreviewUrl: `/api/employees/${employee.nip || employee.id}/certificate.pdf`,
-      template: db.event?.certificateTemplate || null,
-      certSettings: db.event?.certSettings || null
+      template: event.certificateTemplate || db.event?.certificateTemplate || null,
+      certSettings: event.certSettings || db.event?.certSettings || null
     }
   });
 });
@@ -876,8 +892,9 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
       return res.status(403).send('E-Sertifikat masih terkunci atau belum disetujui admin.');
     }
 
-    const event = db.event || {};
-    const certConfig = event.certSettings || {};
+    const empEvtId = employee.eventId || 'EVT-2026-001';
+    const event = (db.events || []).find(e => e.id === empEvtId) || db.event || {};
+    const certConfig = event.certSettings || db.event?.certSettings || {};
 
     let templatePath = null;
     if (event.certificateTemplate?.filePath) {
