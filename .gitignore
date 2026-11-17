@@ -1,0 +1,7 @@
+node_modules/
+uploads/lpti/*
+!uploads/lpti/.gitkeep
+uploads/templates/*
+!uploads/templates/.gitkeep
+.DS_Store
+Thumbs.db
