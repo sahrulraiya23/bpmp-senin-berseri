@@ -16,8 +16,8 @@
       "namaFontSize": 26,
       "nomorFontSize": 11
     },
-    "createdAt": "2026-11-17T03:19:56.200Z",
-    "updatedAt": "2026-11-17T03:19:56.200Z"
+    "createdAt": "2026-11-17T04:39:51.158Z",
+    "updatedAt": "2026-11-17T04:39:51.158Z"
   },
   "events": [
     {
@@ -37,8 +37,8 @@
         "namaFontSize": 26,
         "nomorFontSize": 11
       },
-      "createdAt": "2026-11-17T03:19:56.200Z",
-      "updatedAt": "2026-11-17T03:19:56.200Z"
+      "createdAt": "2026-11-17T04:39:51.158Z",
+      "updatedAt": "2026-11-17T04:39:51.158Z"
     }
   ],
   "employees": [
@@ -2654,7 +2654,7 @@
       "password": "Bpmp2026!",
       "name": "Administrator Kepegawaian BPMP Sultra",
       "role": "superadmin",
-      "createdAt": "2026-11-17T03:19:56.191Z"
+      "createdAt": "2026-11-17T04:39:51.158Z"
     }
   ]
 }
