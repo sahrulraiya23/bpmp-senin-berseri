@@ -151,9 +151,29 @@ npx vercel --prod
 4. Arahkan kamera HP ke gambar QR Code yang tampil di layar proyektor / laptop.
 5. HP akan otomatis memunculkan tautan kuning/banner:
    `Buka ".../pegawai?token=LPTI-XXXXXX&action=presensi"`
-6. Tap tautan tersebut -> Halaman Portal Pegawai terbuka langsung di HP dengan modal konfirmasi:
-   `"📸 Scan Kamera HP Terdeteksi: Token LPTI-XXXXXX"`.
-7. Pilih akun pegawai Anda lalu tap **"Konfirmasi Hadir"**. Status kehadiran langsung resmi **HADIR** secara real-time!
+6. Tap tautan tersebut -> Halaman Portal Pegawai terbuka di HP dengan banner:
+   `"📸 Presensi Dynamic QR Terdeteksi: Token LPTI-XXXXXX"`.
+7. **Login Menggunakan NIP & Password**:
+   - **NIP**: Masukkan 18 digit NIP pegawai (atau tap salah satu tombol akun uji coba cepat).
+   - **Password**: Masukkan kata sandi default: **`Bpmp2026!`**.
+8. Tap **"Masuk ke Portal Pegawai"**. Sistem otomatis memverifikasi token QR dan mencatat kehadiran Anda sebagai **🟢 HADIR** secara instan!
+
+---
+
+## 👥 Data Pegawai & Kredensial Login
+
+Pangkalan data memuat **104 Pegawai Resmi BPMP Provinsi Sulawesi Tenggara**:
+- **Format Username**: NIP Pegawai (18 digit angka).
+- **Kata Sandi (Default)**: **`Bpmp2026!`** (berlaku untuk seluruh pegawai).
+
+### Contoh Akun untuk Uji Coba Cepat:
+| Nama Pegawai | Jabatan | NIP | Password | Status Awal |
+| :--- | :--- | :--- | :--- | :---: |
+| **Junaiddin Pagala, ST, M.T.** | Kepala BPMP | `197606122002121004` | `Bpmp2026!` | Disetujui (Sertifikat Ada) |
+| **Rika Ernita Mekuo, S.Si. M.Si.** | Kasubbag Umum | `198106022006042001` | `Bpmp2026!` | Menunggu Persetujuan |
+| **Riya Ld. Makruf Tonda, S.Pd, M.Pd.** | Widyaprada Ahli Madya | `196912311995121016` | `Bpmp2026!` | Perlu Revisi |
+| **La Siara, S.Pd, M.Pd.** | Ka Timker SD | `197112311997021007` | `Bpmp2026!` | **Belum Hadir (Siap Scan)** |
+| **Dra. Tenri Sanna, M.Pd.** | Widyaprada Ahli Madya | `196611171991012001` | `Bpmp2026!` | **Belum Hadir (Siap Scan)** |
 
 ---
 
@@ -244,6 +264,7 @@ Buka dua jendela browser berdampingan (kiri: `/admin`, kanan: `/pegawai`) untuk 
 
 | Metode | Endpoint | Keterangan |
 | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | Otentikasi login pegawai dengan NIP dan Password (`Bpmp2026!`) |
 | `GET` | `/api/event` | Mengambil data konfigurasi event aktif |
 | `PUT` | `/api/event` | Memperbarui event & nilai Jam Pelajaran (1 - 120 JP) |
 | `GET` | `/api/qr/current` | Mendapatkan token 30 detik aktif, sisa waktu, dan DataURL QR |

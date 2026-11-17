@@ -211,6 +211,50 @@ app.get('/api/qr/current', async (req, res) => {
   }
 });
 
+// ========================================================
+// AUTHENTICATION API (LOGIN PEGAWAI DENGAN NIP & PASSWORD)
+// ========================================================
+app.post('/api/auth/login', (req, res) => {
+  const { nip, password } = req.body;
+
+  if (!nip || !password) {
+    return res.status(400).json({ success: false, message: 'NIP dan Password wajib diisi!' });
+  }
+
+  const cleanNip = String(nip).trim();
+  const cleanPassword = String(password).trim();
+  const db = readDb();
+
+  const employee = (db.employees || []).find(e => e.nip === cleanNip || e.id === cleanNip);
+
+  if (!employee) {
+    return res.status(401).json({
+      success: false,
+      message: `NIP "${cleanNip}" tidak ditemukan dalam pangkalan data BPMP Provinsi Sulawesi Tenggara.`
+    });
+  }
+
+  const defaultPassword = 'Bpmp2026!';
+  const expectedPassword = employee.password || defaultPassword;
+
+  if (cleanPassword !== expectedPassword && cleanPassword !== defaultPassword) {
+    return res.status(401).json({
+      success: false,
+      message: 'Password salah! Pastikan menggunakan password yang benar (Password default: Bpmp2026!).'
+    });
+  }
+
+  // Return safe employee profile (exclude password)
+  const { password: _, ...safeEmployee } = employee;
+
+  return res.json({
+    success: true,
+    message: `Login berhasil! Selamat datang, ${employee.name}.`,
+    employee: safeEmployee,
+    event: db.event
+  });
+});
+
 // Endpoint Verifikasi & Validasi Token Presensi (Dari Web atau Scan HP)
 app.post('/api/presensi/verify-token', (req, res) => {
   const { employeeId, token } = req.body;
@@ -243,7 +287,7 @@ app.post('/api/presensi/verify-token', (req, res) => {
     });
   }
 
-  const employee = db.employees.find(e => e.id === employeeId || e.nip === employeeId);
+  const employee = (db.employees || []).find(e => e.id === employeeId || e.nip === employeeId);
 
   if (!employee) {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
@@ -253,14 +297,16 @@ app.post('/api/presensi/verify-token', (req, res) => {
     return res.json({
       success: true,
       alreadyAttended: true,
-      message: `Pegawai ${employee.name} sudah tercatat HADIR sebelumnya.`,
+      message: `Pegawai ${employee.name} sudah tercatat HADIR sebelumnya pada kegiatan ini.`,
       employee: employee
     });
   }
 
-  // Tandai hadir
+  // Tandai hadir & kaitkan dengan event aktif
   employee.attended = true;
   employee.attendedAt = new Date().toISOString();
+  employee.eventId = event.id || 'EVT-2026-001';
+  employee.eventTitle = event.title;
   writeDb(db);
 
   return res.json({
@@ -600,35 +646,26 @@ app.get('/api/verify-cert/:certNumber', (req, res) => {
   `);
 });
 
-// Reset Demo Data
+// Reset Demo Data (Mempertahankan 104 Pegawai BPMP Sultra & Me-reset Status Kehadiran / LPTI untuk Pengujian)
 app.post('/api/reset-data', (req, res) => {
-  const initialData = {
-    event: {
-      id: "EVT-2026-001",
-      title: "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern",
-      jp: 32,
-      category: "Teknis & Manajerial Kepegawaian",
-      schedule: "18 - 20 November 2026, 08:00 - 16:30 WIB",
-      location: "Auditorium Sasana Praja BKPSDM & Hybrid Zoom",
-      organizer: "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia (BKPSDM)",
-      targetAudience: "Aparatur Sipil Negara (ASN) Pelaksana & Fungsional",
-      active: true, // Default aktif untuk sampel
-      updatedAt: new Date().toISOString()
-    },
-    employees: [
-      {
-        id: "EMP-001",
-        nip: "198803152010121002",
-        name: "Budi Santoso, S.Kom., M.T.",
-        jabatan: "Pranata Komputer Ahli Muda",
-        instansi: "Dinas Komunikasi dan Informatika",
+  const db = readDb();
+  
+  // Reset status untuk semua pegawai BPMP (set password Bpmp2026!)
+  const updatedEmployees = (db.employees || []).map((emp, index) => {
+    // 3 pegawai pertama diberikan status sampel untuk memudahkan presentasi / demo
+    if (index === 0) {
+      // Sampel 1: Disetujui & Sertifikat Terbit (Kepala BPMP)
+      return {
+        ...emp,
+        password: "Bpmp2026!",
         attended: true,
         attendedAt: new Date(Date.now() - 3600000).toISOString(),
         accumulatedJp: 96,
+        eventId: "EVT-2026-001",
         lpti: {
           status: "approved",
-          fileName: "LPTI_Budi_Santoso_EVT001.pdf",
-          fileOriginalName: "Laporan_Pasca_Pelatihan_Budi_Santoso.pdf",
+          fileName: "LPTI_Junaiddin_Pagala.pdf",
+          fileOriginalName: "Laporan_LPTI_Junaiddin.pdf",
           filePath: "/uploads/lpti/LPTI_Budi_Santoso_EVT001.pdf",
           fileSize: 348160,
           uploadedAt: new Date(Date.now() - 1800000).toISOString(),
@@ -640,56 +677,56 @@ app.post('/api/reset-data', (req, res) => {
           verifier: "Drs. H. Hendrawan, M.Si",
           verifierTitle: "Kepala Badan Kepegawaian dan Pengembangan SDM"
         }
-      },
-      {
-        id: "EMP-002",
-        nip: "199207212015032004",
-        name: "Siti Nurhaliza, S.E., M.M.",
-        jabatan: "Analis Kepegawaian Pertama",
-        instansi: "Badan Kepegawaian Daerah",
+      };
+    } else if (index === 1) {
+      // Sampel 2: Menunggu Persetujuan (Kasubbag Umum)
+      return {
+        ...emp,
+        password: "Bpmp2026!",
         attended: true,
         attendedAt: new Date(Date.now() - 3000000).toISOString(),
         accumulatedJp: 64,
+        eventId: "EVT-2026-001",
         lpti: {
           status: "pending",
-          fileName: "LPTI_Siti_Nurhaliza_EVT001.pdf",
-          fileOriginalName: "LPTI_Siti_Nurhaliza_Final.pdf",
+          fileName: "LPTI_Rika_Ernita_Mekuo.pdf",
+          fileOriginalName: "LPTI_Rika_Ernita_Final.pdf",
           filePath: "/uploads/lpti/LPTI_Siti_Nurhaliza_EVT001.pdf",
           fileSize: 284500,
           uploadedAt: new Date(Date.now() - 1200000).toISOString(),
           revisionNote: ""
         },
         certificate: null
-      },
-      {
-        id: "EMP-003",
-        nip: "198511042008011003",
-        name: "Ahmad Fauzi, S.Sos.",
-        jabatan: "Pengelola Pengadaan Barang/Jasa",
-        instansi: "Sekretariat Daerah",
+      };
+    } else if (index === 2) {
+      // Sampel 3: Perlu Revisi
+      return {
+        ...emp,
+        password: "Bpmp2026!",
         attended: true,
         attendedAt: new Date(Date.now() - 2400000).toISOString(),
         accumulatedJp: 48,
+        eventId: "EVT-2026-001",
         lpti: {
           status: "revision",
-          fileName: "LPTI_Ahmad_Fauzi_EVT001.pdf",
-          fileOriginalName: "Laporan_Ahmad_Fauzi.pdf",
+          fileName: "LPTI_Joko_Purnomo.pdf",
+          fileOriginalName: "Laporan_Pasca_Pelatihan_Joko.pdf",
           filePath: "/uploads/lpti/LPTI_Ahmad_Fauzi_EVT001.pdf",
           fileSize: 195200,
           uploadedAt: new Date(Date.now() - 600000).toISOString(),
           revisionNote: "Bab 3 Rencana Tindak Lanjut belum dilengkapi tandatangan atasan langsung. Mohon upload ulang dengan lembar pengesahan berstempel basah/TTE."
         },
         certificate: null
-      },
-      {
-        id: "EMP-004",
-        nip: "199504122019022007",
-        name: "Rina Marlina, S.Tr.Ak.",
-        jabatan: "Auditor Pertama",
-        instansi: "Inspektorat Daerah",
+      };
+    } else {
+      // Sisa 101 pegawai dalam status belum hadir & siap untuk diuji coba scan QR & login
+      return {
+        ...emp,
+        password: "Bpmp2026!",
         attended: false,
         attendedAt: null,
-        accumulatedJp: 40,
+        accumulatedJp: emp.accumulatedJp || 32,
+        eventId: "EVT-2026-001",
         lpti: {
           status: "none",
           fileName: null,
@@ -700,36 +737,18 @@ app.post('/api/reset-data', (req, res) => {
           revisionNote: ""
         },
         certificate: null
-      },
-      {
-        id: "EMP-005",
-        nip: "199010052014021005",
-        name: "Dr. Dian Puspitasari, M.Pd.",
-        jabatan: "Widyaiswara Ahli Pertama",
-        instansi: "BPSDM Provinsi",
-        attended: false,
-        attendedAt: null,
-        accumulatedJp: 112,
-        lpti: {
-          status: "none",
-          fileName: null,
-          fileOriginalName: null,
-          filePath: null,
-          fileSize: 0,
-          uploadedAt: null,
-          revisionNote: ""
-        },
-        certificate: null
-      }
-    ],
-    system: {
-      certPrefix: "800.1.3/SERT-LPTI/2026",
-      certCounter: 2
+      };
     }
+  });
+
+  db.employees = updatedEmployees;
+  db.system = {
+    certPrefix: "800.1.3/SERT-LPTI/2026",
+    certCounter: 2
   };
 
-  writeDb(initialData);
-  res.json({ success: true, message: 'Data demonstrasi sistem berhasil di-reset!' });
+  writeDb(db);
+  res.json({ success: true, message: `Pangkalan data 104 Pegawai BPMP Sultra berhasil disinkronkan & status pengujian di-reset!` });
 });
 
 // Routing Halaman Utama
