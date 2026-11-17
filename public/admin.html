@@ -327,7 +327,7 @@
     <section class="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm">
       
       <!-- Panel Header & Filter -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100">
         <div class="flex items-center space-x-3">
           <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base">3</span>
           <div>
@@ -336,10 +336,22 @@
           </div>
         </div>
 
-        <!-- Filter & Search Controls -->
+        <!-- Filter & Search Controls (Termasuk Select Option Pilihan Event) -->
         <div class="flex flex-wrap items-center gap-2.5">
+          
+          <!-- SELECT OPTION PILIHAN EVENT -->
+          <div class="flex items-center space-x-1.5 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+            <label for="filterEventSelect" class="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-2 hidden sm:inline flex-shrink-0">
+              Event:
+            </label>
+            <select id="filterEventSelect" onchange="handleEventFilterChange(this.value)" class="text-xs font-bold text-emerald-950 bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 shadow-xs max-w-[210px] sm:max-w-[260px] truncate">
+              <option value="all">Semua Event Pelatihan</option>
+              <!-- Populated dynamically via JS -->
+            </select>
+          </div>
+
           <div class="relative">
-            <input type="text" id="searchEmployee" oninput="renderTable()" placeholder="Cari Nama / NIP..." class="pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-44 sm:w-56 font-medium">
+            <input type="text" id="searchEmployee" oninput="renderTable()" placeholder="Cari Nama / NIP..." class="pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-36 sm:w-48 font-medium">
             <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </div>
 
@@ -685,12 +697,40 @@
     }
 
     // 3. Fetch Employees & Table Render
+    let currentEventFilter = 'all';
+    let allEventsList = [];
+
+    function handleEventFilterChange(val) {
+      currentEventFilter = val;
+      updateKPIs();
+      renderTable();
+    }
+
+    function populateEventFilterDropdown(events = []) {
+      const select = document.getElementById('filterEventSelect');
+      if (!select) return;
+
+      const currentVal = select.value || currentEventFilter;
+
+      let html = `<option value="all">Semua Event Pelatihan (${employeesData.length} Peserta)</option>`;
+      events.forEach(ev => {
+        const count = employeesData.filter(e => (e.eventId || 'EVT-2026-001') === ev.id).length;
+        html += `<option value="${ev.id}" ${ev.id === currentVal ? 'selected' : ''}>📌 ${ev.title} (${count} Peserta)</option>`;
+      });
+
+      select.innerHTML = html;
+    }
+
     async function loadEmployees() {
       try {
         const res = await fetch('/api/employees');
         const data = await res.json();
         if (data.success) {
           employeesData = data.employees || [];
+          if (data.events && data.events.length > 0) {
+            allEventsList = data.events;
+            populateEventFilterDropdown(allEventsList);
+          }
           updateKPIs();
           renderTable();
         }
@@ -700,10 +740,16 @@
     }
 
     function updateKPIs() {
-      const total = employeesData.length;
-      const hadir = employeesData.filter(e => e.attended).length;
-      const pending = employeesData.filter(e => e.lpti && e.lpti.status === 'pending').length;
-      const approved = employeesData.filter(e => e.certificate).length;
+      // Hitung KPI berdasarkan filter event yang sedang dipilih
+      let list = employeesData;
+      if (currentEventFilter !== 'all') {
+        list = list.filter(e => (e.eventId || 'EVT-2026-001') === currentEventFilter);
+      }
+
+      const total = list.length;
+      const hadir = list.filter(e => e.attended).length;
+      const pending = list.filter(e => e.lpti && e.lpti.status === 'pending').length;
+      const approved = list.filter(e => e.certificate).length;
 
       document.getElementById('statTotal').textContent = total;
       document.getElementById('statHadir').textContent = hadir;
@@ -730,9 +776,17 @@
       const search = (document.getElementById('searchEmployee').value || '').toLowerCase().trim();
 
       let filtered = employeesData.filter(emp => {
+        // Filter Berdasarkan Select Option Pilihan Event
+        if (currentEventFilter !== 'all') {
+          const empEvtId = emp.eventId || 'EVT-2026-001';
+          if (empEvtId !== currentEventFilter) return false;
+        }
+
+        // Filter Berdasarkan Nama / NIP
         const matchesSearch = emp.name.toLowerCase().includes(search) || emp.nip.includes(search);
         if (!matchesSearch) return false;
 
+        // Filter Berdasarkan Tab Status
         if (currentFilter === 'pending') return emp.lpti?.status === 'pending';
         if (currentFilter === 'approved') return emp.lpti?.status === 'approved';
         if (currentFilter === 'revision') return emp.lpti?.status === 'revision';
@@ -744,7 +798,7 @@
           <tr>
             <td colspan="6" class="py-12 text-center text-slate-400">
               <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              Tidak ada data pegawai yang sesuai dengan filter.
+              Tidak ada data pegawai yang sesuai dengan pilihan event dan filter ini.
             </td>
           </tr>
         `;
@@ -796,6 +850,67 @@
         // Tombol Aksi Verifikasi
         let actionButtons = '';
         if (hasPdf && (status === 'pending' || status === 'revision')) {
+          actionButtons = `
+            <div class="flex items-center justify-center space-x-1.5">
+              <button onclick="approveLpti('${emp.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="Setujui dan terbitkan e-sertifikat">
+                ✓ Cocok / Setujui
+              </button>
+              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 transition" title="Minta perbaikan berkas LPTI">
+                ✕ Minta Revisi
+              </button>
+            </div>
+          `;
+        } else if (status === 'approved') {
+          actionButtons = `
+            <div class="flex items-center justify-center space-x-1">
+              <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Tuntas Disetujui
+              </span>
+              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="text-[11px] text-slate-400 hover:text-rose-600 underline ml-1" title="Batalkan dan minta revisi kembali">
+                Koreksi
+              </button>
+            </div>
+          `;
+        } else {
+          actionButtons = '<span class="text-xs text-slate-400 italic">Menunggu Peserta</span>';
+        }
+
+        return `
+          <tr class="hover:bg-emerald-50/30 transition">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-slate-900">${emp.name}</div>
+              <div class="font-mono text-xs text-slate-500">${emp.nip}</div>
+              <div class="text-[11px] text-slate-400">${emp.jabatan} &bull; ${emp.instansi}</div>
+              <div class="mt-1">
+                <span class="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200/80 truncate max-w-[280px]" title="${emp.eventTitle || 'Pelatihan Kepegawaian'}">
+                  📌 ${emp.eventTitle || 'Pelatihan Kepegawaian'}
+                </span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              ${emp.attended 
+                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">HADIR</span>' 
+                : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">BELUM</span>'
+              }
+            </td>
+            <td class="py-3.5 px-4">
+              ${statusBadge}
+              ${lpti.revisionNote ? `<div class="mt-1 text-[11px] text-rose-600 bg-rose-50 p-1.5 rounded-lg border border-rose-100 line-clamp-2" title="${lpti.revisionNote}">Catatan: ${lpti.revisionNote}</div>` : ''}
+            </td>
+            <td class="py-3.5 px-4">
+              ${pdfAction}
+              ${lpti.fileOriginalName ? `<div class="text-[10px] text-slate-400 mt-0.5 max-w-[140px] truncate" title="${lpti.fileOriginalName}">${lpti.fileOriginalName}</div>` : ''}
+            </td>
+            <td class="py-3.5 px-4">
+              ${certInfo}
+            </td>
+            <td class="py-3.5 px-4 text-center">
+              ${actionButtons}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
           actionButtons = `
             <div class="flex items-center justify-center space-x-1.5">
               <button onclick="approveLpti('${emp.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="Setujui dan terbitkan e-sertifikat">

@@ -275,7 +275,13 @@ app.post('/api/presensi/verify-token', (req, res) => {
 // ========================================================
 app.get('/api/event', (req, res) => {
   const db = readDb();
-  res.json({ success: true, event: db.event });
+  res.json({ success: true, event: db.event, events: db.events || [] });
+});
+
+app.get('/api/events', (req, res) => {
+  const db = readDb();
+  const events = db.events || (db.event ? [db.event] : []);
+  res.json({ success: true, events: events, currentEvent: db.event });
 });
 
 // Simpan & Aktifkan Event (Menerbitkan QR Code)
@@ -292,8 +298,10 @@ app.put('/api/event', (req, res) => {
   }
 
   const db = readDb();
+  const eventId = db.event?.id || `EVT-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`;
+  
   db.event = {
-    id: db.event?.id || `EVT-${new Date().getFullYear()}-001`,
+    id: eventId,
     title: title.trim(),
     jp: parsedJp,
     category: (category || 'Teknis & Manajerial Kepegawaian').trim(),
@@ -304,12 +312,22 @@ app.put('/api/event', (req, res) => {
     updatedAt: new Date().toISOString()
   };
 
+  // Simpan / Perbarui juga di daftar db.events
+  if (!db.events) db.events = [];
+  const existingIdx = db.events.findIndex(e => e.id === eventId || e.title.toLowerCase() === title.trim().toLowerCase());
+  if (existingIdx >= 0) {
+    db.events[existingIdx] = db.event;
+  } else {
+    db.events.unshift(db.event);
+  }
+
   writeDb(db);
 
   res.json({
     success: true,
     message: 'Event pelatihan berhasil disimpan & diaktifkan! Dynamic QR Code presensi kini telah terbit.',
-    event: db.event
+    event: db.event,
+    events: db.events
   });
 });
 
@@ -319,6 +337,13 @@ app.post('/api/event/toggle-status', (req, res) => {
   if (!db.event) db.event = {};
   db.event.active = !db.event.active;
   db.event.updatedAt = new Date().toISOString();
+
+  // Sinkronkan ke daftar events
+  if (db.events) {
+    const ev = db.events.find(e => e.id === db.event.id);
+    if (ev) ev.active = db.event.active;
+  }
+
   writeDb(db);
 
   res.json({
@@ -333,7 +358,7 @@ app.post('/api/event/toggle-status', (req, res) => {
 // ========================================================
 app.get('/api/employees', (req, res) => {
   const db = readDb();
-  res.json({ success: true, employees: db.employees, event: db.event });
+  res.json({ success: true, employees: db.employees, event: db.event, events: db.events || [] });
 });
 
 app.get('/api/employees/:id', (req, res) => {

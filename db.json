@@ -10,6 +10,38 @@
     "active": false,
     "updatedAt": "2026-11-16T13:36:02.212Z"
   },
+  "events": [
+    {
+      "id": "EVT-2026-001",
+      "title": "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern 2026",
+      "jp": 32,
+      "category": "Teknis & Manajerial Kepegawaian",
+      "schedule": "18 - 20 November 2026",
+      "location": "Auditorium Sasana Praja BKPSDM",
+      "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia",
+      "active": false
+    },
+    {
+      "id": "EVT-2026-002",
+      "title": "Workshop Manajemen Talenta & Sasaran Kinerja Pegawai (SKP)",
+      "jp": 24,
+      "category": "Kompetensi Manajerial ASN",
+      "schedule": "02 - 03 Desember 2026",
+      "location": "Ruang Diklat Graha Wiyata & Daring",
+      "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia",
+      "active": false
+    },
+    {
+      "id": "EVT-2026-003",
+      "title": "Bimbingan Teknis Pengadaan Barang & Jasa Pemerintah",
+      "jp": 40,
+      "category": "Fungsional Keahlian Digital",
+      "schedule": "15 - 18 Desember 2026",
+      "location": "Hotel Grand Sahid & Hybrid",
+      "organizer": "Badan Kepegawaian dan Pengembangan Sumber Daya Manusia",
+      "active": false
+    }
+  ],
   "employees": [
     {
       "id": "EMP-001",
@@ -17,6 +49,8 @@
       "name": "Budi Santoso, S.Kom., M.T.",
       "jabatan": "Pranata Komputer Ahli Muda",
       "instansi": "Dinas Komunikasi dan Informatika",
+      "eventId": "EVT-2026-001",
+      "eventTitle": "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern 2026",
       "attended": true,
       "attendedAt": "2026-11-16T08:15:20.000Z",
       "accumulatedJp": 96,
@@ -42,6 +76,8 @@
       "name": "Siti Nurhaliza, S.E., M.M.",
       "jabatan": "Analis Kepegawaian Pertama",
       "instansi": "Badan Kepegawaian Daerah",
+      "eventId": "EVT-2026-001",
+      "eventTitle": "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern 2026",
       "attended": true,
       "attendedAt": "2026-11-16T08:22:45.000Z",
       "accumulatedJp": 64,
@@ -62,6 +98,8 @@
       "name": "Ahmad Fauzi, S.Sos.",
       "jabatan": "Pengelola Pengadaan Barang/Jasa",
       "instansi": "Sekretariat Daerah",
+      "eventId": "EVT-2026-003",
+      "eventTitle": "Bimbingan Teknis Pengadaan Barang & Jasa Pemerintah",
       "attended": true,
       "attendedAt": "2026-11-16T08:35:10.000Z",
       "accumulatedJp": 48,
@@ -82,6 +120,8 @@
       "name": "Rina Marlina, S.Tr.Ak.",
       "jabatan": "Auditor Pertama",
       "instansi": "Inspektorat Daerah",
+      "eventId": "EVT-2026-001",
+      "eventTitle": "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern 2026",
       "attended": false,
       "attendedAt": null,
       "accumulatedJp": 40,
@@ -102,6 +142,8 @@
       "name": "Dr. Dian Puspitasari, M.Pd.",
       "jabatan": "Widyaiswara Ahli Pertama",
       "instansi": "BPSDM Provinsi",
+      "eventId": "EVT-2026-002",
+      "eventTitle": "Workshop Manajemen Talenta & Sasaran Kinerja Pegawai (SKP)",
       "attended": false,
       "attendedAt": null,
       "accumulatedJp": 112,
