@@ -5,3 +5,4 @@ uploads/templates/*
 !uploads/templates/.gitkeep
 .DS_Store
 Thumbs.db
+templates/

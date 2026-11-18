@@ -40,11 +40,20 @@ if (!IS_VERCEL) {
 const JSON_DB_PATH = path.join(TMP_DIR, 'db.json');
 const BUNDLED_JSON_PATH = path.join(BASE_DIR, 'db.json');
 
+let bundledData = null;
+try {
+  bundledData = require('./db.json');
+} catch (e) {
+  console.warn('Tidak dapat memuat bundled db.json via require:', e.message);
+}
+
 function initJsonDb() {
   if (IS_VERCEL && !fs.existsSync(JSON_DB_PATH)) {
     try {
       if (fs.existsSync(BUNDLED_JSON_PATH)) {
         fs.copyFileSync(BUNDLED_JSON_PATH, JSON_DB_PATH);
+      } else if (bundledData) {
+        fs.writeFileSync(JSON_DB_PATH, JSON.stringify(bundledData, null, 2), 'utf8');
       }
     } catch (e) {
       console.warn('Gagal menyalin db.json awal ke /tmp:', e.message);
@@ -62,7 +71,10 @@ function readJson() {
       return JSON.parse(fs.readFileSync(BUNDLED_JSON_PATH, 'utf8'));
     }
   } catch (err) {
-    console.error('Error reading JSON DB:', err.message);
+    console.error('Error reading JSON DB from filesystem:', err.message);
+  }
+  if (bundledData) {
+    return JSON.parse(JSON.stringify(bundledData));
   }
   return {
     admins: [{ id: 1, username: 'admin', password: 'Bpmp2026!', name: 'Administrator Kepegawaian BPMP Sultra', role: 'superadmin' }],
@@ -1137,6 +1149,7 @@ module.exports = {
   db,
   useSqlite,
   initDb,
+  isSupabaseAvailable: () => supabaseAdapter.isSupabaseAvailable(),
   getAllEmployees,
   getEmployeeByIdOrNip,
   markEmployeeAttended,

@@ -714,6 +714,43 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
 });
 
 // ========================================================
+// SYSTEM DIAGNOSTICS
+// ========================================================
+app.get('/api/system/status', async (req, res) => {
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+  const key = (process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
+  const isAvailable = Boolean(sqliteDb.isSupabaseAvailable && sqliteDb.isSupabaseAvailable());
+
+  const info = {
+    time: new Date().toISOString(),
+    isVercel: Boolean(process.env.VERCEL),
+    supabase: {
+      hasUrl: Boolean(url),
+      hasKey: Boolean(key),
+      urlDomain: url ? url.replace(/^https?:\/\//, '').split('/')[0] : null,
+      keyLength: key ? key.length : 0,
+      isAvailable
+    }
+  };
+
+  if (isAvailable) {
+    try {
+      const emps = await sqliteDb.getAllEmployees();
+      const activeEvt = await sqliteDb.getActiveEvent();
+      info.supabase.testResult = {
+        employeesCount: emps ? emps.length : 0,
+        activeEventId: activeEvt ? activeEvt.id : null,
+        sampleEmployee: emps && emps[0] ? { id: emps[0].id, name: emps[0].name, nip: emps[0].nip } : null
+      };
+    } catch (e) {
+      info.supabase.testError = e.message;
+    }
+  }
+
+  res.json(info);
+});
+
+// ========================================================
 // EMPLOYEES & LPTI VERIFICATION APIs
 // ========================================================
 app.get('/api/employees', async (req, res) => {

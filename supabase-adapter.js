@@ -6,24 +6,51 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+let _supabaseInstance = null;
 
-let supabase = null;
-if (SUPABASE_URL && SUPABASE_KEY) {
-  try {
-    supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false }
-    });
-    console.log('✅ Supabase Client berhasil diinisialisasi:', SUPABASE_URL);
-  } catch (err) {
-    console.warn('⚠️ Gagal inisialisasi Supabase client:', err.message);
+function getClient() {
+  if (_supabaseInstance) return _supabaseInstance;
+  const SUPABASE_URL = (
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    ''
+  ).trim();
+  const SUPABASE_KEY = (
+    process.env.SUPABASE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    ''
+  ).trim();
+
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      _supabaseInstance = createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false }
+      });
+      console.log('✅ Supabase Client berhasil diinisialisasi:', SUPABASE_URL);
+    } catch (err) {
+      console.warn('⚠️ Gagal inisialisasi Supabase client:', err.message);
+    }
   }
+  return _supabaseInstance;
 }
 
 function isSupabaseAvailable() {
-  return Boolean(supabase);
+  return Boolean(getClient());
 }
+
+// Proxy agar pemanggilan supabase.<method> selalu otomatis menggunakan client aktif
+const supabase = new Proxy({}, {
+  get(target, prop) {
+    const client = getClient();
+    if (!client) {
+      throw new Error('Supabase client belum diinisialisasi (SUPABASE_URL atau SUPABASE_KEY belum terisi)');
+    }
+    const val = client[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 // ==============================================================
 // FORMATTER HELPERS
