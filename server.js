@@ -735,12 +735,16 @@ app.get('/api/system/status', async (req, res) => {
 
   if (isAvailable) {
     try {
-      const emps = await sqliteDb.getAllEmployees();
-      const activeEvt = await sqliteDb.getActiveEvent();
-      info.supabase.testResult = {
-        employeesCount: emps ? emps.length : 0,
-        activeEventId: activeEvt ? activeEvt.id : null,
-        sampleEmployee: emps && emps[0] ? { id: emps[0].id, name: emps[0].name, nip: emps[0].nip } : null
+      const client = require('@supabase/supabase-js').createClient(url, key, { auth: { persistSession: false } });
+      const { data: rawEmps, error: rawEmpError } = await client.from('employees').select('*').limit(5);
+      const { data: rawEvts, error: rawEvtError } = await client.from('events').select('*').limit(5);
+      
+      info.supabase.directQuery = {
+        empError: rawEmpError ? { message: rawEmpError.message, details: rawEmpError.details, hint: rawEmpError.hint, code: rawEmpError.code } : null,
+        evtError: rawEvtError ? { message: rawEvtError.message, details: rawEvtError.details, hint: rawEvtError.hint, code: rawEvtError.code } : null,
+        rawEmpsCount: rawEmps ? rawEmps.length : 0,
+        rawEvtsCount: rawEvts ? rawEvts.length : 0,
+        sample: rawEmps && rawEmps[0] ? rawEmps[0] : null
       };
     } catch (e) {
       info.supabase.testError = e.message;
