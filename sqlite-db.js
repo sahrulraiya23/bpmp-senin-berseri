@@ -191,6 +191,16 @@ function formatEvent(row) {
     if (row.cert_settings) certSettings = JSON.parse(row.cert_settings);
   } catch (e) {}
 
+  const defaultCertSettings = {
+    prefix: '800.1.3/SERT-LPTI/2026',
+    nomorYRatio: 0.72,
+    namaYRatio: 0.50,
+    namaFontSize: 26,
+    nomorFontSize: 11,
+    showUnderline: true,
+    showQr: true
+  };
+
   return {
     id: row.id,
     title: row.title,
@@ -203,7 +213,7 @@ function formatEvent(row) {
     status: row.status || (Boolean(row.active) ? 'active' : 'completed'),
     completedAt: row.completed_at || null,
     certificateTemplate: certTemplate,
-    certSettings: certSettings,
+    certSettings: certSettings ? { ...defaultCertSettings, ...certSettings } : defaultCertSettings,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -962,24 +972,35 @@ async function updateEventTemplate(eventId, templateData) {
 
 async function updateEventCertSettings(eventId, certSettings) {
   const serialized = JSON.stringify(certSettings);
+  const now = new Date().toISOString();
   if (useSqlite) {
     if (eventId) {
-      await run('UPDATE events SET cert_settings = ? WHERE id = ?', [serialized, eventId]);
+      await run('UPDATE events SET cert_settings = ?, updated_at = ? WHERE id = ?', [serialized, now, eventId]);
     } else {
-      await run('UPDATE events SET cert_settings = ? WHERE active = 1', [serialized]);
+      await run('UPDATE events SET cert_settings = ?, updated_at = ? WHERE active = 1', [serialized, now]);
     }
-    return true;
+    return eventId ? getEventById(eventId) : getActiveEvent();
   } else {
     const dbData = readJson();
-    const ev = (dbData.events || []).find(e => e.id === eventId) || dbData.event;
-    if (ev) {
-      ev.certSettings = certSettings;
-      if (dbData.event && dbData.event.id === ev.id) {
-        dbData.event.certSettings = certSettings;
+    let target = null;
+    (dbData.events || []).forEach(e => {
+      if (e.id === eventId || (!eventId && e.active)) {
+        e.certSettings = certSettings;
+        e.updatedAt = now;
+        target = e;
       }
-      writeJson(dbData);
+    });
+    if (!target && dbData.event) {
+      dbData.event.certSettings = certSettings;
+      dbData.event.updatedAt = now;
+      target = dbData.event;
     }
-    return true;
+    if (target && dbData.event && dbData.event.id === target.id) {
+      dbData.event.certSettings = certSettings;
+      dbData.event.updatedAt = now;
+    }
+    writeJson(dbData);
+    return target || dbData.event;
   }
 }
 

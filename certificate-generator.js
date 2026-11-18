@@ -4,6 +4,18 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * Helper untuk normalisasi rasio vertikal Y (0.05 - 0.95 dari bawah halaman).
+ * Mencegah error jika user memasukkan persentase (misal 50 atau 72) atau koma.
+ */
+function parseYRatio(val, fallback) {
+  if (val === undefined || val === null || val === '') return fallback;
+  if (typeof val === 'string') val = parseFloat(val.replace(',', '.'));
+  if (isNaN(val)) return fallback;
+  if (val > 1) val = val / 100; // Konversi 50 -> 0.50
+  return Math.max(0.05, Math.min(0.95, val));
+}
+
+/**
  * Menghasilkan file PDF E-Sertifikat dengan menempatkan Nomor Surat & Nama Pegawai
  * secara otomatis di atas template yang diunggah (Foto PNG/JPG atau Dokumen PDF).
  */
@@ -22,11 +34,11 @@ async function generateCertificatePdf({
   verifierNip = '197606122002121004',
   issuedAt = new Date().toISOString(),
   verifyUrl = '',
-  // Pengaturan posisi relatif (0.0 - 1.0 dari bawah halaman)
   nomorYRatio = 0.72,
   namaYRatio = 0.50,
   namaFontSize = 26,
   nomorFontSize = 11,
+  showUnderline = true,
   showQr = true
 }) {
   let doc;
@@ -39,7 +51,7 @@ async function generateCertificatePdf({
   if (templatePath && fs.existsSync(templatePath) && ext === '.pdf') {
     try {
       const templateBytes = fs.readFileSync(templatePath);
-      doc = await PDFDocument.load(templateBytes);
+      doc = await PDFDocument.load(templateBytes, { ignoreEncryption: true });
       const pages = doc.getPages();
       if (pages.length > 0) {
         page = pages[0];
@@ -56,33 +68,41 @@ async function generateCertificatePdf({
       const imageBytes = fs.readFileSync(templatePath);
       doc = await PDFDocument.create();
 
-      let image;
+      let image = null;
       if (ext === '.png') {
-        image = await doc.embedPng(imageBytes);
+        try {
+          image = await doc.embedPng(imageBytes);
+        } catch (ePng) {
+          image = await doc.embedJpg(imageBytes);
+        }
       } else {
-        image = await doc.embedJpg(imageBytes);
+        try {
+          image = await doc.embedJpg(imageBytes);
+        } catch (eJpg) {
+          image = await doc.embedPng(imageBytes);
+        }
       }
 
-      // Ukuran halaman mengikuti proporsi gambar asli (standar minimal A4 Landscape: 842 x 595 pt)
-      const imgWidth = image.width;
-      const imgHeight = image.height;
-      const pageRatio = imgWidth / imgHeight;
+      if (image) {
+        // Ukuran halaman mengikuti proporsi gambar asli (standar A4 Landscape: 841.89 pt lebar)
+        const imgWidth = image.width;
+        const imgHeight = image.height;
+        const pageRatio = imgWidth / imgHeight;
 
-      // Buat halaman A4 Landscape yang proporsional
-      const pageWidth = 841.89;
-      const pageHeight = pageWidth / pageRatio;
+        const pageWidth = 841.89;
+        const pageHeight = pageWidth / pageRatio;
 
-      page = doc.addPage([pageWidth, pageHeight]);
+        page = doc.addPage([pageWidth, pageHeight]);
 
-      // Gambar foto template sebagai latar belakang penuh (background)
-      page.drawImage(image, {
-        x: 0,
-        y: 0,
-        width: pageWidth,
-        height: pageHeight
-      });
+        page.drawImage(image, {
+          x: 0,
+          y: 0,
+          width: pageWidth,
+          height: pageHeight
+        });
 
-      isCustomTemplate = true;
+        isCustomTemplate = true;
+      }
     } catch (err) {
       console.warn('Gagal memuat template gambar, menggunakan template bawaan:', err.message);
     }
@@ -196,14 +216,18 @@ async function generateCertificatePdf({
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
 
+  const safeNomorYRatio = parseYRatio(nomorYRatio, 0.72);
+  const safeNamaYRatio = parseYRatio(namaYRatio, 0.50);
+
   // ========================================================
   // 1. DYNAMIC FIELD 1: NOMOR SURAT / NOMOR SERTIFIKAT
   // ========================================================
-  const noText = `Nomor: ${certNumber}`;
-  const noSize = Number(nomorFontSize) || 11;
+  const cleanNumber = String(certNumber || '').trim();
+  const noText = cleanNumber.toLowerCase().startsWith('nomor') ? cleanNumber : `Nomor: ${cleanNumber}`;
+  const noSize = Math.max(8, Math.min(24, Number(nomorFontSize) || 11));
   const noWidth = fontRegular.widthOfTextAtSize(noText, noSize);
   const noX = (width - noWidth) / 2;
-  const noY = height * (Number(nomorYRatio) || 0.72);
+  const noY = height * safeNomorYRatio;
 
   page.drawText(noText, {
     x: noX,
@@ -217,10 +241,11 @@ async function generateCertificatePdf({
   // 2. DYNAMIC FIELD 2: NAMA PEGAWAI (BESAR & TEGAS)
   // ========================================================
   const safeName = String(employeeName || '').trim();
-  const calculatedNameSize = safeName.length > 34 ? Math.max(18, namaFontSize - 4) : Number(namaFontSize) || 26;
+  const baseSize = Math.max(14, Math.min(48, Number(namaFontSize) || 26));
+  const calculatedNameSize = safeName.length > 34 ? Math.max(18, baseSize - 4) : baseSize;
   const nameWidth = fontBold.widthOfTextAtSize(safeName, calculatedNameSize);
   const nameX = (width - nameWidth) / 2;
-  const nameY = height * (Number(namaYRatio) || 0.50);
+  const nameY = height * safeNamaYRatio;
 
   page.drawText(safeName, {
     x: nameX,
@@ -230,24 +255,27 @@ async function generateCertificatePdf({
     color: rgb(0.04, 0.12, 0.18)
   });
 
-  // Garis bawah elegan untuk Nama
-  page.drawLine({
-    start: { x: Math.max(80, nameX - 12), y: nameY - 6 },
-    end: { x: Math.min(width - 80, nameX + nameWidth + 12), y: nameY - 6 },
-    thickness: 1,
-    color: rgb(0.65, 0.65, 0.65)
-  });
+  // Garis bawah elegan untuk Nama Pegawai (bisa diaktifkan/dinonaktifkan)
+  if (showUnderline !== false) {
+    page.drawLine({
+      start: { x: Math.max(80, nameX - 12), y: nameY - 6 },
+      end: { x: Math.min(width - 80, nameX + nameWidth + 12), y: nameY - 6 },
+      thickness: 1,
+      color: rgb(0.65, 0.65, 0.65)
+    });
+  }
 
   // ========================================================
   // 3. OPTIONAL: IDENTITAS NIP & JABATAN
   // ========================================================
   if (employeeNip) {
-    const nipLine = `NIP. ${employeeNip} ${employeeJabatan ? ' • ' + employeeJabatan : ''}`;
-    const nipWidth = fontRegular.widthOfTextAtSize(nipLine, 9.5);
+    const nipLine = `NIP. ${employeeNip}${employeeJabatan ? ' • ' + employeeJabatan : ''}`;
+    const nipSize = 9.5;
+    const nipWidth = fontRegular.widthOfTextAtSize(nipLine, nipSize);
     page.drawText(nipLine, {
       x: (width - nipWidth) / 2,
       y: nameY - 20,
-      size: 9.5,
+      size: nipSize,
       font: fontRegular,
       color: rgb(0.35, 0.38, 0.42)
     });
@@ -258,7 +286,7 @@ async function generateCertificatePdf({
   // ========================================================
   if (showQr) {
     try {
-      const qrUrl = verifyUrl || `http://localhost:3000/api/verify-cert/${encodeURIComponent(certNumber)}`;
+      const qrUrl = verifyUrl || `http://localhost:3000/api/verify-cert/${encodeURIComponent(cleanNumber)}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 140, color: { dark: '#064e3b', light: '#ffffff' } });
       const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
       const qrImage = await doc.embedPng(qrImageBytes);

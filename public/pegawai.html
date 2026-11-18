@@ -898,6 +898,9 @@
         </div>
 
         <div class="modal-footer py-2 bg-light">
+          <a id="btnModalDownloadPdf" href="#" target="_blank" class="btn btn-gov-emerald btn-sm font-weight-bold">
+            <i class="fas fa-file-download mr-1"></i> Unduh File Asli (PDF)
+          </a>
           <button type="button" class="btn btn-secondary btn-sm font-weight-bold" data-dismiss="modal">Tutup</button>
         </div>
 
@@ -1497,6 +1500,10 @@
           const btnDownload = document.getElementById('btnDownloadCertPdf');
           if (btnDownload) {
             btnDownload.href = cert.pdfDownloadUrl;
+          }
+          const modalDl = document.getElementById('btnModalDownloadPdf');
+          if (modalDl) {
+            modalDl.href = `/api/employees/${currentAuthUser.nip}/certificate.pdf?download=true`;
           }
 
           const printArea = document.getElementById('certificatePrintArea');

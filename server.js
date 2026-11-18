@@ -581,6 +581,25 @@ app.post('/api/event/upload-template', (req, res) => {
   });
 });
 
+function resolveTemplatePath(filePath) {
+  if (!filePath) return null;
+  const cleanPath = String(filePath).replace(/^\//, '');
+  const basename = path.basename(filePath);
+  const candidates = [
+    path.join(DATA_DIR, cleanPath),
+    path.join(BASE_DIR, cleanPath),
+    path.join(TEMPLATE_DIR, basename),
+    path.join(DATA_DIR, 'uploads', 'templates', basename),
+    path.join(BASE_DIR, 'uploads', 'templates', basename)
+  ];
+  for (const cand of candidates) {
+    try {
+      if (fs.existsSync(cand)) return cand;
+    } catch (e) {}
+  }
+  return null;
+}
+
 app.delete('/api/event/template', async (req, res) => {
   const targetEventId = req.body?.eventId || req.query?.eventId;
   await sqliteDb.updateEventTemplate(targetEventId, null);
@@ -588,15 +607,24 @@ app.delete('/api/event/template', async (req, res) => {
 });
 
 app.post('/api/event/cert-settings', async (req, res) => {
-  const { eventId, prefix, nomorYRatio, namaYRatio, namaFontSize, nomorFontSize } = req.body;
+  const { eventId, prefix, nomorYRatio, namaYRatio, namaFontSize, nomorFontSize, showUnderline } = req.body;
   const targetEventId = eventId;
+
+  const parseRatio = (v, def) => {
+    if (v === undefined || v === null || v === '') return def;
+    const n = typeof v === 'string' ? parseFloat(v.replace(',', '.')) : Number(v);
+    if (isNaN(n)) return def;
+    const normalized = n > 1 ? n / 100 : n;
+    return Math.max(0.05, Math.min(0.95, normalized));
+  };
 
   const certSettings = {
     prefix: (prefix || '800.1.3/SERT-LPTI/2026').trim(),
-    nomorYRatio: parseFloat(nomorYRatio) || 0.72,
-    namaYRatio: parseFloat(namaYRatio) || 0.50,
-    namaFontSize: parseInt(namaFontSize, 10) || 26,
-    nomorFontSize: parseInt(nomorFontSize, 10) || 11
+    nomorYRatio: parseRatio(nomorYRatio, 0.72),
+    namaYRatio: parseRatio(namaYRatio, 0.50),
+    namaFontSize: Math.max(14, Math.min(48, parseInt(namaFontSize, 10) || 26)),
+    nomorFontSize: Math.max(8, Math.min(24, parseInt(nomorFontSize, 10) || 11)),
+    showUnderline: showUnderline !== false
   };
 
   const updated = await sqliteDb.updateEventCertSettings(targetEventId, certSettings);
@@ -616,13 +644,24 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
     const event = (targetEventId ? await sqliteDb.getEventById(targetEventId) : await sqliteDb.getActiveEvent()) || {};
     const certConfig = event.certSettings || {};
 
-    let templatePath = null;
-    if (event.certificateTemplate?.filePath) {
-      const p = path.join(BASE_DIR, event.certificateTemplate.filePath.replace(/^\//, ''));
-      if (fs.existsSync(p)) templatePath = p;
-    }
+    const templatePath = resolveTemplatePath(event.certificateTemplate?.filePath);
 
-    const sampleCertNumber = `${certConfig.prefix || '800.1.3/SERT-LPTI/2026'}/001`;
+    // Nilai koordinat dapat dioverride langsung dari parameter query untuk Instant Live Testing
+    const parseParam = (param, fallback) => {
+      if (param === undefined || param === null || param === '') return fallback;
+      const n = parseFloat(String(param).replace(',', '.'));
+      if (isNaN(n)) return fallback;
+      return n > 1 ? n / 100 : n;
+    };
+
+    const finalPrefix = (req.query.prefix || certConfig.prefix || '800.1.3/SERT-LPTI/2026').trim();
+    const finalNomorY = parseParam(req.query.nomorY, certConfig.nomorYRatio || 0.72);
+    const finalNamaY = parseParam(req.query.namaY, certConfig.namaYRatio || 0.50);
+    const finalNamaSize = parseInt(req.query.namaSize || certConfig.namaFontSize || 26, 10);
+    const finalNomorSize = parseInt(req.query.nomorSize || certConfig.nomorFontSize || 11, 10);
+    const finalShowUnderline = req.query.showUnderline !== undefined ? (req.query.showUnderline === 'true' || req.query.showUnderline === '1') : (certConfig.showUnderline !== false);
+
+    const sampleCertNumber = `${finalPrefix}/001`;
 
     const pdfBuffer = await generateCertificatePdf({
       templatePath: templatePath,
@@ -639,14 +678,18 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
       verifierNip: '197606122002121004',
       issuedAt: new Date().toISOString(),
       verifyUrl: 'http://localhost:3000/api/verify-cert/' + encodeURIComponent(sampleCertNumber),
-      nomorYRatio: certConfig.nomorYRatio || 0.72,
-      namaYRatio: certConfig.namaYRatio || 0.50,
-      namaFontSize: certConfig.namaFontSize || 26,
-      nomorFontSize: certConfig.nomorFontSize || 11
+      nomorYRatio: finalNomorY,
+      namaYRatio: finalNamaY,
+      namaFontSize: finalNamaSize,
+      nomorFontSize: finalNomorSize,
+      showUnderline: finalShowUnderline
     });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename="Sample_Certificate_Preview.pdf"');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.setHeader('Content-Length', pdfBuffer.length);
     res.send(Buffer.from(pdfBuffer));
   } catch (error) {
@@ -819,11 +862,7 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
     const event = (empEvtId ? await sqliteDb.getEventById(empEvtId) : await sqliteDb.getActiveEvent()) || {};
     const certConfig = event.certSettings || {};
 
-    let templatePath = null;
-    if (event.certificateTemplate?.filePath) {
-      const p = path.join(BASE_DIR, event.certificateTemplate.filePath.replace(/^\//, ''));
-      if (fs.existsSync(p)) templatePath = p;
-    }
+    const templatePath = resolveTemplatePath(event.certificateTemplate?.filePath);
 
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
@@ -847,7 +886,8 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
       nomorYRatio: certConfig.nomorYRatio || 0.72,
       namaYRatio: certConfig.namaYRatio || 0.50,
       namaFontSize: certConfig.namaFontSize || 26,
-      nomorFontSize: certConfig.nomorFontSize || 11
+      nomorFontSize: certConfig.nomorFontSize || 11,
+      showUnderline: certConfig.showUnderline !== false
     });
 
     const isDownload = req.query.download === 'true';
@@ -855,6 +895,9 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `${isDownload ? 'attachment' : 'inline'}; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.setHeader('Content-Length', pdfBuffer.length);
     res.send(Buffer.from(pdfBuffer));
   } catch (error) {
