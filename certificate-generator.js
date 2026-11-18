@@ -45,12 +45,35 @@ async function generateCertificatePdf({
   let page;
   let isCustomTemplate = false;
 
-  const ext = templatePath ? path.extname(templatePath).toLowerCase() : '';
+  let templateBytes = null;
+  let ext = '';
+
+  if (templatePath) {
+    if (templatePath.startsWith('http://') || templatePath.startsWith('https://')) {
+      try {
+        const resp = await fetch(templatePath);
+        if (resp.ok) {
+          const ab = await resp.arrayBuffer();
+          templateBytes = Buffer.from(ab);
+          const cleanUrl = templatePath.split('?')[0];
+          ext = path.extname(cleanUrl).toLowerCase();
+        }
+      } catch (fErr) {
+        console.warn('Gagal mengunduh template dari Cloud Storage:', fErr.message);
+      }
+    } else if (fs.existsSync(templatePath)) {
+      try {
+        templateBytes = fs.readFileSync(templatePath);
+        ext = path.extname(templatePath).toLowerCase();
+      } catch (rErr) {
+        console.warn('Gagal membaca template lokal:', rErr.message);
+      }
+    }
+  }
 
   // KONDISI 1: Template adalah Dokumen PDF
-  if (templatePath && fs.existsSync(templatePath) && ext === '.pdf') {
+  if (templateBytes && ext === '.pdf') {
     try {
-      const templateBytes = fs.readFileSync(templatePath);
       doc = await PDFDocument.load(templateBytes, { ignoreEncryption: true });
       const pages = doc.getPages();
       if (pages.length > 0) {
@@ -63,23 +86,22 @@ async function generateCertificatePdf({
   }
 
   // KONDISI 2: Template adalah Foto / Gambar (PNG / JPG / JPEG)
-  else if (templatePath && fs.existsSync(templatePath) && ['.png', '.jpg', '.jpeg'].includes(ext)) {
+  else if (templateBytes && ['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
     try {
-      const imageBytes = fs.readFileSync(templatePath);
       doc = await PDFDocument.create();
 
       let image = null;
       if (ext === '.png') {
         try {
-          image = await doc.embedPng(imageBytes);
+          image = await doc.embedPng(templateBytes);
         } catch (ePng) {
-          image = await doc.embedJpg(imageBytes);
+          image = await doc.embedJpg(templateBytes);
         }
       } else {
         try {
-          image = await doc.embedJpg(imageBytes);
+          image = await doc.embedJpg(templateBytes);
         } catch (eJpg) {
-          image = await doc.embedPng(imageBytes);
+          image = await doc.embedPng(templateBytes);
         }
       }
 

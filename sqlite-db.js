@@ -8,6 +8,7 @@
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
+const supabaseAdapter = require('./supabase-adapter');
 
 const IS_VERCEL = Boolean(process.env.VERCEL);
 const BASE_DIR = __dirname;
@@ -386,6 +387,9 @@ async function initDb() {
 
 // EMPLOYEES
 async function getAllEmployees() {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.getAllEmployees();
+  }
   if (useSqlite) {
     const rows = await all('SELECT * FROM employees ORDER BY id ASC');
     return rows.map(formatEmployee);
@@ -397,6 +401,9 @@ async function getAllEmployees() {
 
 async function getEmployeeByIdOrNip(idOrNip) {
   if (!idOrNip) return null;
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.getEmployeeByIdOrNip(idOrNip);
+  }
   const clean = String(idOrNip).trim();
   if (useSqlite) {
     const row = await get('SELECT * FROM employees WHERE id = ? OR nip = ?', [clean, clean]);
@@ -408,6 +415,9 @@ async function getEmployeeByIdOrNip(idOrNip) {
 }
 
 async function markEmployeeAttended(employeeId, eventId, eventTitle) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.markEmployeeAttended(employeeId, eventId, eventTitle);
+  }
   const now = new Date().toISOString();
   if (useSqlite) {
     const existing = await getEmployeeByIdOrNip(employeeId);
@@ -470,6 +480,9 @@ async function markEmployeeAttended(employeeId, eventId, eventTitle) {
 }
 
 async function updateEmployeeLpti(employeeId, lptiData) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.updateEmployeeLpti(employeeId, lptiData);
+  }
   const uploadedAt = lptiData.uploadedAt || new Date().toISOString();
   if (useSqlite) {
     await run(`
@@ -519,6 +532,9 @@ async function updateEmployeeLpti(employeeId, lptiData) {
 }
 
 async function verifyEmployeeLpti(employeeId, certData = null, revisionNote = null) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.verifyEmployeeLpti(employeeId, certData, revisionNote);
+  }
   if (certData) {
     if (useSqlite) {
       await run(`
@@ -596,6 +612,9 @@ async function verifyEmployeeLpti(employeeId, certData = null, revisionNote = nu
 
 // EVENTS
 async function getAllEvents() {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.getAllEvents();
+  }
   if (useSqlite) {
     const rows = await all('SELECT * FROM events ORDER BY created_at DESC');
     return rows.map(formatEvent);
@@ -606,6 +625,9 @@ async function getAllEvents() {
 }
 
 async function getActiveEvent() {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.getActiveEvent();
+  }
   if (useSqlite) {
     const row = await get('SELECT * FROM events WHERE active = 1 ORDER BY updated_at DESC, created_at DESC LIMIT 1');
     if (row) return formatEvent(row);
@@ -626,6 +648,9 @@ async function getActiveEvent() {
 
 async function getEventById(id) {
   if (!id) return null;
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.getEventById(id);
+  }
   if (useSqlite) {
     const row = await get('SELECT * FROM events WHERE id = ?', [id]);
     return formatEvent(row);
@@ -636,6 +661,9 @@ async function getEventById(id) {
 }
 
 async function saveEvent(eventData, isNew = false) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.saveEvent(eventData, isNew);
+  }
   const now = new Date().toISOString();
   const shouldBeNew = Boolean(isNew || eventData.isNew || !eventData.id || eventData.id === 'new');
 
@@ -755,6 +783,9 @@ async function saveEvent(eventData, isNew = false) {
 }
 
 async function activateEventById(eventId) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.activateEventById(eventId);
+  }
   const now = new Date().toISOString();
   if (useSqlite) {
     await run('UPDATE events SET active = 0');
@@ -782,6 +813,9 @@ async function activateEventById(eventId) {
 }
 
 async function completeEventById(eventId) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.completeEventById(eventId);
+  }
   const now = new Date().toISOString();
   if (useSqlite) {
     await run(`
@@ -910,6 +944,9 @@ async function syncEvents(clientEvents) {
 }
 
 async function deleteEventById(eventId) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.deleteEventById(eventId);
+  }
   if (useSqlite) {
     await run('DELETE FROM events WHERE id = ?', [eventId]);
     const remaining = await get('SELECT * FROM events ORDER BY created_at DESC LIMIT 1');
@@ -948,6 +985,9 @@ async function toggleActiveEventStatus() {
 }
 
 async function updateEventTemplate(eventId, templateData) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.updateEventTemplate(eventId, templateData);
+  }
   const serialized = templateData ? JSON.stringify(templateData) : null;
   if (useSqlite) {
     if (eventId) {
@@ -971,6 +1011,9 @@ async function updateEventTemplate(eventId, templateData) {
 }
 
 async function updateEventCertSettings(eventId, certSettings) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.updateEventCertSettings(eventId, certSettings);
+  }
   const serialized = JSON.stringify(certSettings);
   const now = new Date().toISOString();
   if (useSqlite) {
@@ -1006,6 +1049,9 @@ async function updateEventCertSettings(eventId, certSettings) {
 
 // ADMIN AUTH
 async function verifyAdminCredentials(username, password) {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.verifyAdminCredentials(username, password);
+  }
   if (useSqlite) {
     const admin = await get('SELECT id, username, name, role FROM admins WHERE username = ? AND password = ?', [username, password]);
     return admin || null;
@@ -1036,6 +1082,9 @@ async function getSystemSettings() {
 
 // RESET TESTING DATA (Jaga semua 104 NIP Pegawai tetap utuh)
 async function resetTestingData() {
+  if (supabaseAdapter.isSupabaseAvailable()) {
+    return await supabaseAdapter.resetTestingData();
+  }
   if (useSqlite) {
     await run(`
       UPDATE employees SET

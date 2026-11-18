@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { generateCertificatePdf } = require('./certificate-generator');
 const sqliteDb = require('./sqlite-db');
+const supabaseAdapter = require('./supabase-adapter');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -560,12 +561,23 @@ app.post('/api/event/upload-template', (req, res) => {
     const ext = path.extname(req.file.originalname).toLowerCase();
     const fileType = ext === '.pdf' ? 'pdf' : 'image';
 
+    let templateFilePath = `/uploads/templates/${req.file.filename}`;
+    if (supabaseAdapter.isSupabaseAvailable() && fs.existsSync(req.file.path)) {
+      try {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const storageUrl = await supabaseAdapter.uploadToStorage('templates', req.file.filename, fileBuffer, req.file.mimetype);
+        if (storageUrl) templateFilePath = storageUrl;
+      } catch (storageErr) {
+        console.warn('Gagal upload template ke Supabase Storage:', storageErr.message);
+      }
+    }
+
     const newTemplate = {
       hasCustomTemplate: true,
       fileType: fileType,
       fileName: req.file.filename,
       fileOriginalName: req.file.originalname,
-      filePath: `/uploads/templates/${req.file.filename}`,
+      filePath: templateFilePath,
       fileSize: req.file.size,
       uploadedAt: new Date().toISOString()
     };
@@ -583,6 +595,9 @@ app.post('/api/event/upload-template', (req, res) => {
 
 function resolveTemplatePath(filePath) {
   if (!filePath) return null;
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath; // Supabase Cloud Storage public URL
+  }
   const cleanPath = String(filePath).replace(/^\//, '');
   const basename = path.basename(filePath);
   const candidates = [
@@ -751,10 +766,21 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
       });
     }
 
+    let uploadedFilePath = `/uploads/lpti/${req.file.filename}`;
+    if (supabaseAdapter.isSupabaseAvailable() && fs.existsSync(req.file.path)) {
+      try {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const storageUrl = await supabaseAdapter.uploadToStorage('lpti', req.file.filename, fileBuffer, req.file.mimetype);
+        if (storageUrl) uploadedFilePath = storageUrl;
+      } catch (storageErr) {
+        console.warn('Gagal upload LPTI ke Supabase Storage:', storageErr.message);
+      }
+    }
+
     const updatedEmployee = await sqliteDb.updateEmployeeLpti(employee.id, {
       fileName: req.file.filename,
       fileOriginalName: req.file.originalname,
-      filePath: `/uploads/lpti/${req.file.filename}`,
+      filePath: uploadedFilePath,
       fileSize: req.file.size
     });
 
