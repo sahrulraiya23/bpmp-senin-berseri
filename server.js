@@ -392,16 +392,27 @@ app.post('/api/presensi/verify-token', async (req, res) => {
   // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini
   const isAlreadyAttendedThisEvent = Boolean(employee.attended && employee.eventId === activeEvent.id);
   if (isAlreadyAttendedThisEvent) {
+    let finalEmp = employee;
+    if (!employee.accumulatedJp || employee.accumulatedJp === 0) {
+      if (typeof sqliteDb.ensureEmployeeJp === 'function') {
+        finalEmp = await sqliteDb.ensureEmployeeJp(employee.id, activeEvent.jp || 32);
+      }
+    }
     return res.json({
       success: true,
       alreadyAttended: true,
       message: `Pegawai ${employee.name} sudah tercatat HADIR sebelumnya pada kegiatan "${activeEvent.title}".`,
-      employee: employee,
+      employee: finalEmp || employee,
       event: activeEvent
     });
   }
 
-  const updatedEmployee = await sqliteDb.markEmployeeAttended(employee.id, activeEvent.id, activeEvent.title);
+  const updatedEmployee = await sqliteDb.markEmployeeAttended(
+    employee.id,
+    activeEvent.id,
+    activeEvent.title,
+    activeEvent.jp || 32
+  );
 
   return res.json({
     success: true,

@@ -1123,22 +1123,32 @@
 
     // 6. Render Profil & Presensi Peserta
     function renderEmployeeProfile(emp) {
+      if (!emp) return;
       const initial = emp.name ? emp.name.charAt(0).toUpperCase() : 'P';
       document.getElementById('empAvatarInitial').textContent = initial;
       document.getElementById('empName').textContent = emp.name;
       document.getElementById('empNip').textContent = `NIP: ${emp.nip}`;
-      document.getElementById('empJabatan').textContent = emp.position || '-';
-      document.getElementById('empPanggol').textContent = emp.rank || '-';
-      document.getElementById('empInstansi').textContent = emp.institution || 'BPMP Prov. Sultra';
-      document.getElementById('empAccumulatedJp').textContent = `${emp.accumulatedJp || 0} JP`;
+      document.getElementById('empJabatan').textContent = emp.position || emp.jabatan || '-';
+      document.getElementById('empPanggol').textContent = emp.rank || emp.panggol || '-';
+      document.getElementById('empInstansi').textContent = emp.institution || emp.instansi || 'BPMP Prov. Sultra';
 
-      // Cek Kehadiran pada Event Aktif
+      // Cek Kehadiran pada Event Aktif (Dukung boolean emp.attended & objek emp.attendance)
       const isAttendedThisEvent = Boolean(
-        emp.attendance && (
-          (currentEvent && emp.attendance[currentEvent.id]) ||
+        emp.attended ||
+        (emp.attendance && (
+          (currentEvent && (
+            emp.attendance[currentEvent.id] === true ||
+            emp.attendance[currentEvent.id]?.status === 'present'
+          )) ||
           emp.attendance.status === 'present'
-        )
+        ))
       );
+
+      // Pastikan Total JP terisi dan terupdate realtime
+      const finalJp = Number(emp.accumulatedJp) > 0
+        ? Number(emp.accumulatedJp)
+        : (isAttendedThisEvent ? (Number(currentEvent?.jp) || 32) : 0);
+      document.getElementById('empAccumulatedJp').textContent = `${finalJp} JP`;
 
       const attBadge = document.getElementById('empAttendanceBadge');
       const actionBox = document.getElementById('attendanceActionBox');
@@ -1150,8 +1160,22 @@
         actionBox.classList.add('d-none');
         successBox.classList.remove('d-none');
         
-        const attObj = currentEvent ? emp.attendance[currentEvent.id] : emp.attendance;
-        const timeStr = (typeof attObj === 'object' && attObj?.time) ? attObj.time : 'Pukul 08:30:00 WITA';
+        let timeStr = 'Pukul 08:30:00 WITA';
+        if (emp.attendedAt) {
+          try {
+            const d = new Date(emp.attendedAt);
+            timeStr = !isNaN(d.getTime())
+              ? 'Pukul ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+              : String(emp.attendedAt);
+          } catch (e) {
+            timeStr = String(emp.attendedAt);
+          }
+        } else if (emp.attendance && typeof emp.attendance === 'object') {
+          const attObj = currentEvent ? emp.attendance[currentEvent.id] : emp.attendance;
+          if (attObj && typeof attObj === 'object' && attObj.time) {
+            timeStr = attObj.time;
+          }
+        }
         document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${timeStr}`;
       } else {
         attBadge.className = 'badge badge-secondary px-2.5 py-1 font-weight-bold';
@@ -1270,7 +1294,10 @@
         if (result.success) {
           showToast(result.message, 'success');
           if (result.event) currentEvent = result.event;
-          if (result.employee) currentAuthUser = result.employee;
+          if (result.employee) {
+            currentAuthUser = result.employee;
+            renderEmployeeProfile(currentAuthUser);
+          }
           await syncCurrentProfile();
           window.history.replaceState({}, '', '/');
         } else {

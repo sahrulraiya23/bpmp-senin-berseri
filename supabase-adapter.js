@@ -57,6 +57,30 @@ const supabase = new Proxy({}, {
 // ==============================================================
 function formatSupabaseEmployee(row) {
   if (!row) return null;
+  const isAttended = Boolean(row.attended);
+  let timeStr = null;
+  if (row.attended_at) {
+    try {
+      const d = new Date(row.attended_at);
+      timeStr = !isNaN(d.getTime())
+        ? 'Pukul ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+        : String(row.attended_at);
+    } catch (e) {
+      timeStr = String(row.attended_at);
+    }
+  }
+
+  const attendanceObj = {
+    status: isAttended ? 'present' : 'absent',
+    time: timeStr || (isAttended ? 'Pukul 08:30:00 WITA' : null)
+  };
+  if (row.event_id) {
+    attendanceObj[row.event_id] = {
+      status: isAttended ? 'present' : 'absent',
+      time: timeStr || (isAttended ? 'Pukul 08:30:00 WITA' : null)
+    };
+  }
+
   return {
     id: row.id,
     nip: row.nip,
@@ -68,8 +92,9 @@ function formatSupabaseEmployee(row) {
     pendidikan: row.pendidikan || '',
     eventId: row.event_id || null,
     eventTitle: row.event_title || null,
-    attended: Boolean(row.attended),
+    attended: isAttended,
     attendedAt: row.attended_at || null,
+    attendance: attendanceObj,
     accumulatedJp: Number(row.accumulated_jp) || 0,
     lpti: {
       status: row.lpti_status || 'none',
@@ -150,8 +175,23 @@ async function getEmployeeByIdOrNip(idOrNip) {
   return formatSupabaseEmployee(data);
 }
 
-async function markEmployeeAttended(id, eventId, eventTitle) {
+async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32) {
   const now = new Date().toISOString();
+  const clean = String(id).trim();
+  const jpToAdd = parseInt(eventJp, 10) || 32;
+
+  // Ambil pegawai untuk cek accumulated_jp terkini
+  const { data: existing } = await supabase
+    .from('employees')
+    .select('id, accumulated_jp')
+    .or(`id.eq."${clean}",nip.eq."${clean}"`)
+    .limit(1)
+    .maybeSingle();
+
+  const currentJp = Number(existing?.accumulated_jp) || 0;
+  const newJp = currentJp > 0 ? currentJp + jpToAdd : jpToAdd;
+  const targetId = existing?.id || id;
+
   const { data, error } = await supabase
     .from('employees')
     .update({
@@ -159,9 +199,10 @@ async function markEmployeeAttended(id, eventId, eventTitle) {
       attended_at: now,
       event_id: eventId || null,
       event_title: eventTitle || null,
+      accumulated_jp: newJp,
       updated_at: now
     })
-    .eq('id', id)
+    .eq('id', targetId)
     .select()
     .single();
 

@@ -161,6 +161,30 @@ async function all(sql, params = []) {
 
 function formatEmployee(row) {
   if (!row) return null;
+  const isAttended = Boolean(row.attended);
+  let timeStr = null;
+  if (row.attended_at) {
+    try {
+      const d = new Date(row.attended_at);
+      timeStr = !isNaN(d.getTime())
+        ? 'Pukul ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+        : String(row.attended_at);
+    } catch (e) {
+      timeStr = String(row.attended_at);
+    }
+  }
+
+  const attendanceObj = {
+    status: isAttended ? 'present' : 'absent',
+    time: timeStr || (isAttended ? 'Pukul 08:30:00 WITA' : null)
+  };
+  if (row.event_id) {
+    attendanceObj[row.event_id] = {
+      status: isAttended ? 'present' : 'absent',
+      time: timeStr || (isAttended ? 'Pukul 08:30:00 WITA' : null)
+    };
+  }
+
   return {
     id: row.id,
     nip: row.nip,
@@ -172,9 +196,10 @@ function formatEmployee(row) {
     pendidikan: row.pendidikan,
     eventId: row.event_id,
     eventTitle: row.event_title,
-    attended: Boolean(row.attended),
+    attended: isAttended,
     attendedAt: row.attended_at,
-    accumulatedJp: row.accumulated_jp || 0,
+    attendance: attendanceObj,
+    accumulatedJp: Number(row.accumulated_jp) || 0,
     lpti: {
       status: row.lpti_status || 'none',
       fileName: row.lpti_file_name,
@@ -426,11 +451,13 @@ async function getEmployeeByIdOrNip(idOrNip) {
   }
 }
 
-async function markEmployeeAttended(employeeId, eventId, eventTitle) {
+async function markEmployeeAttended(employeeId, eventId, eventTitle, eventJp = 32) {
   if (supabaseAdapter.isSupabaseAvailable()) {
-    return await supabaseAdapter.markEmployeeAttended(employeeId, eventId, eventTitle);
+    return await supabaseAdapter.markEmployeeAttended(employeeId, eventId, eventTitle, eventJp);
   }
   const now = new Date().toISOString();
+  const jpToAdd = parseInt(eventJp, 10) || 32;
+
   if (useSqlite) {
     const existing = await getEmployeeByIdOrNip(employeeId);
     const isNewEvent = Boolean(existing && existing.eventId !== eventId);
@@ -442,6 +469,7 @@ async function markEmployeeAttended(employeeId, eventId, eventTitle) {
           attended_at = ?,
           event_id = ?,
           event_title = ?,
+          accumulated_jp = CASE WHEN accumulated_jp IS NULL OR accumulated_jp = 0 THEN ? ELSE accumulated_jp + ? END,
           lpti_status = 'none',
           lpti_file_name = NULL,
           lpti_file_original_name = NULL,
@@ -452,12 +480,17 @@ async function markEmployeeAttended(employeeId, eventId, eventTitle) {
           certificate_number = NULL,
           certificate_issued_at = NULL
         WHERE id = ? OR nip = ?
-      `, [now, eventId, eventTitle, employeeId, employeeId]);
+      `, [now, eventId, eventTitle, jpToAdd, jpToAdd, employeeId, employeeId]);
     } else {
-      await run(
-        'UPDATE employees SET attended = 1, attended_at = ?, event_id = ?, event_title = ? WHERE id = ? OR nip = ?',
-        [now, eventId, eventTitle, employeeId, employeeId]
-      );
+      await run(`
+        UPDATE employees SET
+          attended = 1,
+          attended_at = ?,
+          event_id = ?,
+          event_title = ?,
+          accumulated_jp = CASE WHEN accumulated_jp IS NULL OR accumulated_jp = 0 THEN ? ELSE accumulated_jp + ? END
+        WHERE id = ? OR nip = ?
+      `, [now, eventId, eventTitle, jpToAdd, jpToAdd, employeeId, employeeId]);
     }
     return getEmployeeByIdOrNip(employeeId);
   } else {
@@ -470,6 +503,8 @@ async function markEmployeeAttended(employeeId, eventId, eventTitle) {
       emp.attendedAt = now;
       emp.eventId = eventId;
       emp.eventTitle = eventTitle;
+      const currentJp = Number(emp.accumulatedJp) || 0;
+      emp.accumulatedJp = currentJp > 0 ? currentJp + jpToAdd : jpToAdd;
 
       if (isNewEvent) {
         emp.lpti = {
@@ -485,7 +520,31 @@ async function markEmployeeAttended(employeeId, eventId, eventTitle) {
       }
 
       writeJson(dbData);
-      return emp;
+      return formatEmployee(emp);
+    }
+    return null;
+  }
+}
+
+async function ensureEmployeeJp(employeeId, eventJp = 32) {
+  const jpToAdd = parseInt(eventJp, 10) || 32;
+  if (useSqlite) {
+    await run(`
+      UPDATE employees SET
+        accumulated_jp = CASE WHEN accumulated_jp IS NULL OR accumulated_jp = 0 THEN ? ELSE accumulated_jp END
+      WHERE id = ? OR nip = ?
+    `, [jpToAdd, employeeId, employeeId]);
+    return getEmployeeByIdOrNip(employeeId);
+  } else {
+    const dbData = readJson();
+    const clean = String(employeeId).trim();
+    const emp = (dbData.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
+    if (emp) {
+      if (!emp.accumulatedJp || emp.accumulatedJp === 0) {
+        emp.accumulatedJp = jpToAdd;
+        writeJson(dbData);
+      }
+      return formatEmployee(emp);
     }
     return null;
   }
@@ -1153,6 +1212,7 @@ module.exports = {
   getAllEmployees,
   getEmployeeByIdOrNip,
   markEmployeeAttended,
+  ensureEmployeeJp,
   updateEmployeeLpti,
   verifyEmployeeLpti,
   getAllEvents,
