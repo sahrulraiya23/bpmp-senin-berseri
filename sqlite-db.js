@@ -400,20 +400,58 @@ async function getEmployeeByIdOrNip(idOrNip) {
 async function markEmployeeAttended(employeeId, eventId, eventTitle) {
   const now = new Date().toISOString();
   if (useSqlite) {
-    await run(
-      'UPDATE employees SET attended = 1, attended_at = ?, event_id = ?, event_title = ? WHERE id = ? OR nip = ?',
-      [now, eventId, eventTitle, employeeId, employeeId]
-    );
+    const existing = await getEmployeeByIdOrNip(employeeId);
+    const isNewEvent = Boolean(existing && existing.eventId !== eventId);
+
+    if (isNewEvent) {
+      await run(`
+        UPDATE employees SET
+          attended = 1,
+          attended_at = ?,
+          event_id = ?,
+          event_title = ?,
+          lpti_status = 'none',
+          lpti_file_name = NULL,
+          lpti_file_original_name = NULL,
+          lpti_file_path = NULL,
+          lpti_file_size = NULL,
+          lpti_uploaded_at = NULL,
+          lpti_revision_note = '',
+          certificate_number = NULL,
+          certificate_issued_at = NULL
+        WHERE id = ? OR nip = ?
+      `, [now, eventId, eventTitle, employeeId, employeeId]);
+    } else {
+      await run(
+        'UPDATE employees SET attended = 1, attended_at = ?, event_id = ?, event_title = ? WHERE id = ? OR nip = ?',
+        [now, eventId, eventTitle, employeeId, employeeId]
+      );
+    }
     return getEmployeeByIdOrNip(employeeId);
   } else {
     const dbData = readJson();
     const clean = String(employeeId).trim();
     const emp = (dbData.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
     if (emp) {
+      const isNewEvent = Boolean(emp.eventId !== eventId);
       emp.attended = true;
       emp.attendedAt = now;
       emp.eventId = eventId;
       emp.eventTitle = eventTitle;
+
+      if (isNewEvent) {
+        emp.lpti = {
+          status: 'none',
+          fileName: null,
+          fileOriginalName: null,
+          filePath: null,
+          fileSize: null,
+          uploadedAt: null,
+          revisionNote: ''
+        };
+        emp.certificate = null;
+      }
+
       writeJson(dbData);
       return emp;
     }
@@ -983,8 +1021,8 @@ async function resetTestingData() {
         attended = 0,
         attended_at = NULL,
         accumulated_jp = 0,
-        eventId = NULL,
-        eventTitle = NULL,
+        event_id = NULL,
+        event_title = NULL,
         lpti_status = 'none',
         lpti_file_name = NULL,
         lpti_file_original_name = NULL,

@@ -348,12 +348,20 @@ app.post('/api/auth/login', async (req, res) => {
 // PRESENSI SCAN TOKEN (AULA PROYEKTOR)
 // ========================================================
 app.post('/api/presensi/verify-token', async (req, res) => {
-  const { employeeId, token } = req.body;
+  const { employeeId, token, eventId } = req.body;
   if (!employeeId || !token) {
     return res.status(400).json({ success: false, message: 'Identitas Pegawai dan Kode Token QR wajib diisi!' });
   }
 
-  const activeEvent = await sqliteDb.getActiveEvent();
+  let activeEvent = null;
+  const requestedId = eventId || req.query.eventId || req.query.id;
+  if (requestedId) {
+    activeEvent = await sqliteDb.getEventById(requestedId);
+  }
+  if (!activeEvent || !activeEvent.title) {
+    activeEvent = await sqliteDb.getActiveEvent();
+  }
+
   if (!activeEvent || !activeEvent.title) {
     return res.status(400).json({
       success: false,
@@ -368,7 +376,7 @@ app.post('/api/presensi/verify-token', async (req, res) => {
   if (!isValid) {
     return res.status(400).json({
       success: false,
-      message: 'Token QR tidak valid atau telah kedaluwarsa (>30 detik). Silakan scan langsung dari layar proyektor aula!'
+      message: `Token QR (${cleanToken}) tidak cocok atau telah kedaluwarsa (>30 detik) untuk kegiatan "${activeEvent.title}". Silakan scan langsung dari layar proyektor aula!`
     });
   }
 
@@ -377,12 +385,15 @@ app.post('/api/presensi/verify-token', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
   }
 
-  if (employee.attended) {
+  // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini
+  const isAlreadyAttendedThisEvent = Boolean(employee.attended && employee.eventId === activeEvent.id);
+  if (isAlreadyAttendedThisEvent) {
     return res.json({
       success: true,
       alreadyAttended: true,
-      message: `Pegawai ${employee.name} sudah tercatat HADIR sebelumnya pada kegiatan ini.`,
-      employee: employee
+      message: `Pegawai ${employee.name} sudah tercatat HADIR sebelumnya pada kegiatan "${activeEvent.title}".`,
+      employee: employee,
+      event: activeEvent
     });
   }
 
@@ -391,7 +402,8 @@ app.post('/api/presensi/verify-token', async (req, res) => {
   return res.json({
     success: true,
     message: `Presensi Berhasil! Status kehadiran ${employee.name} kini resmi HADIR pada kegiatan "${activeEvent.title}".`,
-    employee: updatedEmployee
+    employee: updatedEmployee,
+    event: activeEvent
   });
 });
 
@@ -656,8 +668,15 @@ app.get('/api/employees', async (req, res) => {
 app.get('/api/employees/:id', async (req, res) => {
   const emp = await sqliteDb.getEmployeeByIdOrNip(req.params.id);
   if (!emp) return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
-  const activeEvent = await sqliteDb.getActiveEvent();
-  res.json({ success: true, employee: emp, event: activeEvent });
+  let targetEvent = null;
+  const requestedEventId = req.query.eventId || req.query.event;
+  if (requestedEventId) {
+    targetEvent = await sqliteDb.getEventById(requestedEventId);
+  }
+  if (!targetEvent) {
+    targetEvent = await sqliteDb.getActiveEvent();
+  }
+  res.json({ success: true, employee: emp, event: targetEvent });
 });
 
 app.post('/api/employees/:id/upload-lpti', (req, res) => {

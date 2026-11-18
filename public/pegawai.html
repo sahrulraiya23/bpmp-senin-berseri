@@ -922,6 +922,7 @@
     let currentAuthUser = null;
     let currentEvent = null;
     let pendingScannedToken = null;
+    let pendingScannedEventId = null;
     let pollInterval = null;
     let html5QrScanner = null;
     let currentCameraFacing = 'environment';
@@ -990,8 +991,9 @@
 
           // Jika ada token yang dipindai kamera HP sebelum login, langsung eksekusi presensi otomatis
           if (pendingScannedToken) {
-            await executeAutoPresence(pendingScannedToken);
+            await executeAutoPresence(pendingScannedToken, pendingScannedEventId);
             pendingScannedToken = null;
+            pendingScannedEventId = null;
           }
         } else {
           showToast(data.message || 'Login gagal. Periksa kembali NIP & Password Anda.', 'error');
@@ -1040,11 +1042,33 @@
     async function syncCurrentProfile() {
       if (!currentAuthUser) return;
       try {
-        const res = await fetch(`/api/employees/${currentAuthUser.nip}`);
+        let localEvents = [];
+        try {
+          const cached = localStorage.getItem('bpmp_events_cache');
+          if (cached) localEvents = JSON.parse(cached);
+        } catch (e) {}
+
+        const queryEv = currentEvent?.id ? `?eventId=${encodeURIComponent(currentEvent.id)}` : '';
+        const res = await fetch(`/api/employees/${currentAuthUser.nip}${queryEv}`);
         const data = await res.json();
         if (data.success && data.employee) {
+          let ev = data.event;
+          if (localEvents.length > 0 && (!ev || !ev.title)) {
+            try {
+              const syncRes = await fetch('/api/events/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ events: localEvents })
+              });
+              const syncData = await syncRes.json();
+              if (syncData.success && syncData.event) {
+                ev = syncData.event;
+              }
+            } catch (sErr) {}
+          }
+
           currentAuthUser = data.employee;
-          if (data.event) currentEvent = data.event;
+          if (ev) currentEvent = ev;
           renderEmployeeProfile(currentAuthUser);
           renderEventBanner(currentEvent);
         }
@@ -1073,20 +1097,20 @@
       document.getElementById('empInstansi').textContent = emp.instansi || 'BPMP Prov. Sultra';
       document.getElementById('empAccumulatedJp').textContent = `${emp.accumulatedJp || 0} JP`;
 
-      // Status Kehadiran
-      const isAttended = Boolean(emp.attended);
+      // Status Kehadiran KHUSUS pada event yang aktif saat ini
+      const isAttendedThisEvent = Boolean(emp.attended && currentEvent && emp.eventId === currentEvent.id);
       const badge = document.getElementById('empAttendanceBadge');
       const actionBox = document.getElementById('attendanceActionBox');
       const successBox = document.getElementById('attendanceSuccessBox');
 
-      if (isAttended) {
+      if (isAttendedThisEvent) {
         badge.className = 'badge badge-success px-2.5 py-1 font-weight-bold';
         badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> SUDAH HADIR';
         actionBox.classList.add('d-none');
         successBox.classList.remove('d-none');
         if (emp.attendedAt) {
           const d = new Date(emp.attendedAt);
-          document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${d.toLocaleDateString('id-ID')} pukul ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA`;
+          document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${d.toLocaleDateString('id-ID')} pukul ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA (${currentEvent.title})`;
         }
       } else {
         badge.className = 'badge badge-secondary px-2.5 py-1 font-weight-bold';
@@ -1096,20 +1120,20 @@
       }
 
       // Render Status Berkas LPTI & Sertifikat
-      renderLptiStatus(emp.lpti);
-      renderCertificateSection(emp);
+      renderLptiStatus(emp.lpti, isAttendedThisEvent);
+      renderCertificateSection(emp, isAttendedThisEvent);
     }
 
     // 5. Render Status Berkas LPTI
-    function renderLptiStatus(lpti) {
-      const status = lpti?.status || 'none';
+    function renderLptiStatus(lpti, isAttendedThisEvent = false) {
+      const status = (isAttendedThisEvent && lpti) ? (lpti.status || 'none') : 'none';
       const pill = document.getElementById('lptiStatusPill');
       const revBox = document.getElementById('revisionAlertBox');
       const docCard = document.getElementById('currentUploadedDocCard');
       const docLink = document.getElementById('currentUploadedLink');
       const btnPreview = document.getElementById('btnPreviewPdf');
 
-      if (lpti && lpti.filePath) {
+      if (isAttendedThisEvent && lpti && lpti.filePath) {
         docCard.classList.remove('d-none');
         docLink.textContent = lpti.fileOriginalName || lpti.fileName;
         docLink.href = lpti.filePath;
@@ -1127,7 +1151,7 @@
       } else if (status === 'revision') {
         pill.innerHTML = `<span class="badge badge-danger px-2.5 py-1 font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Perlu Revisi</span>`;
         revBox.classList.remove('d-none');
-        document.getElementById('revisionNoteContent').textContent = lpti.revisionNote || 'Mohon periksa kembali kelengkapan lembar pengesahan berkas LPTI.';
+        document.getElementById('revisionNoteContent').textContent = (lpti && lpti.revisionNote) || 'Mohon periksa kembali kelengkapan lembar pengesahan berkas LPTI.';
       } else if (status === 'approved') {
         pill.innerHTML = `<span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="fas fa-check-circle mr-1"></i> Disetujui Admin!</span>`;
         revBox.classList.add('d-none');
@@ -1135,8 +1159,14 @@
     }
 
     // 6. Render Status E-Sertifikat
-    function renderCertificateSection(emp) {
-      const isApproved = (emp.lpti?.status === 'approved' && Boolean(emp.certificate));
+    function renderCertificateSection(emp, isAttendedThisEvent = false) {
+      const isApproved = Boolean(
+        isAttendedThisEvent &&
+        emp.lpti?.status === 'approved' &&
+        emp.certificate &&
+        currentEvent &&
+        emp.eventId === currentEvent.id
+      );
       const lockedView = document.getElementById('certLockedView');
       const unlockedView = document.getElementById('certUnlockedView');
       const lockedReason = document.getElementById('certLockedReason');
@@ -1153,8 +1183,9 @@
         lockedView.classList.remove('d-none');
         unlockedView.classList.add('d-none');
 
-        if (!emp.attended) {
-          lockedReason.textContent = 'Presensi kehadiran di aula belum dilakukan. Silakan validasi token QR terlebih dahulu.';
+        if (!isAttendedThisEvent) {
+          const evName = currentEvent ? `"${currentEvent.title}"` : 'kegiatan ini';
+          lockedReason.textContent = `Presensi kehadiran di aula untuk ${evName} belum dilakukan. Silakan validasi token QR atau scan kamera terlebih dahulu.`;
         } else if (!emp.lpti || emp.lpti.status === 'none') {
           lockedReason.textContent = 'Berkas LPTI belum diunggah. Unggah laporan format PDF Anda untuk diverifikasi Admin.';
         } else if (emp.lpti.status === 'pending') {
@@ -1176,23 +1207,30 @@
         return;
       }
 
-      await executeAutoPresence(token);
+      await executeAutoPresence(token, currentEvent?.id);
       tokenInput.value = '';
     }
 
-    async function executeAutoPresence(token) {
+    async function executeAutoPresence(token, targetEventId) {
       if (!currentAuthUser) return;
       const cleanToken = token.trim().toUpperCase();
+      const eventIdToSend = targetEventId || currentEvent?.id;
 
       try {
         const res = await fetch('/api/presensi/verify-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ employeeId: currentAuthUser.nip, token: cleanToken })
+          body: JSON.stringify({
+            employeeId: currentAuthUser.nip,
+            token: cleanToken,
+            eventId: eventIdToSend
+          })
         });
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
+          if (result.event) currentEvent = result.event;
+          if (result.employee) currentAuthUser = result.employee;
           await syncCurrentProfile();
           window.history.replaceState({}, '', '/pegawai');
         } else {
@@ -1205,11 +1243,12 @@
 
     async function autoFillCurrentToken() {
       try {
-        const res = await fetch('/api/qr/current');
+        const queryEv = currentEvent?.id ? `?eventId=${encodeURIComponent(currentEvent.id)}` : '';
+        const res = await fetch(`/api/qr/current${queryEv}`);
         const data = await res.json();
         if (data.success && data.token) {
           document.getElementById('inputPresenceToken').value = data.token;
-          showToast(`Token aktif aula "${data.token}" berhasil diisikan otomatis!`, 'success');
+          showToast(`Token aktif aula "${data.token}" (${data.eventTitle}) berhasil diisikan!`, 'success');
         } else {
           showToast(data.message || 'Belum ada QR Code aktif dari server.', 'error');
         }
@@ -1221,21 +1260,35 @@
     // ========================================================
     // FEATURE: SCAN KAMERA QR CODE (HTML5-QRCODE)
     // ========================================================
-    function extractTokenFromQr(decodedText) {
-      if (!decodedText) return null;
+    function extractQrData(decodedText) {
+      if (!decodedText) return { token: null, eventId: null };
+      let token = null;
+      let eventId = null;
+
       try {
         const url = new URL(decodedText);
-        const token = url.searchParams.get('token');
-        if (token) return token.trim().toUpperCase();
+        token = url.searchParams.get('token');
+        eventId = url.searchParams.get('event') || url.searchParams.get('eventId');
       } catch (e) {}
 
-      const match = decodedText.match(/token=([A-Za-z0-9\-_]+)/i);
-      if (match) return match[1].trim().toUpperCase();
+      if (!token) {
+        const match = decodedText.match(/token=([A-Za-z0-9\-_]+)/i);
+        if (match) token = match[1];
+      }
+      if (!token) {
+        const tokenMatch = decodedText.match(/LPTI-[A-Z0-9]+/i);
+        if (tokenMatch) token = tokenMatch[0];
+        else token = decodedText.trim();
+      }
+      if (!eventId) {
+        const evMatch = decodedText.match(/event(?:Id)?=([A-Za-z0-9\-_]+)/i);
+        if (evMatch) eventId = evMatch[1];
+      }
 
-      const tokenMatch = decodedText.match(/LPTI-[A-Z0-9]+/i);
-      if (tokenMatch) return tokenMatch[0].trim().toUpperCase();
-
-      return decodedText.trim().toUpperCase();
+      return {
+        token: token ? token.trim().toUpperCase() : null,
+        eventId: eventId ? eventId.trim() : null
+      };
     }
 
     async function openCameraScanner() {
@@ -1264,21 +1317,22 @@
         };
 
         const onScanSuccess = async (decodedText) => {
-          console.log('Scanned QR:', decodedText);
-          const token = extractTokenFromQr(decodedText);
-          if (token) {
+          console.log('Scanned QR Raw:', decodedText);
+          const qrData = extractQrData(decodedText);
+          if (qrData.token) {
             await stopCameraScanner();
             $('#cameraScannerModal').modal('hide');
-            showToast(`📸 QR Code Terdeteksi: ${token}`, 'success');
+            showToast(`📸 QR Code Terdeteksi: ${qrData.token}`, 'success');
 
             if (currentAuthUser) {
-              await executeAutoPresence(token);
+              await executeAutoPresence(qrData.token, qrData.eventId);
             } else {
-              pendingScannedToken = token;
+              pendingScannedToken = qrData.token;
+              pendingScannedEventId = qrData.eventId;
               const alertBox = document.getElementById('loginQrAlert');
               const tokenBadge = document.getElementById('alertDetectedToken');
               if (alertBox && tokenBadge) {
-                tokenBadge.textContent = token;
+                tokenBadge.textContent = qrData.token;
                 alertBox.classList.remove('d-none');
               }
             }
@@ -1288,6 +1342,21 @@
         try {
           await html5QrScanner.start({ facingMode: currentCameraFacing }, config, onScanSuccess);
         } catch (e1) {
+          const altFacing = (currentCameraFacing === 'environment') ? 'user' : 'environment';
+          await html5QrScanner.start({ facingMode: altFacing }, config, onScanSuccess);
+          currentCameraFacing = altFacing;
+        }
+
+        document.getElementById('scannerLoadingStatus').classList.add('d-none');
+      } catch (err) {
+        console.error('Camera Scanner error:', err);
+        document.getElementById('scannerLoadingStatus').classList.add('d-none');
+        const errBox = document.getElementById('scannerErrorMessage');
+        errBox.classList.remove('d-none');
+        document.getElementById('scannerErrorText').textContent = 
+          'Tidak dapat mengakses kamera: ' + (err.message || 'Izin kamera ditolak atau perangkat tidak memiliki kamera.');
+      }
+    }
           // Fallback facingMode
           const altFacing = (currentCameraFacing === 'environment') ? 'user' : 'environment';
           await html5QrScanner.start({ facingMode: altFacing }, config, onScanSuccess);
@@ -1445,15 +1514,17 @@
       }
     }
 
-    // 10. Deteksi Parameter URL (Hasil Scan Kamera HP: ?token=LPTI-...&action=presensi)
+    // 10. Deteksi Parameter URL (Hasil Scan Kamera HP: ?token=LPTI-...&event=EVT-...)
     async function checkUrlParamsAndSession() {
       const params = new URLSearchParams(window.location.search);
       const tokenParam = params.get('token');
+      const eventParam = params.get('event') || params.get('eventId');
 
       const savedNip = localStorage.getItem('bpmp_auth_nip');
       if (savedNip) {
         try {
-          const res = await fetch(`/api/employees/${savedNip}`);
+          const queryEv = eventParam ? `?eventId=${encodeURIComponent(eventParam)}` : '';
+          const res = await fetch(`/api/employees/${savedNip}${queryEv}`);
           const data = await res.json();
           if (data.success && data.employee) {
             currentAuthUser = data.employee;
@@ -1463,7 +1534,7 @@
             if (tokenParam) {
               const cleanToken = tokenParam.trim().toUpperCase();
               showToast(`📸 Kode token presensi aula "${cleanToken}" terdeteksi dari scan HP!`, 'success');
-              await executeAutoPresence(cleanToken);
+              await executeAutoPresence(cleanToken, eventParam);
             }
             return;
           }
@@ -1475,6 +1546,7 @@
       if (tokenParam) {
         const cleanToken = tokenParam.trim().toUpperCase();
         pendingScannedToken = cleanToken;
+        pendingScannedEventId = eventParam;
 
         const alertBox = document.getElementById('loginQrAlert');
         const tokenBadge = document.getElementById('alertDetectedToken');

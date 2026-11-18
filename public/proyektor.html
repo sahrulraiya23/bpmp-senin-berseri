@@ -260,39 +260,64 @@
     // 2. Fetch Data Event
     async function syncEventData() {
       try {
+        let localEvents = [];
+        try {
+          const cached = localStorage.getItem('bpmp_events_cache');
+          if (cached) localEvents = JSON.parse(cached);
+        } catch (e) {}
+
         const res = await fetch(`/api/event${getQueryEventParam()}`);
         const data = await res.json();
-        if (data.success && data.event) {
-          currentEvent = data.event;
-          
-          const activeView = document.getElementById('activeEventView');
-          const inactiveView = document.getElementById('inactiveEventView');
-          const completedView = document.getElementById('completedEventView');
+        if (data.success) {
+          let ev = data.event;
 
-          if (currentEvent.status === 'completed') {
-            activeView.classList.add('hidden');
+          // Jika serverless baru restart dan event lokal lebih baru/banyak, auto-sync
+          if (localEvents.length > 0 && (!ev || !ev.title || !data.events || data.events.length < localEvents.length)) {
+            try {
+              const syncRes = await fetch('/api/events/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ events: localEvents })
+              });
+              const syncData = await syncRes.json();
+              if (syncData.success && syncData.event) {
+                ev = syncData.event;
+              }
+            } catch (sErr) {}
+          }
+
+          if (ev && ev.title) {
+            currentEvent = ev;
+            
+            const activeView = document.getElementById('activeEventView');
+            const inactiveView = document.getElementById('inactiveEventView');
+            const completedView = document.getElementById('completedEventView');
+
+            if (currentEvent.status === 'completed') {
+              activeView.classList.add('hidden');
+              inactiveView.classList.add('hidden');
+              completedView.classList.remove('hidden');
+              document.getElementById('completedEventTitle').textContent = currentEvent.title || 'Kegiatan Pelatihan Selesai';
+              return;
+            }
+
+            if (!currentEvent.active || !currentEvent.title) {
+              activeView.classList.add('hidden');
+              completedView.classList.add('hidden');
+              inactiveView.classList.remove('hidden');
+              return;
+            }
+
+            activeView.classList.remove('hidden');
             inactiveView.classList.add('hidden');
-            completedView.classList.remove('hidden');
-            document.getElementById('completedEventTitle').textContent = currentEvent.title || 'Kegiatan Pelatihan Selesai';
-            return;
-          }
-
-          if (!currentEvent.active || !currentEvent.title) {
-            activeView.classList.add('hidden');
             completedView.classList.add('hidden');
-            inactiveView.classList.remove('hidden');
-            return;
+
+            document.getElementById('eventTitleDisplay').textContent = currentEvent.title;
+            document.getElementById('eventJpBadge').textContent = `${currentEvent.jp || 32} Jam Pelajaran (JP)`;
+            document.getElementById('eventCategoryBadge').textContent = currentEvent.category || 'Teknis & Manajerial Kepegawaian';
+            document.getElementById('eventScheduleDisplay').textContent = currentEvent.schedule || 'Tahun 2026';
+            document.getElementById('eventLocationDisplay').textContent = currentEvent.location || 'Auditorium BPMP Sultra';
           }
-
-          activeView.classList.remove('hidden');
-          inactiveView.classList.add('hidden');
-          completedView.classList.add('hidden');
-
-          document.getElementById('eventTitleDisplay').textContent = currentEvent.title;
-          document.getElementById('eventJpBadge').textContent = `${currentEvent.jp || 32} Jam Pelajaran (JP)`;
-          document.getElementById('eventCategoryBadge').textContent = currentEvent.category || 'Teknis & Manajerial Kepegawaian';
-          document.getElementById('eventScheduleDisplay').textContent = currentEvent.schedule || 'Tahun 2026';
-          document.getElementById('eventLocationDisplay').textContent = currentEvent.location || 'Auditorium BPMP Sultra';
         }
       } catch (err) {
         console.error('Error sync event:', err);
