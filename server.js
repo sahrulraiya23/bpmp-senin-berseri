@@ -147,9 +147,16 @@ function getCurrentQrState(eventId = 'EVT-001') {
 // Endpoint Current Dynamic QR Code
 app.get('/api/qr/current', async (req, res) => {
   try {
-    const activeEvent = await sqliteDb.getActiveEvent();
+    let targetEvent = null;
+    const requestedId = req.query.eventId || req.query.id;
+    if (requestedId) {
+      targetEvent = await sqliteDb.getEventById(requestedId);
+    }
+    if (!targetEvent) {
+      targetEvent = await sqliteDb.getActiveEvent();
+    }
 
-    if (!activeEvent || !activeEvent.title) {
+    if (!targetEvent || !targetEvent.title) {
       return res.json({
         success: true,
         active: false,
@@ -158,10 +165,10 @@ app.get('/api/qr/current', async (req, res) => {
       });
     }
 
-    const qrState = getCurrentQrState(activeEvent.id);
+    const qrState = getCurrentQrState(targetEvent.id);
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
-    const scanUrl = `${protocol}://${host}/pegawai?token=${qrState.token}&event=${activeEvent.id}&action=presensi`;
+    const scanUrl = `${protocol}://${host}/pegawai?token=${qrState.token}&event=${targetEvent.id}&action=presensi`;
 
     const qrDataUrl = await QRCode.toDataURL(scanUrl, {
       errorCorrectionLevel: 'M',
@@ -180,8 +187,9 @@ app.get('/api/qr/current', async (req, res) => {
       duration: qrState.duration,
       remainingSeconds: qrState.remainingSeconds,
       validUntil: qrState.validUntil,
-      eventTitle: activeEvent.title,
-      eventJp: activeEvent.jp,
+      eventId: targetEvent.id,
+      eventTitle: targetEvent.title,
+      eventJp: targetEvent.jp,
       scanUrl: scanUrl,
       qrImage: qrDataUrl
     });
@@ -333,9 +341,16 @@ app.post('/api/presensi/verify-token', async (req, res) => {
 // EVENT MANAGEMENT APIs (SQLITE BACKED)
 // ========================================================
 app.get('/api/event', async (req, res) => {
-  const activeEvent = await sqliteDb.getActiveEvent();
+  let targetEvent = null;
+  const requestedId = req.query.eventId || req.query.id;
+  if (requestedId) {
+    targetEvent = await sqliteDb.getEventById(requestedId);
+  }
+  if (!targetEvent) {
+    targetEvent = await sqliteDb.getActiveEvent();
+  }
   const allEvents = await sqliteDb.getAllEvents();
-  res.json({ success: true, event: activeEvent, events: allEvents });
+  res.json({ success: true, event: targetEvent, events: allEvents });
 });
 
 app.get('/api/events', async (req, res) => {
@@ -356,11 +371,14 @@ const handleSaveEvent = async (req, res) => {
   }
 
   try {
-    const saved = await sqliteDb.saveEvent(req.body);
+    const isNew = Boolean(req.body.isNew || req.body.isNewEvent || !req.body.id || req.body.id === 'new');
+    const saved = await sqliteDb.saveEvent(req.body, isNew);
+    // Pastikan event baru/tersimpan ini langsung menjadi sesi resmi yang aktif di aula & QR
+    await sqliteDb.activateEventById(saved.id);
     const allEvents = await sqliteDb.getAllEvents();
     res.json({
       success: true,
-      message: `Event "${saved.title}" (${saved.id}) berhasil disimpan & diaktifkan di aula!`,
+      message: `Event "${saved.title}" (${saved.id}) berhasil disimpan & diaktifkan di layar aula!`,
       event: saved,
       events: allEvents
     });

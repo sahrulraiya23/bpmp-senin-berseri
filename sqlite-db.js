@@ -519,15 +519,20 @@ async function getAllEvents() {
 
 async function getActiveEvent() {
   if (useSqlite) {
-    const row = await get('SELECT * FROM events WHERE active = 1 ORDER BY updated_at DESC LIMIT 1');
+    const row = await get('SELECT * FROM events WHERE active = 1 ORDER BY updated_at DESC, created_at DESC LIMIT 1');
     if (row) return formatEvent(row);
-    const fallback = await get('SELECT * FROM events ORDER BY created_at DESC LIMIT 1');
+    const fallback = await get('SELECT * FROM events ORDER BY updated_at DESC, created_at DESC LIMIT 1');
     return formatEvent(fallback);
   } else {
     const dbData = readJson();
-    const active = (dbData.events || []).find(e => e.active);
-    if (active) return active;
-    return dbData.event || (dbData.events && dbData.events[0]) || null;
+    const activeList = (dbData.events || []).filter(e => e.active);
+    if (activeList.length > 0) {
+      activeList.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+      return activeList[0];
+    }
+    if (dbData.event && dbData.event.title) return dbData.event;
+    if (dbData.events && dbData.events.length > 0) return dbData.events[0];
+    return null;
   }
 }
 
@@ -544,12 +549,22 @@ async function getEventById(id) {
 
 async function saveEvent(eventData, isNew = false) {
   const now = new Date().toISOString();
+  const shouldBeNew = Boolean(isNew || eventData.isNew || !eventData.id || eventData.id === 'new');
+
   if (useSqlite) {
     let eventId = eventData.id;
-    if (isNew || !eventId) {
-      const countRow = await get('SELECT COUNT(*) as c FROM events');
-      const seq = (countRow ? countRow.c : 0) + 1;
-      eventId = 'EVT-2026-' + String(seq).padStart(3, '0');
+    if (shouldBeNew || !eventId || eventId === 'new') {
+      const rows = await all('SELECT id FROM events');
+      let maxSeq = 0;
+      rows.forEach(r => {
+        const match = r.id && r.id.match(/EVT-(\d{4})-(\d+)/i);
+        if (match) {
+          const num = parseInt(match[2], 10);
+          if (num > maxSeq) maxSeq = num;
+        }
+      });
+      const year = new Date().getFullYear();
+      eventId = `EVT-${year}-${String(maxSeq + 1).padStart(3, '0')}`;
     }
 
     const existing = await get('SELECT * FROM events WHERE id = ?', [eventId]);
@@ -561,6 +576,7 @@ async function saveEvent(eventData, isNew = false) {
           category = ?,
           schedule = ?,
           location = ?,
+          active = 1,
           updated_at = ?
         WHERE id = ?
       `, [
@@ -588,16 +604,27 @@ async function saveEvent(eventData, isNew = false) {
         now,
         now
       ]);
-      await run('UPDATE events SET active = 0 WHERE id != ?', [eventId]);
     }
+    // Pastikan semua event lain non-aktif di layar aula dan QR
+    await run('UPDATE events SET active = 0 WHERE id != ?', [eventId]);
     return getEventById(eventId);
   } else {
     const dbData = readJson();
     if (!dbData.events) dbData.events = [];
     let eventId = eventData.id;
-    if (isNew || !eventId) {
-      eventId = 'EVT-2026-' + String(dbData.events.length + 1).padStart(3, '0');
+    if (shouldBeNew || !eventId || eventId === 'new') {
+      let maxSeq = 0;
+      dbData.events.forEach(r => {
+        const match = r.id && r.id.match(/EVT-(\d{4})-(\d+)/i);
+        if (match) {
+          const num = parseInt(match[2], 10);
+          if (num > maxSeq) maxSeq = num;
+        }
+      });
+      const year = new Date().getFullYear();
+      eventId = `EVT-${year}-${String(maxSeq + 1).padStart(3, '0')}`;
     }
+
     const idx = dbData.events.findIndex(e => e.id === eventId);
     const newEv = {
       id: eventId,
@@ -608,42 +635,52 @@ async function saveEvent(eventData, isNew = false) {
       location: eventData.location || '',
       organizer: eventData.organizer || 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
       active: true,
-      certificateTemplate: null,
-      certSettings: {
+      certificateTemplate: (idx >= 0 && dbData.events[idx].certificateTemplate) ? dbData.events[idx].certificateTemplate : null,
+      certSettings: (idx >= 0 && dbData.events[idx].certSettings) ? dbData.events[idx].certSettings : {
         prefix: '800.1.3/SERT-LPTI/2026',
         nomorYRatio: 0.72,
         namaYRatio: 0.50,
         namaFontSize: 26,
         nomorFontSize: 11
       },
-      createdAt: now,
+      createdAt: (idx >= 0 && dbData.events[idx].createdAt) ? dbData.events[idx].createdAt : now,
       updatedAt: now
     };
 
+    // Nonaktifkan semua event lain
+    dbData.events.forEach(e => {
+      e.active = false;
+    });
+
     if (idx >= 0) {
-      dbData.events[idx] = { ...dbData.events[idx], ...eventData, updatedAt: now };
+      dbData.events[idx] = { ...dbData.events[idx], ...newEv, active: true };
     } else {
-      dbData.events.forEach(e => e.active = false);
-      dbData.events.push(newEv);
+      dbData.events.unshift(newEv);
     }
-    dbData.event = dbData.events.find(e => e.id === eventId) || newEv;
+    dbData.event = newEv;
     writeJson(dbData);
-    return dbData.event;
+    return newEv;
   }
 }
 
 async function activateEventById(eventId) {
+  const now = new Date().toISOString();
   if (useSqlite) {
     await run('UPDATE events SET active = 0');
-    await run('UPDATE events SET active = 1, updated_at = ? WHERE id = ?', [new Date().toISOString(), eventId]);
+    await run('UPDATE events SET active = 1, updated_at = ? WHERE id = ?', [now, eventId]);
     return getEventById(eventId);
   } else {
     const dbData = readJson();
     (dbData.events || []).forEach(e => {
       e.active = (e.id === eventId);
+      if (e.id === eventId) e.updatedAt = now;
     });
     const found = (dbData.events || []).find(e => e.id === eventId);
-    if (found) dbData.event = found;
+    if (found) {
+      found.active = true;
+      found.updatedAt = now;
+      dbData.event = found;
+    }
     writeJson(dbData);
     return found;
   }

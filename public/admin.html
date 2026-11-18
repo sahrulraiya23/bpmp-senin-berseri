@@ -471,7 +471,7 @@
                 </button>
 
                 <div class="flex items-center gap-2">
-                  <a href="/proyektor" target="_blank" class="flex-1 inline-flex items-center justify-center px-3.5 py-2.5 rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-soft-sm hover:border-emerald-300 transition">
+                  <a id="btnStep2ProjectorLink" href="/proyektor" target="_blank" class="flex-1 inline-flex items-center justify-center px-3.5 py-2.5 rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-soft-sm hover:border-emerald-300 transition">
                     <span>Layar Baru ↗</span>
                   </a>
                   <button onclick="toggleEventStatus()" id="btnToggleEventStatus" class="flex-1 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition text-center shadow-soft-sm">
@@ -747,7 +747,7 @@
             <h2 class="text-sm sm:text-base font-black text-slate-900">Dynamic QR Code (Anti-Titip 30 Detik)</h2>
           </div>
 
-          <a href="/proyektor" target="_blank" class="inline-flex items-center px-4 py-2.5 rounded-2xl text-xs font-black bg-gradient-soft-emerald hover:opacity-95 text-white shadow-soft-sm transition">
+          <a id="btnViewQrProjectorLink" href="/proyektor" target="_blank" class="inline-flex items-center px-4 py-2.5 rounded-2xl text-xs font-black bg-gradient-soft-emerald hover:opacity-95 text-white shadow-soft-sm transition">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             <span>Buka di Tab/Layar Penuh ↗</span>
           </a>
@@ -1090,6 +1090,7 @@
       currentSelectedEventId = eventId;
       const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
       if (!ev) return;
+      eventData = ev;
 
       switchMainTab('dashboard');
 
@@ -1135,6 +1136,13 @@
         document.getElementById('qrViewTitle').textContent = ev.title || 'Pelatihan Kepegawaian';
       }
 
+      // Sinkronkan tautan proyektor dengan event yang dipilih
+      const pUrl = `/proyektor?event=${encodeURIComponent(ev.id)}`;
+      const pLink1 = document.getElementById('btnStep2ProjectorLink');
+      if (pLink1) pLink1.href = pUrl;
+      const pLink2 = document.getElementById('btnViewQrProjectorLink');
+      if (pLink2) pLink2.href = pUrl;
+
       // Sinkronisasi status template sertifikat
       renderTemplateStatus(ev.certificateTemplate, ev.certSettings || {});
 
@@ -1143,6 +1151,9 @@
       if (btnPreview) {
         btnPreview.href = `/api/event/sample-certificate.pdf?eventId=${encodeURIComponent(ev.id)}`;
       }
+
+      // Perbarui QR Code khusus event ini
+      updateDynamicQr();
 
       if (doScroll && step2) {
         step2.scrollIntoView({ behavior: 'smooth' });
@@ -1182,13 +1193,14 @@
         if (result.success) {
           showToast(result.message, 'success');
           eventData = result.event;
+          currentSelectedEventId = result.event.id;
           editingEventId = null;
           
           await loadEventData();
           await loadEmployees();
-          updateDynamicQr();
+          await updateDynamicQr();
           // Buka Langkah 2 KHUSUS untuk event yang baru diterbitkan ini
-          openEventDetail(eventData.id, true);
+          openEventDetail(result.event.id, true);
         } else {
           showToast(result.message, 'error');
         }
@@ -1245,7 +1257,8 @@
     // ==============================================================
     async function updateDynamicQr() {
       try {
-        const res = await fetch('/api/qr/current');
+        const queryEvent = currentSelectedEventId ? `?eventId=${encodeURIComponent(currentSelectedEventId)}` : '';
+        const res = await fetch(`/api/qr/current${queryEvent}`);
         const data = await res.json();
         const btnToggleLabel = document.getElementById('btnToggleEventLabel');
 
@@ -1270,8 +1283,8 @@
         if (document.getElementById('dashboardMiniToken')) {
           document.getElementById('dashboardMiniToken').textContent = data.token;
         }
-        if (document.getElementById('qrViewTitle') && eventData && eventData.title) {
-          document.getElementById('qrViewTitle').textContent = eventData.title;
+        if (document.getElementById('qrViewTitle')) {
+          document.getElementById('qrViewTitle').textContent = data.eventTitle || (eventData && eventData.title) || 'Pelatihan Kepegawaian';
         }
         if (document.getElementById('scanUrlDisplay')) {
           document.getElementById('scanUrlDisplay').textContent = data.scanUrl;

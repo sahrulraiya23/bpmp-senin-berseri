@@ -214,10 +214,17 @@
       }
     });
 
+    // Helper to get eventId from query parameters if opened for specific event
+    function getQueryEventParam() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const evId = urlParams.get('event') || urlParams.get('eventId');
+      return evId ? `?eventId=${encodeURIComponent(evId)}` : '';
+    }
+
     // 2. Fetch Data Event
     async function syncEventData() {
       try {
-        const res = await fetch('/api/event');
+        const res = await fetch(`/api/event${getQueryEventParam()}`);
         const data = await res.json();
         if (data.success && data.event) {
           currentEvent = data.event;
@@ -248,7 +255,7 @@
     // 3. Fetch Dynamic QR Code (Setiap 1 detik untuk countdown halus)
     async function syncDynamicQr() {
       try {
-        const res = await fetch('/api/qr/current');
+        const res = await fetch(`/api/qr/current${getQueryEventParam()}`);
         const data = await res.json();
 
         const activeView = document.getElementById('activeEventView');
