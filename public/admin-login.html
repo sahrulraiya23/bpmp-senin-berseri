@@ -359,17 +359,15 @@
 
         if (data.success) {
           showAlert(data.message, false);
-          // Simpan token admin ke sessionStorage & localStorage
+          // Simpan token admin ke localStorage & sessionStorage (Persistensi ganda)
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('adminUser', JSON.stringify(data.admin));
           sessionStorage.setItem('adminToken', data.token);
           sessionStorage.setItem('adminUser', JSON.stringify(data.admin));
-          if (document.getElementById('rememberMe').checked) {
-            localStorage.setItem('adminToken', data.token);
-            localStorage.setItem('adminUser', JSON.stringify(data.admin));
-          }
 
           setTimeout(() => {
             window.location.href = '/admin';
-          }, 800);
+          }, 600);
         } else {
           showAlert(data.message || 'Login gagal, periksa kembali username dan password.');
           btn.disabled = false;
@@ -384,14 +382,16 @@
 
     // Auto-login jika token sudah ada di localStorage / sessionStorage
     document.addEventListener('DOMContentLoaded', () => {
-      const existingToken = sessionStorage.getItem('adminToken') || localStorage.getItem('adminToken');
+      const existingToken = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
       if (existingToken) {
+        localStorage.setItem('adminToken', existingToken);
+        sessionStorage.setItem('adminToken', existingToken);
         fetch('/api/auth/admin-check', {
           headers: { 'Authorization': `Bearer ${existingToken}` }
         })
         .then(r => r.json())
         .then(data => {
-          if (data.success) {
+          if (data.success && data.authenticated) {
             window.location.href = '/admin';
           }
         })

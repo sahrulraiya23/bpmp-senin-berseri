@@ -946,19 +946,26 @@
 
     // 0. Autentikasi Admin & Logout
     async function checkAdminAuth() {
-      const token = sessionStorage.getItem('adminToken') || localStorage.getItem('adminToken');
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
       if (!token) {
         window.location.replace('/admin/login');
         return false;
       }
+      
+      // Pertahankan token di kedua penyimpanan
+      localStorage.setItem('adminToken', token);
+      sessionStorage.setItem('adminToken', token);
+
       try {
         const res = await fetch('/api/auth/admin-check', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
         if (!data.authenticated) {
-          sessionStorage.removeItem('adminToken');
           localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminUser');
+          sessionStorage.removeItem('adminToken');
+          sessionStorage.removeItem('adminUser');
           window.location.replace('/admin/login');
           return false;
         }
@@ -967,6 +974,8 @@
         }
         return true;
       } catch (e) {
+        console.warn('Network auth check issue:', e);
+        // Jangan logout otomatis jika terjadi gangguan jaringan sesaat
         return true;
       }
     }
@@ -974,10 +983,16 @@
     async function handleAdminLogout() {
       if (!confirm('Apakah Anda yakin ingin keluar dari Administrator Console?')) return;
       try {
-        await fetch('/api/auth/admin-logout', { method: 'POST' });
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        await fetch('/api/auth/admin-logout', {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
       } catch (e) {}
-      sessionStorage.removeItem('adminToken');
       localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+      sessionStorage.removeItem('adminToken');
+      sessionStorage.removeItem('adminUser');
       window.location.replace('/admin/login');
     }
 

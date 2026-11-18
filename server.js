@@ -43,20 +43,71 @@ if (IS_VERCEL) {
   app.use('/uploads/templates', express.static(path.join(BASE_DIR, 'uploads', 'templates')));
 }
 
-// Admin session store (in-memory token map)
+// Admin session store (Stateless HMAC-signed token + fallback memory map)
+const JWT_SECRET = process.env.SESSION_SECRET || 'bpmp-senin-berseri-secret-key-2026';
 const adminSessions = new Map();
 
-function getAdminFromToken(authHeader) {
-  if (!authHeader) return null;
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  const session = adminSessions.get(token);
-  if (!session) return null;
-  // Session timeout: 24 hours
-  if (Date.now() - session.createdAt > 24 * 60 * 60 * 1000) {
-    adminSessions.delete(token);
-    return null;
+function createAdminToken(admin) {
+  const payload = {
+    u: admin.username,
+    r: admin.role || 'admin',
+    n: admin.name || 'Administrator BPMP',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 hari persisten
+  };
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', JWT_SECRET).update(body).digest('base64url');
+  const token = `adm.${body}.${signature}`;
+  adminSessions.set(token, { admin, createdAt: Date.now() });
+  return token;
+}
+
+function verifyAdminToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const clean = token.trim();
+  
+  // Format token stateless: adm.<base64url>.<signature>
+  if (clean.startsWith('adm.')) {
+    const parts = clean.split('.');
+    if (parts.length === 3) {
+      const [, body, sig] = parts;
+      const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(body).digest('base64url');
+      if (sig === expectedSig) {
+        try {
+          const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+          if (!payload.exp || payload.exp > Math.floor(Date.now() / 1000)) {
+            return {
+              username: payload.u || 'admin',
+              role: payload.r || 'admin',
+              name: payload.n || 'Administrator BPMP'
+            };
+          }
+        } catch (e) {}
+      }
+    }
   }
-  return session.admin;
+
+  // Fallback ke memori map jika ada token sesi lama
+  if (adminSessions.has(clean)) {
+    const session = adminSessions.get(clean);
+    if (Date.now() - session.createdAt < 30 * 24 * 60 * 60 * 1000) {
+      return session.admin;
+    }
+  }
+
+  return null;
+}
+
+function getAdminFromToken(authHeader, cookieHeader) {
+  let token = null;
+  if (authHeader) {
+    token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  }
+  if (!token && cookieHeader) {
+    const match = cookieHeader.match(/admin_token=([^;]+)/);
+    if (match) token = decodeURIComponent(match[1].trim());
+  }
+  return verifyAdminToken(token);
 }
 
 // Multer Storage for LPTI PDFs
@@ -217,8 +268,10 @@ app.post('/api/auth/admin-login', async (req, res) => {
     });
   }
 
-  const token = 'adm_' + crypto.randomBytes(24).toString('hex');
-  adminSessions.set(token, { admin, createdAt: Date.now() });
+  const token = createAdminToken(admin);
+
+  // Set HTTP Cookie untuk keamanan ganda dan persistensi lintas serverless Vercel
+  res.setHeader('Set-Cookie', `admin_token=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax`);
 
   res.json({
     success: true,
@@ -230,7 +283,7 @@ app.post('/api/auth/admin-login', async (req, res) => {
 
 // 2. Admin Check Session
 app.get('/api/auth/admin-check', (req, res) => {
-  const admin = getAdminFromToken(req.headers.authorization);
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
   if (!admin) {
     return res.status(401).json({ success: false, authenticated: false, message: 'Sesi admin tidak valid atau telah berakhir.' });
   }
@@ -244,6 +297,7 @@ app.post('/api/auth/admin-logout', (req, res) => {
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
     adminSessions.delete(token);
   }
+  res.setHeader('Set-Cookie', 'admin_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
   res.json({ success: true, message: 'Anda telah berhasil keluar dari dashboard admin.' });
 });
 
