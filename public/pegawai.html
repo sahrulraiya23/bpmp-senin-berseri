@@ -6,6 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>Portal Mandiri Pegawai - BPMP Provinsi Sulawesi Tenggara</title>
 
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#002d5b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Senin Berseri">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+
   <!-- Vendor CSS (Azia Bootstrap 4) -->
   <link href="/azia/lib/fontawesome-free/css/all.min.css" rel="stylesheet">
   <link href="/azia/lib/ionicons/css/ionicons.min.css" rel="stylesheet">
@@ -390,8 +400,13 @@
             </div>
 
             <!-- Tombol Cepat: Pindai QR Aula via Kamera HP/Laptop -->
-            <button type="button" onclick="openCameraScanner()" class="btn btn-outline-success btn-block font-weight-bold mb-3 py-2">
+            <button type="button" onclick="openCameraScanner()" class="btn btn-outline-success btn-block font-weight-bold mb-2 py-2">
               <i class="fas fa-camera mr-1.5"></i> Pindai QR Code Aula via Kamera
+            </button>
+
+            <!-- Tombol Pasang Aplikasi PWA di HP -->
+            <button type="button" id="btnInstallPwaPegawai" onclick="triggerPwaInstall()" class="btn btn-outline-primary btn-block font-weight-bold mb-3 py-2 d-none">
+              <i class="fas fa-mobile-alt mr-1.5"></i> Pasang Aplikasi di Layar Utama HP
             </button>
 
             <div class="d-flex align-items-center mb-3">
@@ -1562,5 +1577,6 @@
       checkUrlParamsAndSession();
     });
   </script>
+  <script src="/pwa-install.js"></script>
 </body>
 </html>
