@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Portal Mandiri Pegawai - BPMP Provinsi Sulawesi Tenggara</title>
+  <title>Portal Mandiri Pegawai ASN - BPMP Provinsi Sulawesi Tenggara</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="/manifest.json">
@@ -17,14 +16,14 @@
   <link rel="icon" type="image/png" href="/icons/favicon.png">
 
   <!-- Vendor CSS (Azia Bootstrap 4) -->
-  <link href="/azia/lib/fontawesome-free/css/all.min.css" rel="stylesheet">
-  <link href="/azia/lib/ionicons/css/ionicons.min.css" rel="stylesheet">
-  <link href="/azia/lib/typicons.font/typicons.css" rel="stylesheet">
+  <link href="/lib/fontawesome-free/css/all.min.css" rel="stylesheet">
+  <link href="/lib/ionicons/css/ionicons.min.css" rel="stylesheet">
+  <link href="/lib/typicons.font/typicons.css" rel="stylesheet">
 
   <!-- Azia Template CSS -->
-  <link rel="stylesheet" href="/azia/css/azia.min.css">
+  <link rel="stylesheet" href="/css/azia.min.css">
 
-  <!-- Google Fonts: Plus Jakarta Sans & Cinzel (untuk E-Sertifikat) -->
+  <!-- Google Fonts: Plus Jakarta Sans & Cinzel -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -32,11 +31,12 @@
   <style>
     :root {
       --gov-primary: #002d5b;
-      --gov-primary-dark: #001b38;
+      --gov-primary-dark: #001f3f;
       --gov-teal: #0f766e;
       --gov-teal-dark: #0d655e;
       --gov-gold: #d97706;
-      --gov-light-bg: #f8fafc;
+      --gov-slate-bg: #f8fafc;
+      --gov-border: #e2e8f0;
     }
 
     body {
@@ -49,12 +49,12 @@
     }
 
     .font-cert-serif {
-      font-family: 'Cinzel', serif;
+      font-family: 'Cinzel', Georgia, serif;
     }
 
-    /* Top Official Government Strip */
+    /* 1. Official Government Top Strip */
     .gov-top-bar {
-      background: linear-gradient(90deg, #001f3f 0%, #002d5b 50%, #001f3f 100%);
+      background: linear-gradient(90deg, #001b38 0%, #002d5b 50%, #001b38 100%);
       color: #ffffff;
       padding: 7px 20px;
       font-size: 11px;
@@ -66,12 +66,12 @@
       align-items: center;
     }
 
-    /* Azia Header Customization */
+    /* 2. Azia Navigation Header */
     .az-header {
       background: #ffffff;
       border-bottom: 1px solid #e2e8f0;
-      box-shadow: 0 2px 4px rgba(0, 45, 91, 0.04);
-      padding: 10px 0;
+      box-shadow: 0 2px 6px rgba(0, 45, 91, 0.04);
+      padding: 12px 0;
     }
 
     .gov-brand {
@@ -82,23 +82,23 @@
     }
     .gov-brand:hover {
       text-decoration: none;
-      color: #001f3f;
+      color: #001b38;
     }
     .gov-logo-badge {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, #0f766e 0%, #064e3b 100%);
-      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #002d5b 0%, #0a3d74 100%);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 12px;
-      box-shadow: 0 4px 6px rgba(15, 118, 110, 0.2);
+      margin-right: 14px;
+      box-shadow: 0 4px 8px rgba(0, 45, 91, 0.15);
       border: 1px solid #cbd5e1;
       color: #ffffff;
     }
     .gov-brand-title {
-      font-size: 13.5px;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: 0.5px;
       text-transform: uppercase;
@@ -106,19 +106,19 @@
       color: #002d5b;
     }
     .gov-brand-subtitle {
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 700;
       color: #0f766e;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
       text-transform: uppercase;
     }
 
     /* User Profile Capsule in Navbar */
     .gov-user-capsule {
-      background: #f1f5f9;
+      background: #f8fafc;
       border: 1px solid #cbd5e1;
       border-radius: 30px;
-      padding: 4px 14px 4px 6px;
+      padding: 4px 12px 4px 6px;
       display: flex;
       align-items: center;
     }
@@ -126,53 +126,69 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #0f766e 0%, #064e3b 100%);
+      background: #002d5b;
       color: #ffffff;
       font-weight: 800;
       font-size: 13px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 10px;
+      margin-right: 8px;
     }
 
-    /* Cards & Containers */
+    /* Clean Card Container */
     .gov-card {
       background: #ffffff;
-      border-radius: 14px;
+      border-radius: 12px;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
       padding: 24px;
       margin-bottom: 24px;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
+
     .gov-card-header-line {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid #f1f5f9;
       padding-bottom: 14px;
       margin-bottom: 18px;
-      border-bottom: 1px solid #f1f5f9;
     }
 
-    /* Active Event Banner */
     .gov-event-ribbon {
-      background: linear-gradient(135deg, #002d5b 0%, #0f766e 100%);
-      border-radius: 14px;
+      background: linear-gradient(135deg, #002d5b 0%, #0c3c6e 100%);
+      border-radius: 12px;
       color: #ffffff;
-      padding: 22px 26px;
+      padding: 24px 28px;
       margin-bottom: 24px;
-      box-shadow: 0 4px 12px rgba(0, 45, 91, 0.12);
-      border-left: 6px solid #d97706;
+      border-left: 5px solid #d97706;
+      box-shadow: 0 4px 12px rgba(0, 45, 91, 0.1);
     }
 
-    /* Buttons */
+    /* Clean Drag & Drop Upload Zone */
+    .gov-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 28px 20px;
+      text-align: center;
+      background-color: #f8fafc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .gov-dropzone:hover {
+      border-color: #0f766e;
+      background-color: #f0fdfa;
+    }
+
+    /* Institutional Button Styles */
     .btn-gov-primary {
       background-color: #002d5b;
       border-color: #002d5b;
       color: #ffffff;
       font-weight: 700;
-      border-radius: 10px;
+      border-radius: 8px;
+      padding: 9px 18px;
       transition: all 0.2s;
     }
     .btn-gov-primary:hover {
@@ -186,7 +202,8 @@
       border-color: #0f766e;
       color: #ffffff;
       font-weight: 700;
-      border-radius: 10px;
+      border-radius: 8px;
+      padding: 9px 18px;
       transition: all 0.2s;
     }
     .btn-gov-emerald:hover {
@@ -195,120 +212,95 @@
       color: #ffffff;
     }
 
-    .btn-gov-gold {
-      background-color: #d97706;
-      border-color: #d97706;
-      color: #ffffff;
+    .btn-gov-outline {
+      border: 1px solid #cbd5e1;
+      color: #002d5b;
       font-weight: 700;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 8px 16px;
+      transition: all 0.2s;
+    }
+    .btn-gov-outline:hover {
+      background: #f1f5f9;
+      color: #001b38;
+      border-color: #94a3b8;
+    }
+
+    /* Menu Admin Dropdown Styling */
+    .dropdown-menu-gov {
       border-radius: 10px;
-      transition: all 0.2s;
+      box-shadow: 0 10px 25px rgba(0, 45, 91, 0.12);
+      border: 1px solid #e2e8f0;
+      padding: 8px 0;
+      min-width: 220px;
     }
-    .btn-gov-gold:hover {
-      background-color: #b45309;
-      border-color: #b45309;
-      color: #ffffff;
+    .dropdown-menu-gov .dropdown-item {
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      transition: all 0.15s;
     }
-
-    /* Dropzone Upload */
-    .gov-dropzone {
-      border: 2px dashed #cbd5e1;
-      border-radius: 12px;
-      background-color: #f8fafc;
-      padding: 26px 18px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .gov-dropzone:hover {
-      border-color: #0f766e;
-      background-color: #f0fdfa;
+    .dropdown-menu-gov .dropdown-item:hover {
+      background-color: #f1f5f9;
+      color: #002d5b;
     }
 
-    /* QR Scanner Video Container */
-    #cameraQrReader {
-      width: 100% !important;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000;
-    }
-    #cameraQrReader video {
-      border-radius: 12px;
-      object-fit: cover;
+    /* Official Footer */
+    .gov-footer {
+      background-color: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      padding: 24px 0;
+      margin-top: auto;
+      font-size: 12px;
+      color: #64748b;
     }
 
-    /* Toast Notification Container */
+    /* Toast Notifications */
     #toastContainer {
       position: fixed;
       top: 20px;
       right: 20px;
       z-index: 99999;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      pointer-events: none;
+      max-width: 380px;
     }
     .gov-toast {
-      pointer-events: auto;
-      padding: 12px 18px;
+      background: #ffffff;
       border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #ffffff;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-      animation: toastIn 0.3s ease-out;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+      border-left: 4px solid #002d5b;
       display: flex;
       align-items: center;
-      min-width: 280px;
-      max-width: 420px;
+      animation: slideIn 0.3s ease-out;
     }
-    @keyframes toastIn {
+    .gov-toast.toast-success { border-left-color: #0f766e; }
+    .gov-toast.toast-error { border-left-color: #e11d48; }
+    @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
-    }
-
-    /* Print Styles for Certificate (A4 Landscape) */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #certificatePrintArea, #certificatePrintArea * {
-        visibility: visible;
-      }
-      #certificatePrintArea {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
-        padding: 24px !important;
-        background: white !important;
-        box-shadow: none !important;
-        border: none !important;
-        z-index: 99999;
-      }
-      @page {
-        size: A4 landscape;
-        margin: 8mm;
-      }
     }
   </style>
 </head>
 <body>
 
-  <!-- 1. Top Government Strip -->
+  <!-- 1. Government Official Top Bar -->
   <div class="gov-top-bar">
     <div class="container d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center">
         <i class="fas fa-landmark mr-2 text-warning"></i>
         <span>KEMENDIKBUDRISTEK &bull; BPMP PROVINSI SULAWESI TENGGARA</span>
       </div>
-      <div>
-        <a href="/" class="text-white small font-weight-bold mr-3 text-decoration-none">
-          <i class="fas fa-home mr-1"></i> Beranda
+      <div class="d-flex align-items-center">
+        <a href="/proyektor" target="_blank" class="text-white small font-weight-bold text-decoration-none mr-3 d-none d-sm-inline">
+          <i class="fas fa-desktop mr-1 text-warning"></i> Layar Aula
         </a>
-        <a href="/proyektor" class="text-white small font-weight-bold text-decoration-none">
-          <i class="fas fa-desktop mr-1"></i> Layar Aula
+        <a href="/admin/login" class="text-white small font-weight-bold text-decoration-none">
+          <i class="fas fa-user-shield mr-1"></i> Akses Admin
         </a>
       </div>
     </div>
@@ -323,90 +315,111 @@
           <i class="fas fa-id-card fa-lg"></i>
         </div>
         <div>
-          <div class="gov-brand-title">PORTAL MANDIRI PEGAWAI</div>
-          <div class="gov-brand-subtitle">PRESENSI MANDIRI & E-SERTIFIKAT ASN</div>
+          <div class="gov-brand-title">SENIN BERSERI</div>
+          <div class="gov-brand-subtitle">Portal Mandiri Pegawai ASN BPMP Sultra</div>
         </div>
       </a>
 
-      <!-- Right Nav Status -->
+      <!-- Right Navigation: Profile Capsule & Menu Admin -->
       <div class="d-flex align-items-center">
         
-        <!-- User Profile Capsule (Ketika Login) -->
+        <!-- User Profile Capsule (Ketika Pegawai Telah Login) -->
         <div id="navUserBadge" class="gov-user-capsule d-none mr-2">
           <div class="gov-user-avatar" id="navAvatarInitial">P</div>
           <div class="d-none d-sm-block text-left mr-2">
             <div id="navEmployeeName" class="font-weight-bold text-dark small text-truncate" style="max-width: 150px;">Pegawai ASN</div>
-            <div id="navEmployeeNip" class="text-muted" style="font-size: 10px; font-family: monospace;">19760612...</div>
+            <div id="navEmployeeNip" class="text-muted" style="font-size: 10.5px; font-family: monospace;">19760612...</div>
           </div>
           <button onclick="handleLogout()" class="btn btn-sm btn-link text-danger p-0 ml-1" title="Keluar / Ganti Akun">
             <i class="fas fa-sign-out-alt"></i>
           </button>
         </div>
 
-        <a href="/admin" target="_blank" class="btn btn-outline-secondary btn-sm font-weight-bold">
-          <i class="fas fa-user-shield mr-1"></i> Dashboard Admin
-        </a>
+        <!-- MENU ADMIN DROPDOWN -->
+        <div class="dropdown">
+          <button class="btn btn-gov-outline btn-sm font-weight-bold dropdown-toggle d-flex align-items-center" type="button" id="menuAdminDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-user-shield text-primary mr-1.5"></i>
+            <span>Menu Admin</span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-right dropdown-menu-gov" aria-labelledby="menuAdminDropdown">
+            <h6 class="dropdown-header text-uppercase font-weight-bold" style="font-size: 10px; color: #94a3b8; letter-spacing: 0.5px;">Administrasi Lembaga</h6>
+            <a class="dropdown-item" href="/admin/login">
+              <i class="fas fa-sign-in-alt text-primary mr-2.5"></i>
+              <span>Login Administrator</span>
+            </a>
+            <a class="dropdown-item" href="/admin">
+              <i class="fas fa-tachometer-alt text-info mr-2.5"></i>
+              <span>Dashboard Admin</span>
+            </a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="/proyektor" target="_blank">
+              <i class="fas fa-desktop text-success mr-2.5"></i>
+              <span>Layar Proyektor Aula (Live QR)</span>
+            </a>
+          </div>
+        </div>
+
       </div>
 
     </div>
   </header>
 
-  <!-- Toast Container -->
+  <!-- Toast Notification Container -->
   <div id="toastContainer"></div>
 
-  <!-- 3. Main Container -->
+  <!-- 3. Main Content Container -->
   <main class="container my-4 flex-grow-1">
 
     <!-- ======================================================== -->
-    <!-- VIEW 1: FORM LOGIN OTENTIKASI NIP & PASSWORD            -->
-    <!-- (Ditampilkan jika belum ada sesi pegawai login)          -->
+    <!-- VIEW 1: FORM LOGIN MANDIRI PEGAWAI                      -->
+    <!-- (Ditampilkan langsung jika belum login)                 -->
     <!-- ======================================================== -->
-    <section id="loginSection" class="my-4">
+    <section id="loginSection" class="my-3 my-md-4">
       <div class="row justify-content-center">
         <div class="col-lg-5 col-md-7 col-sm-10">
 
-          <!-- Alert Presensi QR Khusus (Muncul saat HP memindai Barcode sebelum login) -->
-          <div id="loginQrAlert" class="alert alert-success border-success shadow-sm mb-4 d-none">
+          <!-- Alert Presensi QR Terdeteksi (Scan Kamera HP sebelum login) -->
+          <div id="loginQrAlert" class="alert alert-success border-success shadow-sm mb-4 d-none" style="border-radius: 10px;">
             <div class="d-flex align-items-start">
-              <div class="mr-3 text-success" style="font-size: 24px;">
+              <div class="mr-3 text-success" style="font-size: 26px;">
                 <i class="fas fa-qrcode"></i>
               </div>
               <div>
-                <span class="badge badge-success font-weight-bold text-uppercase mb-1">
-                  PRESENSI DYNAMIC QR TERDETEKSI
+                <span class="badge badge-success font-weight-bold text-uppercase mb-1" style="font-size: 10px;">
+                  Presensi Aula Terdeteksi
                 </span>
-                <div class="font-weight-bold text-dark">
-                  Token Aula: <code id="alertDetectedToken" class="text-success font-weight-bold bg-white px-2 py-0.5 rounded border border-success">LPTI-......</code>
+                <div class="font-weight-bold text-dark small">
+                  Token: <code id="alertDetectedToken" class="text-success font-weight-bold bg-white px-2 py-0.5 rounded border border-success">LPTI-......</code>
                 </div>
                 <div class="small text-muted mt-1">
-                  Silakan login dengan <strong>NIP</strong> dan <strong>Password</strong> Anda. Kehadiran Anda akan langsung <strong>tercatat otomatis</strong>!
+                  Masuk dengan <strong>NIP</strong> dan <strong>Password</strong> Anda. Presensi akan langsung <strong>tercatat otomatis</strong>!
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Card Formulir Login Pegawai -->
-          <div class="gov-card shadow-sm border">
+          <div class="gov-card shadow-sm">
             
             <div class="text-center mb-4">
-              <div class="mx-auto mb-3" style="width: 54px; height: 54px; border-radius: 14px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #0f766e; font-size: 24px;">
+              <div class="mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 12px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #0f766e; font-size: 24px;">
                 <i class="fas fa-user-check"></i>
               </div>
-              <span class="text-muted text-uppercase font-weight-bold" style="font-size: 10.5px; letter-spacing: 0.8px;">
-                AUTENTIKASI APARATUR SIPIL NEGARA
+              <span class="text-muted text-uppercase font-weight-bold" style="font-size: 11px; letter-spacing: 0.8px;">
+                AUTENTIKASI PEGAWAI ASN
               </span>
               <h4 class="font-weight-bold text-dark mt-1 mb-1">Masuk Akun Pegawai</h4>
-              <p class="text-muted small">Gunakan 18 digit NIP resmi yang terdaftar pada BPMP Provinsi Sulawesi Tenggara.</p>
+              <p class="text-muted small mb-0">Gunakan NIP resmi yang terdaftar pada BPMP Provinsi Sulawesi Tenggara.</p>
             </div>
 
-            <!-- Tombol Cepat: Pindai QR Aula via Kamera HP/Laptop -->
-            <button type="button" onclick="openCameraScanner()" class="btn btn-outline-success btn-block font-weight-bold mb-2 py-2">
+            <!-- Tombol Pindai QR Aula via Kamera -->
+            <button type="button" onclick="openCameraScanner()" class="btn btn-outline-success btn-block font-weight-bold mb-3 py-2" style="border-radius: 8px;">
               <i class="fas fa-camera mr-1.5"></i> Pindai QR Code Aula via Kamera
             </button>
 
-            <!-- Tombol Pasang Aplikasi PWA di HP -->
-            <button type="button" id="btnInstallPwaPegawai" onclick="triggerPwaInstall()" class="btn btn-outline-primary btn-block font-weight-bold mb-3 py-2 d-none">
-              <i class="fas fa-mobile-alt mr-1.5"></i> Pasang Aplikasi di Layar Utama HP
+            <!-- Tombol Pasang PWA di HP jika tersedia -->
+            <button type="button" id="btnInstallPwaPegawai" onclick="triggerPwaInstall()" class="btn btn-outline-primary btn-block font-weight-bold mb-3 py-2 d-none" style="border-radius: 8px;">
+              <i class="fas fa-mobile-alt mr-1.5"></i> Pasang Aplikasi di HP
             </button>
 
             <div class="d-flex align-items-center mb-3">
@@ -424,32 +437,32 @@
                 </label>
                 <div class="input-group">
                   <div class="input-group-prepend">
-                    <span class="input-group-text bg-light text-muted border-right-0">
+                    <span class="input-group-text bg-light text-muted border-right-0" style="border-radius: 8px 0 0 8px;">
                       <i class="fas fa-id-badge"></i>
                     </span>
                   </div>
-                  <input type="text" id="inputNip" required placeholder="Contoh: 197606122002121004" class="form-control font-weight-bold border-left-0" style="font-family: monospace;" autocomplete="username">
+                  <input type="text" id="inputNip" required placeholder="Contoh: 197606122002121004" class="form-control font-weight-bold border-left-0" style="font-family: monospace; border-radius: 0 8px 8px 0; height: 42px;" autocomplete="username">
                 </div>
-                <small class="text-muted">18 digit NIP resmi tanpa spasi.</small>
+                <small class="text-muted" style="font-size: 11px;">18 digit NIP resmi tanpa spasi.</small>
               </div>
 
               <!-- Input Password -->
               <div class="form-group mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <label class="font-weight-bold text-dark small text-uppercase mb-0">
-                    Kata Sandi (Password) <span class="text-danger">*</span>
+                    Kata Sandi <span class="text-danger">*</span>
                   </label>
                   <span class="badge badge-light border text-muted" style="font-size: 10px;">Default: Bpmp2026!</span>
                 </div>
                 <div class="input-group">
                   <div class="input-group-prepend">
-                    <span class="input-group-text bg-light text-muted border-right-0">
+                    <span class="input-group-text bg-light text-muted border-right-0" style="border-radius: 8px 0 0 8px;">
                       <i class="fas fa-key"></i>
                     </span>
                   </div>
-                  <input type="password" id="inputPassword" required placeholder="Masukkan kata sandi..." class="form-control font-weight-bold border-left-0 border-right-0" autocomplete="current-password">
+                  <input type="password" id="inputPassword" required placeholder="Masukkan kata sandi..." class="form-control font-weight-bold border-left-0 border-right-0" style="height: 42px;" autocomplete="current-password">
                   <div class="input-group-append">
-                    <button type="button" onclick="togglePasswordVisibility()" class="btn btn-outline-light text-muted border border-left-0 bg-white" title="Tampilkan / Sembunyikan Password">
+                    <button type="button" onclick="togglePasswordVisibility()" class="btn btn-outline-light text-muted border border-left-0 bg-white" style="border-radius: 0 8px 8px 0;" title="Tampilkan / Sembunyikan Password">
                       <i class="fas fa-eye" id="eyeIcon"></i>
                     </button>
                   </div>
@@ -463,6 +476,13 @@
               </button>
 
             </form>
+
+            <div class="text-center mt-3 pt-3 border-top">
+              <span class="text-muted small">Akses pengelola instansi: </span>
+              <a href="/admin/login" class="text-primary font-weight-bold small text-decoration-none">
+                Login Administrator &rarr;
+              </a>
+            </div>
 
           </div>
 
@@ -493,7 +513,7 @@
           </div>
 
           <div class="text-md-right">
-            <span class="badge badge-light px-3 py-2 font-weight-bold text-dark" style="font-size: 14px;">
+            <span class="badge badge-light px-3 py-2 font-weight-bold text-dark" style="font-size: 14px; border-radius: 8px;">
               <i class="fas fa-clock text-primary mr-1"></i> <span id="eventJpBadge">32 JP</span>
             </span>
           </div>
@@ -537,7 +557,7 @@
                 </tr>
                 <tr class="border-bottom">
                   <td class="text-muted pl-0 py-1.5">Total JP Terkumpul</td>
-                  <td id="empAccumulatedJp" class="font-weight-bold text-success text-right pr-0 py-1.5 font-weight-bold">0 JP</td>
+                  <td id="empAccumulatedJp" class="font-weight-bold text-success text-right pr-0 py-1.5">0 JP</td>
                 </tr>
                 <tr>
                   <td class="text-muted pl-0 py-1.5 align-middle">Status Kehadiran</td>
@@ -569,9 +589,9 @@
               </div>
 
               <div class="input-group mb-2">
-                <input type="text" id="inputPresenceToken" placeholder="Contoh: LPTI-ABC123" class="form-control font-weight-bold text-uppercase border-right-0" style="font-family: monospace;">
+                <input type="text" id="inputPresenceToken" placeholder="Contoh: LPTI-ABC123" class="form-control font-weight-bold text-uppercase border-right-0" style="font-family: monospace; border-radius: 8px 0 0 8px;">
                 <div class="input-group-append">
-                  <button onclick="submitPresenceToken()" id="btnSubmitPresence" class="btn btn-gov-primary font-weight-bold px-3">
+                  <button onclick="submitPresenceToken()" id="btnSubmitPresence" class="btn btn-gov-primary font-weight-bold px-3" style="border-radius: 0 8px 8px 0;">
                     Presensi
                   </button>
                 </div>
@@ -579,7 +599,7 @@
 
               <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 10.5px;">
                 <span>Simulasi lokal?</span>
-                <button onclick="autoFillCurrentToken()" class="btn btn-link btn-sm p-0 text-teal font-weight-bold">
+                <button onclick="autoFillCurrentToken()" class="btn btn-link btn-sm p-0 text-teal font-weight-bold text-decoration-none">
                   Isi Token Proyektor Otomatis ⚡
                 </button>
               </div>
@@ -587,7 +607,7 @@
             </div>
 
             <!-- SUCCESS BOX KETIKA SUDAH HADIR -->
-            <div id="attendanceSuccessBox" class="p-3 rounded bg-light border border-success text-center d-none">
+            <div id="attendanceSuccessBox" class="p-3 rounded bg-light border border-success text-center d-none" style="border-radius: 8px;">
               <div class="text-success mb-1" style="font-size: 26px;">
                 <i class="fas fa-check-circle"></i>
               </div>
@@ -607,7 +627,7 @@
             
             <div class="gov-card-header-line">
               <div class="d-flex align-items-center">
-                <span class="badge badge-primary px-2 py-1 font-weight-bold mr-2" style="background-color: #002d5b;">2</span>
+                <span class="badge badge-primary px-2 py-1 font-weight-bold mr-2" style="background-color: #002d5b; border-radius: 6px;">2</span>
                 <div>
                   <h6 class="font-weight-bold text-dark mb-0">Unggah Berkas LPTI (File Asli PDF)</h6>
                   <span class="text-muted small">Laporan Pasca Pelatihan & Rencana Tindak Lanjut</span>
@@ -621,7 +641,7 @@
             </div>
 
             <!-- Alert Khusus Catatan Revisi Dari Admin -->
-            <div id="revisionAlertBox" class="alert alert-danger border-danger shadow-sm mb-3 d-none">
+            <div id="revisionAlertBox" class="alert alert-danger border-danger shadow-sm mb-3 d-none" style="border-radius: 8px;">
               <div class="d-flex align-items-start">
                 <i class="fas fa-exclamation-triangle text-danger mr-2.5 mt-1"></i>
                 <div>
@@ -648,7 +668,7 @@
                   <div class="text-muted small">Klik di sini untuk menelusuri file PDF laporan (Maks. 15MB)</div>
                 </div>
 
-                <div id="fileSelectedInfo" class="d-none text-left p-2 bg-white rounded border">
+                <div id="fileSelectedInfo" class="d-none text-left p-2.5 bg-white rounded border">
                   <div class="d-flex align-items-center">
                     <i class="fas fa-file-pdf text-danger fa-2x mr-3"></i>
                     <div class="overflow-hidden">
@@ -660,7 +680,7 @@
               </div>
 
               <!-- Info Dokumen Terunggah Sebelumnya -->
-              <div id="currentUploadedDocCard" class="p-2.5 rounded bg-light border mb-3 d-none d-flex justify-content-between align-items-center">
+              <div id="currentUploadedDocCard" class="p-2.5 rounded bg-light border mb-3 d-none d-flex justify-content-between align-items-center" style="border-radius: 8px;">
                 <div class="d-flex align-items-center overflow-hidden mr-2">
                   <i class="fas fa-paperclip text-muted mr-2"></i>
                   <div class="text-truncate">
@@ -670,7 +690,7 @@
                     </a>
                   </div>
                 </div>
-                <a id="btnPreviewPdf" href="#" target="_blank" class="btn btn-sm btn-outline-secondary font-weight-bold flex-shrink-0">
+                <a id="btnPreviewPdf" href="#" target="_blank" class="btn btn-sm btn-outline-secondary font-weight-bold flex-shrink-0" style="border-radius: 6px;">
                   <i class="fas fa-eye mr-1"></i> Buka PDF
                 </a>
               </div>
@@ -689,7 +709,7 @@
             
             <div class="gov-card-header-line">
               <div class="d-flex align-items-center">
-                <span class="badge badge-primary px-2 py-1 font-weight-bold mr-2" style="background-color: #002d5b;">3</span>
+                <span class="badge badge-primary px-2 py-1 font-weight-bold mr-2" style="background-color: #002d5b; border-radius: 6px;">3</span>
                 <div>
                   <h6 class="font-weight-bold text-dark mb-0">Penerbitan E-Sertifikat Kepegawaian</h6>
                   <span class="text-muted small">Sertifikat resmi ber-JP otomatis aktif setelah LPTI disetujui</span>
@@ -698,7 +718,7 @@
             </div>
 
             <!-- KONDISI A: TERKUNCI -->
-            <div id="certLockedView" class="p-4 rounded bg-light border text-center">
+            <div id="certLockedView" class="p-4 rounded bg-light border text-center" style="border-radius: 8px;">
               <div class="text-muted mb-2" style="font-size: 32px;">
                 <i class="fas fa-lock"></i>
               </div>
@@ -706,17 +726,17 @@
               <p id="certLockedReason" class="text-muted small mb-3">
                 Klaim sertifikat akan aktif secara otomatis setelah Admin Kepegawaian menyetujui berkas LPTI yang Anda unggah.
               </p>
-              <button disabled class="btn btn-secondary btn-sm font-weight-bold px-3 py-2 cursor-not-allowed">
+              <button disabled class="btn btn-secondary btn-sm font-weight-bold px-3 py-2 cursor-not-allowed" style="border-radius: 6px;">
                 <i class="fas fa-lock mr-1.5"></i> E-Sertifikat Resmi Terkunci
               </button>
             </div>
 
             <!-- KONDISI B: AKTIF / DISETUJUI -->
-            <div id="certUnlockedView" class="p-4 rounded border border-success bg-light text-center d-none">
+            <div id="certUnlockedView" class="p-4 rounded border border-success bg-light text-center d-none" style="border-radius: 8px;">
               <div class="text-success mb-2" style="font-size: 36px;">
                 <i class="fas fa-award"></i>
               </div>
-              <span class="badge badge-success px-3 py-1 font-weight-bold text-uppercase mb-2">
+              <span class="badge badge-success px-3 py-1 font-weight-bold text-uppercase mb-2" style="border-radius: 6px;">
                 SELAMAT! BERKAS LPTI TELAH DISETUJUI
               </span>
               <h5 class="font-weight-bold text-dark mb-1">E-Sertifikat Resmi Siap Diterbitkan</h5>
@@ -725,10 +745,10 @@
               </div>
 
               <div class="d-flex flex-wrap justify-content-center gap-2">
-                <button onclick="openCertificateModal()" class="btn btn-outline-dark font-weight-bold mr-2 mb-2">
+                <button onclick="openCertificateModal()" class="btn btn-outline-dark font-weight-bold mr-2 mb-2" style="border-radius: 6px;">
                   <i class="fas fa-eye text-teal mr-1.5"></i> Pratinjau Sertifikat
                 </button>
-                <a id="btnDirectDownloadPdf" href="#" target="_blank" class="btn btn-gov-emerald font-weight-bold mb-2">
+                <a id="btnDirectDownloadPdf" href="#" target="_blank" class="btn btn-gov-emerald font-weight-bold mb-2" style="border-radius: 6px;">
                   <i class="fas fa-file-download mr-1.5"></i> Unduh File Asli (PDF)
                 </a>
               </div>
@@ -749,7 +769,7 @@
   <!-- ======================================================== -->
   <div class="modal fade" id="cameraScannerModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-content shadow-lg border-0" style="border-radius: 14px; overflow: hidden;">
         
         <div class="modal-header bg-dark text-white py-3">
           <h6 class="modal-title font-weight-bold mb-0">
@@ -781,10 +801,10 @@
         </div>
 
         <div class="modal-footer py-2 bg-light justify-content-between">
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="switchCameraFacing()">
+          <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold" onclick="switchCameraFacing()" style="border-radius: 6px;">
             <i class="fas fa-sync-alt mr-1"></i> Balik Kamera
           </button>
-          <button type="button" class="btn btn-sm btn-secondary font-weight-bold" data-dismiss="modal" onclick="stopCameraScanner()">
+          <button type="button" class="btn btn-sm btn-secondary font-weight-bold" data-dismiss="modal" onclick="stopCameraScanner()" style="border-radius: 6px;">
             Tutup Kamera
           </button>
         </div>
@@ -798,19 +818,19 @@
   <!-- ======================================================== -->
   <div class="modal fade" id="certificateModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
-      <div class="modal-content shadow-lg border-0" style="border-radius: 16px;">
+      <div class="modal-content shadow-lg border-0" style="border-radius: 14px;">
         
         <div class="modal-header py-3 bg-light d-flex justify-content-between align-items-center">
           <div class="d-flex align-items-center">
-            <span class="badge badge-success mr-2 font-weight-bold">RESMI</span>
+            <span class="badge badge-success mr-2 font-weight-bold px-2.5 py-1">RESMI</span>
             <h6 class="modal-title font-weight-bold mb-0 text-dark">Pratinjau E-Sertifikat Kepegawaian</h6>
           </div>
 
           <div>
-            <a id="btnDownloadCertPdf" href="#" target="_blank" class="btn btn-gov-emerald btn-sm font-weight-bold mr-2">
+            <a id="btnDownloadCertPdf" href="#" target="_blank" class="btn btn-gov-emerald btn-sm font-weight-bold mr-2" style="border-radius: 6px;">
               <i class="fas fa-file-pdf mr-1"></i> Unduh File PDF Asli
             </a>
-            <button onclick="window.print()" class="btn btn-dark btn-sm font-weight-bold mr-2">
+            <button onclick="window.print()" class="btn btn-dark btn-sm font-weight-bold mr-2" style="border-radius: 6px;">
               <i class="fas fa-print mr-1"></i> Cetak (A4)
             </button>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -898,10 +918,10 @@
         </div>
 
         <div class="modal-footer py-2 bg-light">
-          <a id="btnModalDownloadPdf" href="#" target="_blank" class="btn btn-gov-emerald btn-sm font-weight-bold">
+          <a id="btnModalDownloadPdf" href="#" target="_blank" class="btn btn-gov-emerald btn-sm font-weight-bold" style="border-radius: 6px;">
             <i class="fas fa-file-download mr-1"></i> Unduh File Asli (PDF)
           </a>
-          <button type="button" class="btn btn-secondary btn-sm font-weight-bold" data-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-secondary btn-sm font-weight-bold" data-dismiss="modal" style="border-radius: 6px;">Tutup</button>
         </div>
 
       </div>
@@ -921,11 +941,11 @@
   </footer>
 
   <!-- Vendor Scripts -->
-  <script src="/azia/lib/jquery/jquery.min.js"></script>
-  <script src="/azia/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/lib/jquery/jquery.min.js"></script>
+  <script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
   
   <!-- HTML5-QRCode Library (Local & CDN Fallback) -->
-  <script src="/azia/lib/html5-qrcode/html5-qrcode.min.js"></script>
+  <script src="/lib/html5-qrcode/html5-qrcode.min.js"></script>
   <script>
     if (typeof Html5Qrcode === 'undefined') {
       const fallbackScript = document.createElement('script');
@@ -933,6 +953,9 @@
       document.head.appendChild(fallbackScript);
     }
   </script>
+
+  <!-- Azia JS -->
+  <script src="/js/azia.js"></script>
 
   <!-- Application Logic -->
   <script>
@@ -948,30 +971,29 @@
     // Toast Notification System
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
+      if (!container) return;
       const toast = document.createElement('div');
-      const isSuccess = (type === 'success');
-      const isError = (type === 'error');
-
-      toast.className = `gov-toast ${isSuccess ? 'bg-success' : isError ? 'bg-danger' : 'bg-dark'}`;
+      toast.className = `gov-toast toast-${type}`;
+      
+      const icon = type === 'success' ? 'check-circle text-success' : 'exclamation-circle text-danger';
       toast.innerHTML = `
-        <i class="fas ${isSuccess ? 'fa-check-circle' : isError ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2.5" style="font-size: 16px;"></i>
-        <div class="flex-grow-1">${message}</div>
+        <div class="mr-3" style="font-size: 20px;"><i class="fas fa-${icon}"></i></div>
+        <div class="text-dark small font-weight-bold flex-grow-1">${message}</div>
       `;
-
       container.appendChild(toast);
       setTimeout(() => {
-        toast.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+        toast.style.transition = 'all 0.3s ease';
         toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
+        toast.style.transform = 'translateY(-10px)';
         setTimeout(() => toast.remove(), 300);
-      }, 4500);
+      }, 4000);
     }
 
     // Toggle Password Visibility
     function togglePasswordVisibility() {
       const pwInput = document.getElementById('inputPassword');
       const icon = document.getElementById('eyeIcon');
-      const isPassword = (pwInput.type === 'password');
+      const isPassword = pwInput.type === 'password';
       pwInput.type = isPassword ? 'text' : 'password';
       icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
     }
@@ -1036,167 +1058,167 @@
       showToast('Anda telah keluar dari akun pegawai.', 'success');
     }
 
-    // 3. Tampilkan Dashboard & Inisialisasi
+    // 3. Aktivasi Tampilan Dashboard Pegawai Terotentikasi
     function activateDashboardView() {
       document.getElementById('loginSection').classList.add('d-none');
       document.getElementById('dashboardSection').classList.remove('d-none');
 
-      // Update Nav Capsule
-      document.getElementById('navUserBadge').classList.remove('d-none');
-      document.getElementById('navAvatarInitial').textContent = currentAuthUser.name.charAt(0);
+      // Update Nav User Badge
+      const initial = currentAuthUser.name ? currentAuthUser.name.charAt(0).toUpperCase() : 'P';
+      document.getElementById('navAvatarInitial').textContent = initial;
       document.getElementById('navEmployeeName').textContent = currentAuthUser.name;
-      document.getElementById('navEmployeeNip').textContent = `NIP: ${currentAuthUser.nip}`;
+      document.getElementById('navEmployeeNip').textContent = currentAuthUser.nip;
+      document.getElementById('navUserBadge').classList.remove('d-none');
 
-      // Render Data
-      renderEmployeeProfile(currentAuthUser);
-      renderEventBanner(currentEvent);
+      syncCurrentProfile();
 
-      // Sinkronisasi realtime tiap 4 detik
+      // Setup Polling 10 detik agar status verifikasi LPTI update otomatis realtime
       if (pollInterval) clearInterval(pollInterval);
-      pollInterval = setInterval(syncCurrentProfile, 4000);
+      pollInterval = setInterval(syncCurrentProfile, 10000);
     }
 
-    // 4. Sinkronisasi Data Pegawai Terkini
+    // 4. Sinkronisasi Data Pegawai & Status Acara Terkini
     async function syncCurrentProfile() {
       if (!currentAuthUser) return;
       try {
-        let localEvents = [];
-        try {
-          const cached = localStorage.getItem('bpmp_events_cache');
-          if (cached) localEvents = JSON.parse(cached);
-        } catch (e) {}
-
         const queryEv = currentEvent?.id ? `?eventId=${encodeURIComponent(currentEvent.id)}` : '';
         const res = await fetch(`/api/employees/${currentAuthUser.nip}${queryEv}`);
         const data = await res.json();
         if (data.success && data.employee) {
-          let ev = data.event;
-          if (localEvents.length > 0 && (!ev || !ev.title)) {
-            try {
-              const syncRes = await fetch('/api/events/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ events: localEvents })
-              });
-              const syncData = await syncRes.json();
-              if (syncData.success && syncData.event) {
-                ev = syncData.event;
-              }
-            } catch (sErr) {}
-          }
-
           currentAuthUser = data.employee;
-          if (ev) currentEvent = ev;
+          if (data.event) {
+            currentEvent = data.event;
+            renderEventBanner(currentEvent);
+          }
           renderEmployeeProfile(currentAuthUser);
-          renderEventBanner(currentEvent);
         }
       } catch (err) {
-        console.warn('Gagal sinkronisasi data pegawai:', err.message);
+        console.warn('Sync profile notice:', err.message);
+        if (!currentEvent) {
+          const cached = localStorage.getItem('bpmp_events_cache');
+          if (cached) {
+            try {
+              const list = JSON.parse(cached);
+              if (list.length > 0) {
+                currentEvent = list[0];
+                renderEventBanner(currentEvent);
+              }
+            } catch (e) {}
+          }
+        }
       }
     }
 
+    // 5. Render Banner Acara Aktif
     function renderEventBanner(evt) {
       if (!evt) return;
-      document.getElementById('eventTitleBanner').textContent = evt.title || 'Pelatihan Transformasi Digital ASN BPMP Sultra';
-      document.getElementById('eventCategoryBadge').textContent = evt.category || 'Teknis & Manajerial';
+      document.getElementById('eventCategoryBadge').textContent = evt.category || 'Teknis & Manajerial Kepegawaian';
+      document.getElementById('eventTitleBanner').textContent = evt.title;
       document.getElementById('eventScheduleBanner').innerHTML = `
-        <i class="fas fa-calendar-alt mr-1 text-warning"></i> ${evt.schedule || 'Jadwal Ditentukan'} &bull;
+        <i class="fas fa-calendar-alt mr-1 text-warning"></i> ${evt.schedule || '18 - 20 November 2026'} &bull;
         <i class="fas fa-map-marker-alt mr-1 ml-2 text-danger"></i> ${evt.location || 'Auditorium BPMP Sultra'}
       `;
       document.getElementById('eventJpBadge').textContent = `${evt.jp || 32} JP`;
     }
 
+    // 6. Render Profil & Presensi Peserta
     function renderEmployeeProfile(emp) {
-      document.getElementById('empAvatarInitial').textContent = emp.name.charAt(0);
+      const initial = emp.name ? emp.name.charAt(0).toUpperCase() : 'P';
+      document.getElementById('empAvatarInitial').textContent = initial;
       document.getElementById('empName').textContent = emp.name;
       document.getElementById('empNip').textContent = `NIP: ${emp.nip}`;
-      document.getElementById('empJabatan').textContent = emp.jabatan || '-';
-      document.getElementById('empPanggol').textContent = emp.panggol || '-';
-      document.getElementById('empInstansi').textContent = emp.instansi || 'BPMP Prov. Sultra';
+      document.getElementById('empJabatan').textContent = emp.position || '-';
+      document.getElementById('empPanggol').textContent = emp.rank || '-';
+      document.getElementById('empInstansi').textContent = emp.institution || 'BPMP Prov. Sultra';
       document.getElementById('empAccumulatedJp').textContent = `${emp.accumulatedJp || 0} JP`;
 
-      // Status Kehadiran KHUSUS pada event yang aktif saat ini
-      const isAttendedThisEvent = Boolean(emp.attended && currentEvent && emp.eventId === currentEvent.id);
-      const badge = document.getElementById('empAttendanceBadge');
+      // Cek Kehadiran pada Event Aktif
+      const isAttendedThisEvent = Boolean(
+        emp.attendance && (
+          (currentEvent && emp.attendance[currentEvent.id]) ||
+          emp.attendance.status === 'present'
+        )
+      );
+
+      const attBadge = document.getElementById('empAttendanceBadge');
       const actionBox = document.getElementById('attendanceActionBox');
       const successBox = document.getElementById('attendanceSuccessBox');
 
       if (isAttendedThisEvent) {
-        badge.className = 'badge badge-success px-2.5 py-1 font-weight-bold';
-        badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> SUDAH HADIR';
+        attBadge.className = 'badge badge-success px-2.5 py-1 font-weight-bold';
+        attBadge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> HADIR RESMI';
         actionBox.classList.add('d-none');
         successBox.classList.remove('d-none');
-        if (emp.attendedAt) {
-          const d = new Date(emp.attendedAt);
-          document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${d.toLocaleDateString('id-ID')} pukul ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA (${currentEvent.title})`;
-        }
+        
+        const attObj = currentEvent ? emp.attendance[currentEvent.id] : emp.attendance;
+        const timeStr = (typeof attObj === 'object' && attObj?.time) ? attObj.time : 'Pukul 08:30:00 WITA';
+        document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${timeStr}`;
       } else {
-        badge.className = 'badge badge-secondary px-2.5 py-1 font-weight-bold';
-        badge.innerHTML = '<i class="fas fa-times-circle mr-1"></i> BELUM HADIR';
+        attBadge.className = 'badge badge-secondary px-2.5 py-1 font-weight-bold';
+        attBadge.innerHTML = '<i class="fas fa-times-circle mr-1"></i> BELUM HADIR';
         actionBox.classList.remove('d-none');
         successBox.classList.add('d-none');
       }
 
-      // Render Status Berkas LPTI & Sertifikat
+      // Render LPTI & Sertifikat
       renderLptiStatus(emp.lpti, isAttendedThisEvent);
       renderCertificateSection(emp, isAttendedThisEvent);
     }
 
-    // 5. Render Status Berkas LPTI
     function renderLptiStatus(lpti, isAttendedThisEvent = false) {
-      const status = (isAttendedThisEvent && lpti) ? (lpti.status || 'none') : 'none';
       const pill = document.getElementById('lptiStatusPill');
-      const revBox = document.getElementById('revisionAlertBox');
-      const docCard = document.getElementById('currentUploadedDocCard');
-      const docLink = document.getElementById('currentUploadedLink');
+      const revisionBox = document.getElementById('revisionAlertBox');
+      const currentDocCard = document.getElementById('currentUploadedDocCard');
+      const linkDoc = document.getElementById('currentUploadedLink');
       const btnPreview = document.getElementById('btnPreviewPdf');
 
-      if (isAttendedThisEvent && lpti && lpti.filePath) {
-        docCard.classList.remove('d-none');
-        docLink.textContent = lpti.fileOriginalName || lpti.fileName;
-        docLink.href = lpti.filePath;
-        btnPreview.href = lpti.filePath;
-      } else {
-        docCard.classList.add('d-none');
-      }
-
-      if (status === 'none') {
-        pill.innerHTML = `<span class="badge badge-light border text-muted px-2.5 py-1 font-weight-bold">⚪ Belum Diunggah</span>`;
-        revBox.classList.add('d-none');
-      } else if (status === 'pending') {
-        pill.innerHTML = `<span class="badge badge-warning text-dark px-2.5 py-1 font-weight-bold"><i class="fas fa-clock mr-1"></i> Menunggu Verifikasi Admin</span>`;
-        revBox.classList.add('d-none');
-      } else if (status === 'revision') {
-        pill.innerHTML = `<span class="badge badge-danger px-2.5 py-1 font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Perlu Revisi</span>`;
-        revBox.classList.remove('d-none');
-        document.getElementById('revisionNoteContent').textContent = (lpti && lpti.revisionNote) || 'Mohon periksa kembali kelengkapan lembar pengesahan berkas LPTI.';
-      } else if (status === 'approved') {
-        pill.innerHTML = `<span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="fas fa-check-circle mr-1"></i> Disetujui Admin!</span>`;
-        revBox.classList.add('d-none');
+      if (!lpti || lpti.status === 'none') {
+        pill.innerHTML = '<span class="badge badge-light border text-muted px-2.5 py-1 font-weight-bold"><i class="fas fa-clock mr-1"></i> Belum Diunggah</span>';
+        revisionBox.classList.add('d-none');
+        currentDocCard.classList.add('d-none');
+      } else if (lpti.status === 'pending') {
+        pill.innerHTML = '<span class="badge badge-warning text-dark px-2.5 py-1 font-weight-bold"><i class="fas fa-hourglass-half mr-1"></i> Menunggu Verifikasi Admin</span>';
+        revisionBox.classList.add('d-none');
+        currentDocCard.classList.remove('d-none');
+        linkDoc.textContent = lpti.filename || 'LPTI-Tersimpan.pdf';
+        linkDoc.href = lpti.fileUrl || '#';
+        btnPreview.href = lpti.fileUrl || '#';
+      } else if (lpti.status === 'approved') {
+        pill.innerHTML = '<span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="fas fa-check-double mr-1"></i> Terverifikasi Resmi</span>';
+        revisionBox.classList.add('d-none');
+        currentDocCard.classList.remove('d-none');
+        linkDoc.textContent = lpti.filename || 'LPTI-Disetujui.pdf';
+        linkDoc.href = lpti.fileUrl || '#';
+        btnPreview.href = lpti.fileUrl || '#';
+      } else if (lpti.status === 'revision') {
+        pill.innerHTML = '<span class="badge badge-danger px-2.5 py-1 font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Perlu Revisi</span>';
+        revisionBox.classList.remove('d-none');
+        document.getElementById('revisionNoteContent').textContent = lpti.notes || 'Harap periksa kembali format laporan.';
+        currentDocCard.classList.remove('d-none');
+        linkDoc.textContent = lpti.filename || 'LPTI-Revisi.pdf';
+        linkDoc.href = lpti.fileUrl || '#';
+        btnPreview.href = lpti.fileUrl || '#';
       }
     }
 
-    // 6. Render Status E-Sertifikat
     function renderCertificateSection(emp, isAttendedThisEvent = false) {
-      const isApproved = Boolean(
-        isAttendedThisEvent &&
-        emp.lpti?.status === 'approved' &&
-        emp.certificate &&
-        currentEvent &&
-        emp.eventId === currentEvent.id
-      );
       const lockedView = document.getElementById('certLockedView');
       const unlockedView = document.getElementById('certUnlockedView');
       const lockedReason = document.getElementById('certLockedReason');
+      const certBadge = document.getElementById('certNumberBadge');
+      const btnDirectDownload = document.getElementById('btnDirectDownloadPdf');
 
-      if (isApproved) {
+      const isLptiApproved = Boolean(emp.lpti && emp.lpti.status === 'approved');
+      const canUnlock = isAttendedThisEvent && isLptiApproved;
+
+      if (canUnlock) {
         lockedView.classList.add('d-none');
         unlockedView.classList.remove('d-none');
-        document.getElementById('certNumberBadge').textContent = `Nomor Sertifikat: ${emp.certificate.number}`;
-        const directDownloadBtn = document.getElementById('btnDirectDownloadPdf');
-        if (directDownloadBtn) {
-          directDownloadBtn.href = `/api/employees/${emp.nip || emp.id}/certificate.pdf?download=true`;
-        }
+        const certNum = emp.certificateNumber || `800.1.3/SERT-LPTI/2026/${emp.id || '001'}`;
+        certBadge.textContent = `Nomor Sertifikat: ${certNum}`;
+
+        const pdfUrl = `/api/employees/${emp.nip}/certificate.pdf${currentEvent ? `?eventId=${encodeURIComponent(currentEvent.id)}` : ''}`;
+        btnDirectDownload.href = pdfUrl;
       } else {
         lockedView.classList.remove('d-none');
         unlockedView.classList.add('d-none');
@@ -1250,7 +1272,7 @@
           if (result.event) currentEvent = result.event;
           if (result.employee) currentAuthUser = result.employee;
           await syncCurrentProfile();
-          window.history.replaceState({}, '', '/pegawai');
+          window.history.replaceState({}, '', '/');
         } else {
           showToast(result.message, 'error');
         }
@@ -1353,47 +1375,33 @@
                 tokenBadge.textContent = qrData.token;
                 alertBox.classList.remove('d-none');
               }
+              showToast(`Silakan login dengan NIP Anda untuk mencatat kehadiran token ${qrData.token}.`, 'success');
             }
           }
         };
 
-        try {
-          await html5QrScanner.start({ facingMode: currentCameraFacing }, config, onScanSuccess);
-        } catch (e1) {
-          const altFacing = (currentCameraFacing === 'environment') ? 'user' : 'environment';
-          await html5QrScanner.start({ facingMode: altFacing }, config, onScanSuccess);
-          currentCameraFacing = altFacing;
-        }
+        const onScanError = (errorMessage) => {
+          // Abaikan scan frame error berkala
+        };
+
+        await html5QrScanner.start(
+          { facingMode: currentCameraFacing },
+          config,
+          onScanSuccess,
+          onScanError
+        );
 
         document.getElementById('scannerLoadingStatus').classList.add('d-none');
       } catch (err) {
-        console.error('Camera Scanner error:', err);
         document.getElementById('scannerLoadingStatus').classList.add('d-none');
         const errBox = document.getElementById('scannerErrorMessage');
         errBox.classList.remove('d-none');
-        document.getElementById('scannerErrorText').textContent = 
-          'Tidak dapat mengakses kamera: ' + (err.message || 'Izin kamera ditolak atau perangkat tidak memiliki kamera.');
-      }
-    }
-          // Fallback facingMode
-          const altFacing = (currentCameraFacing === 'environment') ? 'user' : 'environment';
-          await html5QrScanner.start({ facingMode: altFacing }, config, onScanSuccess);
-          currentCameraFacing = altFacing;
-        }
-
-        document.getElementById('scannerLoadingStatus').classList.add('d-none');
-      } catch (err) {
-        console.error('Camera Scanner error:', err);
-        document.getElementById('scannerLoadingStatus').classList.add('d-none');
-        const errBox = document.getElementById('scannerErrorMessage');
-        errBox.classList.remove('d-none');
-        document.getElementById('scannerErrorText').textContent = 
-          'Tidak dapat mengakses kamera: ' + (err.message || 'Izin kamera ditolak atau perangkat tidak memiliki kamera.');
+        document.getElementById('scannerErrorText').textContent = 'Kamera tidak dapat diakses atau diblokir izin peramban: ' + err.message;
       }
     }
 
     async function switchCameraFacing() {
-      currentCameraFacing = (currentCameraFacing === 'environment') ? 'user' : 'environment';
+      currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
       await startCameraScanner();
     }
 
@@ -1403,7 +1411,7 @@
           await html5QrScanner.stop();
           html5QrScanner.clear();
         } catch (e) {
-          console.warn('Scanner stop warning:', e);
+          console.warn('Stop scanner note:', e);
         }
         html5QrScanner = null;
       }
@@ -1413,21 +1421,29 @@
       stopCameraScanner();
     });
 
-    // 8. Upload File PDF LPTI Asli
+    // ========================================================
+    // FEATURE: UNGGAH DOKUMEN LPTI (PDF ONLY)
+    // ========================================================
     function handleFileSelected(input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-          showToast('Hanya file berformat PDF (.pdf) yang diperbolehkan!', 'error');
-          input.value = '';
-          return;
-        }
+      const file = input.files[0];
+      if (!file) return;
 
-        document.getElementById('fileUploadPrompt').classList.add('d-none');
-        document.getElementById('fileSelectedInfo').classList.remove('d-none');
-        document.getElementById('selectedFileName').textContent = file.name;
-        document.getElementById('selectedFileSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        showToast('Hanya dokumen format PDF (.pdf) yang diperbolehkan!', 'error');
+        input.value = '';
+        return;
       }
+
+      if (file.size > 15 * 1024 * 1024) {
+        showToast('Ukuran file maksimal 15 MB!', 'error');
+        input.value = '';
+        return;
+      }
+
+      document.getElementById('fileUploadPrompt').classList.add('d-none');
+      document.getElementById('fileSelectedInfo').classList.remove('d-none');
+      document.getElementById('selectedFileName').textContent = file.name;
+      document.getElementById('selectedFileSize').textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
     }
 
     async function handleUploadLpti(e) {
@@ -1435,108 +1451,103 @@
       if (!currentAuthUser) return;
 
       const fileInput = document.getElementById('lptiFileInput');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        showToast('Silakan pilih berkas PDF asli terlebih dahulu!', 'error');
+      const file = fileInput.files[0];
+      if (!file) {
+        showToast('Pilih berkas PDF LPTI terlebih dahulu!', 'error');
         return;
       }
-
-      if (!currentAuthUser.attended) {
-        showToast('Anda wajib presensi kehadiran di aula sebelum mengunggah LPTI!', 'error');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('lptiFile', fileInput.files[0]);
 
       const btn = document.getElementById('btnUploadSubmit');
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm mr-2" role="status"></span> Mengunggah Berkas PDF...`;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-1"></span> Mengunggah Berkas...';
+
+      const formData = new FormData();
+      formData.append('lptiFile', file);
+      if (currentEvent?.id) formData.append('eventId', currentEvent.id);
 
       try {
         const res = await fetch(`/api/employees/${currentAuthUser.nip}/upload-lpti`, {
           method: 'POST',
           body: formData
         });
-        const result = await res.json();
-        if (result.success) {
-          showToast(result.message, 'success');
+        const data = await res.json();
+        if (data.success) {
+          showToast('Berkas LPTI berhasil diunggah! Status: Menunggu Verifikasi Admin.', 'success');
+          fileInput.value = '';
           document.getElementById('fileUploadPrompt').classList.remove('d-none');
           document.getElementById('fileSelectedInfo').classList.add('d-none');
-          fileInput.value = '';
           await syncCurrentProfile();
         } else {
-          showToast(result.message, 'error');
+          showToast(data.message || 'Gagal mengunggah berkas LPTI.', 'error');
         }
       } catch (err) {
-        showToast('Gagal mengunggah berkas: ' + err.message, 'error');
+        showToast('Terjadi kesalahan unggah: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-1.5"></i> <span>Unggah Berkas LPTI</span>`;
+        btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1.5"></i> <span>Unggah Berkas LPTI</span>';
       }
     }
 
-    // 9. Modal Preview & Cetak E-Sertifikat
+    // ========================================================
+    // FEATURE: PREVIEW & DOWNLOAD E-SERTIFIKAT
+    // ========================================================
     async function openCertificateModal() {
       if (!currentAuthUser) return;
       try {
-        const res = await fetch(`/api/employees/${currentAuthUser.nip}/certificate`);
+        const queryEv = currentEvent?.id ? `?eventId=${encodeURIComponent(currentEvent.id)}` : '';
+        const res = await fetch(`/api/employees/${currentAuthUser.nip}/certificate${queryEv}`);
         const data = await res.json();
         if (data.success && data.certificate) {
           const cert = data.certificate;
+          const emp = data.employee;
 
-          document.getElementById('certModalNumber').textContent = `Nomor: ${cert.number}`;
-          document.getElementById('certModalName').textContent = cert.employeeName;
-          document.getElementById('certModalNip').textContent = `NIP: ${cert.employeeNip}`;
-          document.getElementById('certModalJabatanInstansi').textContent = `${cert.employeeJabatan} • ${cert.employeeInstansi}`;
+          document.getElementById('certModalNumber').textContent = `Nomor: ${cert.certificateNumber}`;
+          document.getElementById('certModalName').textContent = emp.name;
+          document.getElementById('certModalNip').textContent = `NIP. ${emp.nip}`;
+          document.getElementById('certModalJabatanInstansi').textContent = `${emp.position || 'Aparatur Sipil Negara'} • ${emp.institution || 'BPMP Provinsi Sulawesi Tenggara'}`;
           document.getElementById('certModalEventTitle').textContent = `"${cert.eventTitle}"`;
-          document.getElementById('certModalSchedule').textContent = cert.eventSchedule;
-          document.getElementById('certModalJp').textContent = `${cert.eventJp} Jam Pelajaran (JP)`;
-          document.getElementById('certModalQr').src = cert.qrVerification;
-          document.getElementById('certModalVerifier').textContent = cert.verifier;
+          document.getElementById('certModalSchedule').textContent = cert.schedule || '18 - 20 November 2026';
+          document.getElementById('certModalJp').textContent = `${cert.jp || 32} JP`;
+          document.getElementById('certModalIssueDate').textContent = `Ditetapkan pada: ${cert.issuedDate || '16 November 2026'}`;
+          document.getElementById('certModalVerifier').textContent = cert.verifierName || 'Junaiddin Pagala, ST, M.T.';
 
-          const d = new Date(cert.issuedAt);
-          document.getElementById('certModalIssueDate').textContent = `Ditetapkan pada: ${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-
-          const btnDownload = document.getElementById('btnDownloadCertPdf');
-          if (btnDownload) {
-            btnDownload.href = cert.pdfDownloadUrl;
-          }
-          const modalDl = document.getElementById('btnModalDownloadPdf');
-          if (modalDl) {
-            modalDl.href = `/api/employees/${currentAuthUser.nip}/certificate.pdf?download=true`;
+          if (cert.qrCode) {
+            document.getElementById('certModalQr').src = cert.qrCode;
           }
 
           const printArea = document.getElementById('certificatePrintArea');
           const defaultOrnaments = document.getElementById('defaultTemplateOrnaments');
 
-          if (cert.template && cert.template.filePath) {
-            const ext = (cert.template.fileName || '').split('.').pop().toLowerCase();
-            if (['png', 'jpg', 'jpeg'].includes(ext)) {
-              if (defaultOrnaments) defaultOrnaments.classList.add('d-none');
-              if (printArea) {
-                printArea.style.backgroundImage = `url('${cert.template.filePath}')`;
-                printArea.style.backgroundSize = '100% 100%';
-                printArea.style.backgroundRepeat = 'no-repeat';
-              }
-            } else {
-              if (defaultOrnaments) defaultOrnaments.classList.remove('d-none');
-              if (printArea) printArea.style.backgroundImage = 'none';
-            }
+          if (cert.customTemplateUrl) {
+            printArea.style.backgroundImage = `url('${cert.customTemplateUrl}')`;
+            printArea.style.backgroundSize = '100% 100%';
+            printArea.style.backgroundRepeat = 'no-repeat';
+            printArea.style.border = 'none';
+            if (defaultOrnaments) defaultOrnaments.style.display = 'none';
+            printArea.style.paddingTop = '180px';
           } else {
-            if (defaultOrnaments) defaultOrnaments.classList.remove('d-none');
-            if (printArea) printArea.style.backgroundImage = 'none';
+            printArea.style.backgroundImage = 'none';
+            printArea.style.border = '4px double #064e3b';
+            if (defaultOrnaments) defaultOrnaments.style.display = 'block';
+            printArea.style.paddingTop = '';
           }
+
+          const pdfUrl = `/api/employees/${emp.nip}/certificate.pdf${currentEvent ? `?eventId=${encodeURIComponent(currentEvent.id)}` : ''}`;
+          document.getElementById('btnDownloadCertPdf').href = pdfUrl;
+          document.getElementById('btnModalDownloadPdf').href = pdfUrl;
 
           $('#certificateModal').modal('show');
         } else {
-          showToast(data.message || 'Gagal memuat sertifikat.', 'error');
+          showToast(data.message || 'Sertifikat belum dapat diterbitkan.', 'error');
         }
       } catch (err) {
         showToast('Gagal memuat sertifikat: ' + err.message, 'error');
       }
     }
 
-    // 10. Deteksi Parameter URL (Hasil Scan Kamera HP: ?token=LPTI-...&event=EVT-...)
+    // ========================================================
+    // AUTO DETECTION DARI URL PARAMS (SCAN HP LANGSUNG)
+    // ========================================================
     async function checkUrlParamsAndSession() {
       const params = new URLSearchParams(window.location.search);
       const tokenParam = params.get('token');

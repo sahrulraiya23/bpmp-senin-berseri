@@ -2,7 +2,7 @@
  * Service Worker untuk PWA Senin Berseri - BPMP Prov. Sulawesi Tenggara
  */
 
-const CACHE_NAME = 'senin-berseri-pwa-v1';
+const CACHE_NAME = 'senin-berseri-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/pegawai',
@@ -11,9 +11,13 @@ const STATIC_ASSETS = [
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
   '/icons/favicon.png',
+  '/css/azia.min.css',
   '/azia/css/azia.min.css',
+  '/lib/fontawesome-free/css/all.min.css',
   '/azia/lib/fontawesome-free/css/all.min.css',
+  '/lib/jquery/jquery.min.js',
   '/azia/lib/jquery/jquery.min.js',
+  '/lib/bootstrap/js/bootstrap.bundle.min.js',
   '/azia/lib/bootstrap/js/bootstrap.bundle.min.js'
 ];
 

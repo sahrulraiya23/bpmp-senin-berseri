@@ -21,7 +21,9 @@ app.use(express.urlencoded({ extended: true }));
 // Paths & Environment
 const IS_VERCEL = Boolean(process.env.VERCEL);
 const BASE_DIR = __dirname;
-const TEMPLATES_DIR = path.join(BASE_DIR, 'templates');
+const PUBLIC_DIR = fs.existsSync(path.join(BASE_DIR, 'public'))
+  ? path.join(BASE_DIR, 'public')
+  : path.join(BASE_DIR, 'templates');
 const DATA_DIR = IS_VERCEL ? os.tmpdir() : BASE_DIR;
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'lpti');
 const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
@@ -35,9 +37,9 @@ const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
   }
 });
 
-// Static File Serving - Semua Frontend Berada di TEMPLATES_DIR
-app.use(express.static(TEMPLATES_DIR));
-app.use('/azia', express.static(TEMPLATES_DIR));
+// Static File Serving - Frontend Berada di PUBLIC_DIR
+app.use(express.static(PUBLIC_DIR));
+app.use('/azia', express.static(PUBLIC_DIR));
 app.use('/uploads/lpti', express.static(UPLOAD_DIR));
 app.use('/uploads/templates', express.static(TEMPLATE_DIR));
 if (IS_VERCEL) {
@@ -1003,36 +1005,36 @@ app.post('/api/reset-data', async (req, res) => {
 // PAGE ROUTES (Alur Utama: Langsung Login Pegawai di "/")
 // ========================================================
 app.get('/', (req, res) => {
-  res.sendFile(path.join(TEMPLATES_DIR, 'index.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(TEMPLATES_DIR, 'index.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 app.get('/pegawai', (req, res) => {
-  res.sendFile(path.join(TEMPLATES_DIR, 'index.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 app.get('/admin/login', (req, res) => {
-  res.sendFile(path.join(TEMPLATES_DIR, 'admin-login.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'admin-login.html'));
 });
 
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(TEMPLATES_DIR, 'admin.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
 });
 
 app.get('/proyektor', (req, res) => {
-  res.sendFile(path.join(TEMPLATES_DIR, 'proyektor.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'proyektor.html'));
 });
 
 app.get('/qr', (req, res) => {
-  res.sendFile(path.join(TEMPLATES_DIR, 'proyektor.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'proyektor.html'));
 });
 
 // 404 Handler
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(TEMPLATES_DIR, 'index.html'));
+  res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 // Export Express app untuk Vercel Serverless Function (@vercel/node)
