@@ -1,270 +1,633 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Sistem Kepegawaian - Presensi, LPTI & E-Sertifikat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Senin Berseri - Sistem Presensi Mandiri, Verifikasi LPTI & E-Sertifikat ASN BPMP Sultra</title>
+
+  <!-- Vendor CSS (Azia Bootstrap 4) -->
+  <link href="/azia/lib/fontawesome-free/css/all.min.css" rel="stylesheet">
+  <link href="/azia/lib/ionicons/css/ionicons.min.css" rel="stylesheet">
+  <link href="/azia/lib/typicons.font/typicons.css" rel="stylesheet">
+
+  <!-- Azia Template CSS -->
+  <link rel="stylesheet" href="/azia/css/azia.min.css">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
+
   <style>
+    :root {
+      --gov-primary: #002d5b;
+      --gov-primary-dark: #001b38;
+      --gov-teal: #0f766e;
+      --gov-teal-dark: #0d655e;
+      --gov-gold: #d97706;
+      --gov-light-bg: #f8fafc;
+    }
+
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Official Government Strip */
+    .gov-top-bar {
+      background: linear-gradient(90deg, #001f3f 0%, #002d5b 50%, #001f3f 100%);
+      color: #ffffff;
+      padding: 7px 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #d97706;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Azia Header Customization */
+    .az-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 2px 4px rgba(0, 45, 91, 0.04);
+      padding: 12px 0;
+    }
+
+    .gov-brand {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: #002d5b;
+    }
+    .gov-brand:hover {
+      text-decoration: none;
+      color: #001f3f;
+    }
+    .gov-logo-badge {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #002d5b 0%, #0a3d74 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      box-shadow: 0 4px 8px rgba(0, 45, 91, 0.15);
+      border: 1px solid #cbd5e1;
+      color: #ffffff;
+    }
+    .gov-brand-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      line-height: 1.2;
+      color: #002d5b;
+    }
+    .gov-brand-subtitle {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0f766e;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    /* Navigation Links */
+    .az-header-menu .nav-link {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #475569;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .az-header-menu .nav-link:hover {
+      color: #002d5b;
+      background-color: #f1f5f9;
+      text-decoration: none;
+    }
+    .az-header-menu .nav-link.active {
+      color: #002d5b;
+      background-color: #e0f2fe;
+      font-weight: 800;
+    }
+
+    /* Hero Section */
+    .gov-hero-section {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 48px 0 36px;
+      text-align: center;
+    }
+
+    .gov-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 14px;
+      border-radius: 30px;
+      background-color: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .gov-hero-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .gov-hero-title {
+        font-size: 1.65rem;
+      }
+    }
+
+    .gov-hero-desc {
+      font-size: 15px;
+      color: #64748b;
+      max-width: 760px;
+      margin: 0 auto 24px;
+      line-height: 1.6;
+    }
+
+    /* Event Ribbon Banner */
+    .gov-event-banner {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid #0f766e;
+      border-radius: 14px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      padding: 16px 22px;
+      margin-top: 10px;
+      text-align: left;
+    }
+
+    /* Portal Action Cards */
+    .gov-portal-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+      padding: 28px 24px 24px;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }
+    .gov-portal-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 25px -5px rgba(0, 45, 91, 0.09);
+      border-color: #cbd5e1;
+    }
+    .gov-portal-card.card-primary-portal {
+      border-top: 4px solid #002d5b;
+    }
+    .gov-portal-card.card-aula-portal {
+      border-top: 4px solid #0f766e;
+    }
+    .gov-portal-card.card-pegawai-portal {
+      border-top: 4px solid #d97706;
+    }
+
+    .gov-portal-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .btn-gov-primary {
+      background-color: #002d5b;
+      border-color: #002d5b;
+      color: #ffffff;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 10px 18px;
+      transition: all 0.2s;
+    }
+    .btn-gov-primary:hover {
+      background-color: #001b38;
+      border-color: #001b38;
+      color: #ffffff;
+    }
+
+    .btn-gov-emerald {
+      background-color: #0f766e;
+      border-color: #0f766e;
+      color: #ffffff;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 10px 18px;
+      transition: all 0.2s;
+    }
+    .btn-gov-emerald:hover {
+      background-color: #0d655e;
+      border-color: #0d655e;
+      color: #ffffff;
+    }
+
+    .btn-gov-gold {
+      background-color: #d97706;
+      border-color: #d97706;
+      color: #ffffff;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 10px 18px;
+      transition: all 0.2s;
+    }
+    .btn-gov-gold:hover {
+      background-color: #b45309;
+      border-color: #b45309;
+      color: #ffffff;
+    }
+
+    /* Workflow Cards */
+    .gov-sop-card {
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      padding: 22px 18px;
+      text-align: center;
+      height: 100%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+    .gov-step-num {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #002d5b 0%, #0f766e 100%);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 6px rgba(0, 45, 91, 0.15);
+    }
+
+    /* Footer */
+    .gov-footer {
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      padding: 24px 0;
+      margin-top: auto;
+      font-size: 12px;
+      color: #64748b;
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+<body>
 
-  <!-- Header / Navigation Bar -->
-  <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-emerald-100">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-700 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
-        </div>
-        <div>
-          <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 block">KEMENDIKBUDRISTEK &bull; BPMP SULTRA</span>
-          <h1 class="text-base font-extrabold text-slate-900 leading-tight">Senin Berseri &bull; Presensi & E-Sertifikat</h1>
-        </div>
+  <!-- 1. Top Government Official Strip -->
+  <div class="gov-top-bar">
+    <div class="container d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-landmark mr-2 text-warning"></i>
+        <span>KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI &bull; BPMP PROVINSI SULAWESI TENGGARA</span>
       </div>
-      <div class="flex items-center space-x-2">
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-          Server Aktif
+      <div>
+        <span class="badge badge-success px-2 py-1 font-weight-bold" style="font-size: 10.5px;">
+          <i class="fas fa-circle mr-1" style="font-size: 8px;"></i> SISTEM AKTIF
         </span>
       </div>
+    </div>
+  </div>
+
+  <!-- 2. Azia Navigation Bar -->
+  <header class="az-header">
+    <div class="container d-flex align-items-center justify-content-between">
+      
+      <!-- Brand Logo & Identity -->
+      <a href="/" class="gov-brand">
+        <div class="gov-logo-badge">
+          <i class="fas fa-award fa-lg"></i>
+        </div>
+        <div>
+          <div class="gov-brand-title">SENIN BERSERI</div>
+          <div class="gov-brand-subtitle">BPMP PROVINSI SULAWESI TENGGARA</div>
+        </div>
+      </a>
+
+      <!-- Menu Navigation -->
+      <div class="az-header-menu d-none d-lg-flex align-items-center">
+        <a href="/" class="nav-link active">
+          <i class="fas fa-home mr-1.5"></i> Beranda
+        </a>
+        <a href="/proyektor" class="nav-link">
+          <i class="fas fa-qrcode mr-1.5"></i> Layar Aula
+        </a>
+        <a href="/pegawai" class="nav-link">
+          <i class="fas fa-id-card mr-1.5"></i> Portal Pegawai
+        </a>
+        <a href="/admin" class="nav-link">
+          <i class="fas fa-user-shield mr-1.5"></i> Dashboard Admin
+        </a>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="d-flex align-items-center">
+        <a href="/pegawai" class="btn btn-outline-success btn-sm font-weight-bold mr-2">
+          <i class="fas fa-sign-in-alt mr-1"></i> Masuk Pegawai
+        </a>
+        <a href="/admin/login" class="btn btn-gov-primary btn-sm font-weight-bold">
+          <i class="fas fa-lock mr-1"></i> Admin Login
+        </a>
+      </div>
+
     </div>
   </header>
 
-  <!-- Main Hero & Navigation Hub -->
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 w-full flex-grow flex flex-col justify-center">
-    
-    <!-- Hero Title -->
-    <div class="text-center max-w-3xl mx-auto mb-12">
-      <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold uppercase tracking-wider mb-4 shadow-sm">
-        <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-        </svg>
-        <span>Platform Manajemen Pengembangan Kompetensi ASN</span>
-      </div>
-      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-4">
-        Sistem Presensi Mandiri, <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Verifikasi LPTI</span> & E-Sertifikat
-      </h2>
-      <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-        Solusi digital satu pintu kepegawaian untuk validasi kehadiran anti-titip lewat Dynamic QR Code 30 detik, review berkas LPTI PDF asli, dan penerbitan sertifikat resmi ber-JP.
-      </p>
-    </div>
-
-    <!-- Active Event Mini Ribbon -->
-    <div id="eventRibbon" class="max-w-3xl mx-auto w-full mb-10 bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center space-x-3 text-left w-full sm:w-auto">
-        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        </div>
-        <div>
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Pelatihan Aktif Saat Ini</span>
-          <h4 id="eventRibbonTitle" class="text-sm font-bold text-slate-900 line-clamp-1">Memuat data kegiatan pelatihan...</h4>
-        </div>
-      </div>
-      <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
-        <span id="eventRibbonJp" class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm">
-          -- JP
-        </span>
-        <span id="eventRibbonCategory" class="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg">
-          Memuat...
-        </span>
-      </div>
-    </div>
-
-    <!-- 3 Navigation Roles Cards (Pisah antara Admin, Proyektor QR, dan Pegawai) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
+  <!-- 3. Hero Header Section -->
+  <section class="gov-hero-section">
+    <div class="container">
       
-      <!-- Card 1: Admin Kepegawaian -->
-      <div class="group relative bg-white rounded-3xl p-7 border-2 border-slate-200/90 hover:border-emerald-500 shadow-sm hover:shadow-xl hover:shadow-emerald-600/10 transition-all duration-300 flex flex-col justify-between">
-        <div class="absolute -top-3 right-5">
-          <span class="px-3 py-0.5 rounded-full text-[11px] font-bold bg-slate-900 text-white tracking-wide uppercase shadow-sm">
-            Panitia
-          </span>
-        </div>
-
-        <div>
-          <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 shadow-sm">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-          </div>
-
-          <h3 class="text-xl font-bold text-slate-900 mb-2">Dashboard Admin Kepegawaian</h3>
-          <p class="text-xs text-slate-600 mb-5 leading-relaxed">
-            Pusat kendali panitia: formulir penyesuaian event & bobot JP, pengaturan template e-sertifikat (Foto/PDF), serta kurasi & persetujuan berkas LPTI 104 pegawai.
-          </p>
-
-          <ul class="space-y-2 text-xs text-slate-600 mb-6 border-t border-slate-100 pt-4">
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Setup Event & Bobot JP (1-120)</span>
-            </li>
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Upload Template Foto / Dokumen PDF</span>
-            </li>
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Cek Berkas LPTI & Aksi Setujui / Revisi</span>
-            </li>
-          </ul>
-        </div>
-
-        <a href="/admin" class="w-full inline-flex items-center justify-center px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all duration-200 group-hover:translate-x-0.5 text-xs">
-          <span>Buka Dashboard Admin</span>
-          <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-        </a>
+      <div class="gov-hero-badge">
+        <i class="fas fa-shield-alt mr-1.5"></i> Platform Manajemen Pengembangan Kompetensi ASN
       </div>
 
-      <!-- Card 2: Layar Proyektor QR Aula (Khusus Layar Besar) -->
-      <div class="group relative bg-white rounded-3xl p-7 border-2 border-emerald-500/80 shadow-md hover:shadow-xl hover:shadow-emerald-600/15 transition-all duration-300 flex flex-col justify-between">
-        <div class="absolute -top-3 right-5">
-          <span class="px-3 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white tracking-wide uppercase shadow-sm">
-            Layar Aula
-          </span>
-        </div>
+      <h1 class="gov-hero-title">
+        Sistem Presensi Mandiri, <span class="text-teal" style="color: #0f766e;">Verifikasi LPTI</span> & E-Sertifikat
+      </h1>
 
-        <div>
-          <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mb-5 group-hover:scale-105 shadow-md shadow-emerald-600/30 transition-all duration-300">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-            </svg>
+      <p class="gov-hero-desc">
+        Solusi digital satu pintu terintegrasi BPMP Provinsi Sulawesi Tenggara untuk validasi kehadiran aula anti-titip via Dynamic QR Code 30 detik, kurasi dokumen LPTI PDF asli, dan penerbitan e-sertifikat resmi ber-JP.
+      </p>
+
+      <!-- Active Event Live Ribbon -->
+      <div class="row justify-content-center">
+        <div class="col-lg-9 col-md-11">
+          <div class="gov-event-banner d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
+            <div class="d-flex align-items-center mb-3 mb-sm-0">
+              <div class="mr-3 text-teal" style="font-size: 26px; color: #0f766e;">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+              <div>
+                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">
+                  Sesi Pelatihan Aktif di Aula
+                </span>
+                <h6 id="activeEventTitle" class="mb-0 font-weight-bold text-dark text-truncate" style="max-width: 480px;">
+                  Memuat data kegiatan pelatihan...
+                </h6>
+                <div class="text-muted small mt-0.5" id="activeEventDetails">
+                  <i class="fas fa-map-marker-alt text-danger mr-1"></i> Auditorium BPMP Sultra
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center">
+              <span id="activeEventJp" class="badge badge-success px-3 py-2 font-weight-bold mr-2" style="font-size: 12px;">
+                -- JP
+              </span>
+              <a href="/proyektor" class="btn btn-outline-primary btn-sm font-weight-bold">
+                <i class="fas fa-external-link-alt mr-1"></i> Buka Aula
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 4. Main Executive Navigation Cards (3 Portals) -->
+  <main class="container my-5">
+    
+    <div class="text-center mb-4">
+      <span class="text-muted text-uppercase font-weight-bold" style="font-size: 11px; letter-spacing: 0.8px;">
+        PILIH MODUL AKSES SISTEM
+      </span>
+      <h3 class="font-weight-bold text-dark mt-1">Portal Layanan Kepegawaian</h3>
+    </div>
+
+    <div class="row">
+      
+      <!-- Card 1: Dashboard Admin -->
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="gov-portal-card card-primary-portal">
+          <div>
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="gov-portal-icon bg-light text-primary border" style="color: #002d5b !important;">
+                <i class="fas fa-user-shield"></i>
+              </div>
+              <span class="badge badge-dark px-2.5 py-1 font-weight-bold" style="font-size: 10px;">
+                PANITIA / ADMIN
+              </span>
+            </div>
+
+            <h5 class="font-weight-bold text-dark mb-2">Dashboard Administrator</h5>
+            <p class="text-muted small mb-3" style="line-height: 1.6;">
+              Pusat kendali panitia: formulir event & bobot JP, kustomisasi template sertifikat (Foto/PDF), persetujuan LPTI 104 pegawai, dan penyelesaian sesi resmi.
+            </p>
+
+            <ul class="list-unstyled small text-muted border-top pt-3 mb-4">
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Setup Event & Bobot JP (1-120)
+              </li>
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Upload Template Foto / Dokumen PDF
+              </li>
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Kurasi LPTI & Rekap 104 ASN BPMP
+              </li>
+              <li class="d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Tutup & Selesaikan Event Resmi
+              </li>
+            </ul>
           </div>
 
-          <h3 class="text-xl font-bold text-slate-900 mb-2">Layar QR Presensi Aula</h3>
-          <p class="text-xs text-slate-600 mb-5 leading-relaxed">
-            Tampilan khusus proyektor LCD aula: Dynamic QR Code rotasi 30 detik (anti-titip presensi), countdown timer besar, dan counter kehadiran peserta secara live.
-          </p>
-
-          <ul class="space-y-2 text-xs text-slate-600 mb-6 border-t border-slate-100 pt-4">
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Dynamic QR Code Resolusi Tinggi</span>
-            </li>
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Rotasi Token Otomatis Tiap 30 Detik</span>
-            </li>
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Tombol Kembali ke Admin & Fullscreen</span>
-            </li>
-          </ul>
+          <a href="/admin" class="btn btn-gov-primary btn-block">
+            <span>Buka Dashboard Admin</span>
+            <i class="fas fa-arrow-right ml-2"></i>
+          </a>
         </div>
+      </div>
 
-        <a href="/proyektor" class="w-full inline-flex items-center justify-center px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md shadow-emerald-600/30 transition-all duration-200 group-hover:translate-x-0.5 text-xs">
-          <span>Buka Layar Proyektor Aula</span>
-          <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-        </a>
+      <!-- Card 2: Layar Proyektor QR Aula -->
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="gov-portal-card card-aula-portal">
+          <div>
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="gov-portal-icon bg-light text-success border" style="color: #0f766e !important;">
+                <i class="fas fa-qrcode"></i>
+              </div>
+              <span class="badge badge-success px-2.5 py-1 font-weight-bold" style="font-size: 10px;">
+                LAYAR AULA
+              </span>
+            </div>
+
+            <h5 class="font-weight-bold text-dark mb-2">Layar QR Presensi Aula</h5>
+            <p class="text-muted small mb-3" style="line-height: 1.6;">
+              Tampilan khusus proyektor LCD aula: Dynamic QR Code rotasi 30 detik anti-titip absen, countdown timer halus, dan counter kehadiran pegawai secara live.
+            </p>
+
+            <ul class="list-unstyled small text-muted border-top pt-3 mb-4">
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Dynamic QR Resolusi Tinggi Proyektor
+              </li>
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Rotasi Token Otomatis Tiap 30 Detik
+              </li>
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Counter Kehadiran Real-time dari Aula
+              </li>
+              <li class="d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Tampilan Pengumuman Event Selesai
+              </li>
+            </ul>
+          </div>
+
+          <a href="/proyektor" class="btn btn-gov-emerald btn-block">
+            <span>Buka Layar Proyektor Aula</span>
+            <i class="fas fa-desktop ml-2"></i>
+          </a>
+        </div>
       </div>
 
       <!-- Card 3: Portal Pegawai / Peserta -->
-      <div class="group relative bg-white rounded-3xl p-7 border-2 border-slate-200/90 hover:border-emerald-600 shadow-sm hover:shadow-xl hover:shadow-emerald-600/15 transition-all duration-300 flex flex-col justify-between">
-        <div class="absolute -top-3 right-5">
-          <span class="px-3 py-0.5 rounded-full text-[11px] font-bold bg-teal-600 text-white tracking-wide uppercase shadow-sm">
-            Peserta
-          </span>
-        </div>
+      <div class="col-lg-4 col-md-12 mb-4">
+        <div class="gov-portal-card card-pegawai-portal">
+          <div>
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="gov-portal-icon bg-light text-warning border" style="color: #d97706 !important;">
+                <i class="fas fa-id-card"></i>
+              </div>
+              <span class="badge badge-warning text-white px-2.5 py-1 font-weight-bold" style="font-size: 10px;">
+                PESERTA ASN
+              </span>
+            </div>
 
-        <div>
-          <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300 shadow-sm">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
+            <h5 class="font-weight-bold text-dark mb-2">Portal Mandiri Pegawai</h5>
+            <p class="text-muted small mb-3" style="line-height: 1.6;">
+              Akses aparatur sipil negara: validasi kehadiran aula, <strong>pindai QR code via kamera HP / laptop</strong>, unggah berkas PDF asli LPTI, dan unduh sertifikat resmi.
+            </p>
+
+            <ul class="list-unstyled small text-muted border-top pt-3 mb-4">
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Login NIP Resmi 104 Pegawai BPMP
+              </li>
+              <li class="mb-1.5 d-flex align-items-center font-weight-bold text-dark">
+                <i class="fas fa-camera text-primary mr-2"></i> Scan QR Kamera HP / Laptop Otomatis
+              </li>
+              <li class="mb-1.5 d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Unggah Laporan LPTI (Format PDF)
+              </li>
+              <li class="d-flex align-items-center">
+                <i class="fas fa-check-circle text-success mr-2"></i> Pratinjau & Unduh File Asli PDF Sertifikat
+              </li>
+            </ul>
           </div>
 
-          <h3 class="text-xl font-bold text-slate-900 mb-2">Portal Mandiri Pegawai</h3>
-          <p class="text-xs text-slate-600 mb-5 leading-relaxed">
-            Akses mandiri aparatur sipil negara: validasi kehadiran di aula via NIP & password, unggah file PDF asli LPTI, pantau status kurasi, dan unduh sertifikat resmi.
-          </p>
-
-          <ul class="space-y-2 text-xs text-slate-600 mb-6 border-t border-slate-100 pt-4">
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Scan Kamera HP & Login 104 NIP</span>
-            </li>
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Unggah Laporan Asli LPTI (PDF)</span>
-            </li>
-            <li class="flex items-center">
-              <svg class="w-3.5 h-3.5 text-emerald-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Unduh File Asli PDF E-Sertifikat</span>
-            </li>
-          </ul>
+          <a href="/pegawai" class="btn btn-gov-gold btn-block">
+            <span>Masuk ke Portal Pegawai</span>
+            <i class="fas fa-sign-in-alt ml-2"></i>
+          </a>
         </div>
-
-        <a href="/pegawai" class="w-full inline-flex items-center justify-center px-5 py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl shadow-md shadow-teal-700/20 transition-all duration-200 group-hover:translate-x-0.5 text-xs">
-          <span>Masuk Portal Pegawai</span>
-          <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-        </a>
       </div>
 
     </div>
 
-    <!-- 3 Step Workflow Information -->
-    <div class="mt-16 max-w-4xl mx-auto w-full">
-      <div class="text-center mb-8">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-700">Alur Standar Kepegawaian</h4>
-        <p class="text-xl font-bold text-slate-800">Siklus Presensi hingga Penerbitan Sertifikat</p>
+    <!-- 5. 3-Step Official Workflow -->
+    <div class="my-5 pt-3">
+      <div class="text-center mb-4">
+        <span class="text-muted text-uppercase font-weight-bold" style="font-size: 11px; letter-spacing: 0.8px;">
+          STANDAR OPERASIONAL PROSEDUR (SOP)
+        </span>
+        <h4 class="font-weight-bold text-dark mt-1">Alur Presensi Mandiri Hingga Penerbitan E-Sertifikat</h4>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm text-center">
-          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center mx-auto mb-3">1</div>
-          <h5 class="text-sm font-bold text-slate-900 mb-1">Presensi di Layar Aula</h5>
-          <p class="text-xs text-slate-500">Scan QR Code dinamis 30 detik. Sistem menolak barcode kadaluarsa untuk mencegah titip absen.</p>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <div class="gov-sop-card">
+            <div class="gov-step-num">1</div>
+            <h6 class="font-weight-bold text-dark mb-2">Presensi Mandiri di Aula</h6>
+            <p class="text-muted small mb-0">
+              Pegawai memindai Dynamic QR Code di layar proyektor menggunakan <strong>kamera HP</strong> atau memasukkan 6 digit token aktif. Barcode kadaluarsa ditolak otomatis.
+            </p>
+          </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm text-center">
-          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center mx-auto mb-3">2</div>
-          <h5 class="text-sm font-bold text-slate-900 mb-1">Unggah PDF Asli LPTI</h5>
-          <p class="text-xs text-slate-500">Pegawai mengunggah dokumen laporan PDF. Admin membaca berkas dan memberi status persetujuan / revisi.</p>
+        <div class="col-md-4 mb-3">
+          <div class="gov-sop-card">
+            <div class="gov-step-num">2</div>
+            <h6 class="font-weight-bold text-dark mb-2">Unggah Berkas LPTI (PDF)</h6>
+            <p class="text-muted small mb-0">
+              Setelah hadir, pegawai mengunggah laporan pasca pelatihan (LPTI) asli berformat PDF. Panitia kepegawaian memeriksa berkas dan memberikan status disetujui / revisi.
+            </p>
+          </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm text-center">
-          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center mx-auto mb-3">3</div>
-          <h5 class="text-sm font-bold text-slate-900 mb-1">Terbit E-Sertifikat Resmi</h5>
-          <p class="text-xs text-slate-500">Begitu disetujui, nomor sertifikat resmi otomatis diterbitkan dan tombol unduh/cetak langsung aktif.</p>
+        <div class="col-md-4 mb-3">
+          <div class="gov-sop-card">
+            <div class="gov-step-num">3</div>
+            <h6 class="font-weight-bold text-dark mb-2">Terbit E-Sertifikat Resmi</h6>
+            <p class="text-muted small mb-0">
+              Begitu berkas disetujui, nomor sertifikat resmi diterbitkan otomatis dan pegawai dapat langsung melihat pratinjau serta mengunduh dokumen PDF asli ber-JP.
+            </p>
+          </div>
         </div>
       </div>
     </div>
 
   </main>
 
-  <!-- Footer -->
-  <footer class="bg-white border-t border-slate-200 py-6">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
-      <p class="mb-1 font-bold">Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara &copy; 2026</p>
-      <p class="text-slate-400">Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi &bull; Sistem Presensi Mandiri, Verifikasi LPTI & E-Sertifikat ASN (Senin Berseri)</p>
+  <!-- 6. Official Government Footer -->
+  <footer class="gov-footer">
+    <div class="container text-center">
+      <div class="mb-2 font-weight-bold text-dark">
+        Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara &copy; 2026
+      </div>
+      <div>
+        Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi &bull; Sistem Presensi Mandiri, Verifikasi LPTI & E-Sertifikat ASN (Senin Berseri)
+      </div>
     </div>
   </footer>
 
+  <!-- Scripts -->
+  <script src="/azia/lib/jquery/jquery.min.js"></script>
+  <script src="/azia/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Ambil info event aktif untuk ribbon
-    async function loadEventRibbon() {
+    async function loadActiveEvent() {
       try {
         const res = await fetch('/api/event');
         const data = await res.json();
         if (data.success && data.event) {
-          document.getElementById('eventRibbonTitle').textContent = data.event.title || 'Pelatihan Kepegawaian';
-          document.getElementById('eventRibbonJp').textContent = `${data.event.jp || 32} JP`;
-          document.getElementById('eventRibbonCategory').textContent = data.event.category || 'Teknis & Manajerial';
+          const ev = data.event;
+          document.getElementById('activeEventTitle').textContent = ev.title || 'Pelatihan Transformasi Digital ASN BPMP Sultra';
+          document.getElementById('activeEventJp').textContent = `${ev.jp || 32} JP`;
+          document.getElementById('activeEventDetails').innerHTML = `
+            <i class="fas fa-calendar-alt text-warning mr-1"></i> ${ev.schedule || 'Tahun 2026'} &bull;
+            <i class="fas fa-map-marker-alt text-danger ml-2 mr-1"></i> ${ev.location || 'Auditorium BPMP Sultra'}
+          `;
         }
       } catch (err) {
-        console.error('Gagal memuat event:', err);
+        console.warn('Gagal memuat event aktif:', err);
       }
     }
-    loadEventRibbon();
+
+    document.addEventListener('DOMContentLoaded', loadActiveEvent);
   </script>
 </body>
 </html>
-
