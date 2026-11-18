@@ -8,6 +8,8 @@
     "location": "Auditorium BPMP Sultra",
     "organizer": "Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara",
     "active": true,
+    "status": "active",
+    "completedAt": null,
     "certificateTemplate": null,
     "certSettings": {
       "prefix": "800.1.3/SERT-LPTI/2026",
@@ -29,6 +31,8 @@
       "location": "Auditorium BPMP Sultra",
       "organizer": "Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara",
       "active": true,
+      "status": "active",
+      "completedAt": null,
       "certificateTemplate": null,
       "certSettings": {
         "prefix": "800.1.3/SERT-LPTI/2026",

@@ -86,7 +86,10 @@ function writeJson(data) {
 // ========================================================
 // 2. ENGINE SQLITE (UNTUK LOKAL / DEDICATED SERVER)
 // ========================================================
-function run(sql, params = []) {
+let initialized = false;
+let initPromise = null;
+
+function rawRun(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.run(sql, params, function (err) {
       if (err) reject(err);
@@ -95,7 +98,7 @@ function run(sql, params = []) {
   });
 }
 
-function get(sql, params = []) {
+function rawGet(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.get(sql, params, (err, row) => {
       if (err) reject(err);
@@ -104,13 +107,43 @@ function get(sql, params = []) {
   });
 }
 
-function all(sql, params = []) {
+function rawAll(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
       if (err) reject(err);
       else resolve(rows || []);
     });
   });
+}
+
+async function ensureInitialized() {
+  if (initialized) return;
+  if (!initPromise) {
+    initPromise = (async () => {
+      if (useSqlite) {
+        await initSqliteDb();
+      } else {
+        initJsonDb();
+      }
+      initialized = true;
+    })();
+  }
+  await initPromise;
+}
+
+async function run(sql, params = []) {
+  await ensureInitialized();
+  return rawRun(sql, params);
+}
+
+async function get(sql, params = []) {
+  await ensureInitialized();
+  return rawGet(sql, params);
+}
+
+async function all(sql, params = []) {
+  await ensureInitialized();
+  return rawAll(sql, params);
 }
 
 function formatEmployee(row) {
@@ -167,6 +200,8 @@ function formatEvent(row) {
     location: row.location,
     organizer: row.organizer || 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
     active: Boolean(row.active),
+    status: row.status || (Boolean(row.active) ? 'active' : 'completed'),
+    completedAt: row.completed_at || null,
     certificateTemplate: certTemplate,
     certSettings: certSettings,
     createdAt: row.created_at,
@@ -175,7 +210,7 @@ function formatEvent(row) {
 }
 
 async function initSqliteDb() {
-  await run(`
+  await rawRun(`
     CREATE TABLE IF NOT EXISTS admins (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -186,15 +221,15 @@ async function initSqliteDb() {
     )
   `);
 
-  const existingAdmin = await get('SELECT * FROM admins WHERE username = ?', ['admin']);
+  const existingAdmin = await rawGet('SELECT * FROM admins WHERE username = ?', ['admin']);
   if (!existingAdmin) {
-    await run(
+    await rawRun(
       'INSERT INTO admins (username, password, name, role, created_at) VALUES (?, ?, ?, ?, ?)',
       ['admin', 'Bpmp2026!', 'Administrator Kepegawaian BPMP Sultra', 'superadmin', new Date().toISOString()]
     );
   }
 
-  await run(`
+  await rawRun(`
     CREATE TABLE IF NOT EXISTS events (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -204,6 +239,8 @@ async function initSqliteDb() {
       location TEXT,
       organizer TEXT,
       active INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'active',
+      completed_at TEXT,
       certificate_template TEXT,
       cert_settings TEXT,
       created_at TEXT,
@@ -211,7 +248,14 @@ async function initSqliteDb() {
     )
   `);
 
-  await run(`
+  try {
+    await rawRun("ALTER TABLE events ADD COLUMN status TEXT DEFAULT 'active'");
+  } catch (e) {}
+  try {
+    await rawRun("ALTER TABLE events ADD COLUMN completed_at TEXT");
+  } catch (e) {}
+
+  await rawRun(`
     CREATE TABLE IF NOT EXISTS employees (
       id TEXT PRIMARY KEY,
       nip TEXT UNIQUE NOT NULL,
@@ -240,28 +284,28 @@ async function initSqliteDb() {
     )
   `);
 
-  await run(`
+  await rawRun(`
     CREATE TABLE IF NOT EXISTS system_settings (
       key TEXT PRIMARY KEY,
       value TEXT
     )
   `);
 
-  const certPrefix = await get('SELECT value FROM system_settings WHERE key = ?', ['cert_prefix']);
+  const certPrefix = await rawGet('SELECT value FROM system_settings WHERE key = ?', ['cert_prefix']);
   if (!certPrefix) {
-    await run('INSERT INTO system_settings (key, value) VALUES (?, ?)', ['cert_prefix', '800.1.3/SERT-LPTI/2026']);
-    await run('INSERT INTO system_settings (key, value) VALUES (?, ?)', ['cert_counter', '1']);
+    await rawRun('INSERT INTO system_settings (key, value) VALUES (?, ?)', ['cert_prefix', '800.1.3/SERT-LPTI/2026']);
+    await rawRun('INSERT INTO system_settings (key, value) VALUES (?, ?)', ['cert_counter', '1']);
   }
 
   // Seed data awal jika tabel pegawai masih kosong
-  const empCount = await get('SELECT COUNT(*) as count FROM employees');
+  const empCount = await rawGet('SELECT COUNT(*) as count FROM employees');
   if (empCount.count === 0) {
     const jsonPath = path.join(BASE_DIR, 'db.json');
     if (fs.existsSync(jsonPath)) {
       const dbJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
       const rawEmployees = dbJson.employees || [];
       for (const emp of rawEmployees) {
-        await run(`
+        await rawRun(`
           INSERT INTO employees (
             id, nip, name, password, panggol, jabatan, instansi, pendidikan,
             event_id, event_title, attended, attended_at, accumulated_jp,
@@ -300,12 +344,12 @@ async function initSqliteDb() {
   }
 
   // Seed default official event jika kosong
-  const eventCount = await get('SELECT COUNT(*) as count FROM events');
+  const eventCount = await rawGet('SELECT COUNT(*) as count FROM events');
   if (eventCount.count === 0) {
-    await run(`
+    await rawRun(`
       INSERT INTO events (
-        id, title, jp, category, schedule, location, organizer, active, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, title, jp, category, schedule, location, organizer, active, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
     `, [
       'EVT-2026-001',
       'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra',
@@ -323,11 +367,7 @@ async function initSqliteDb() {
 
 // Inisialisasi awal database
 async function initDb() {
-  if (useSqlite) {
-    await initSqliteDb();
-  } else {
-    initJsonDb();
-  }
+  return ensureInitialized();
 }
 
 // ========================================================
@@ -577,6 +617,7 @@ async function saveEvent(eventData, isNew = false) {
           schedule = ?,
           location = ?,
           active = 1,
+          status = 'active',
           updated_at = ?
         WHERE id = ?
       `, [
@@ -591,8 +632,8 @@ async function saveEvent(eventData, isNew = false) {
     } else {
       await run(`
         INSERT INTO events (
-          id, title, jp, category, schedule, location, organizer, active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+          id, title, jp, category, schedule, location, organizer, active, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'active', ?, ?)
       `, [
         eventId,
         eventData.title,
@@ -635,6 +676,8 @@ async function saveEvent(eventData, isNew = false) {
       location: eventData.location || '',
       organizer: eventData.organizer || 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
       active: true,
+      status: 'active',
+      completedAt: null,
       certificateTemplate: (idx >= 0 && dbData.events[idx].certificateTemplate) ? dbData.events[idx].certificateTemplate : null,
       certSettings: (idx >= 0 && dbData.events[idx].certSettings) ? dbData.events[idx].certSettings : {
         prefix: '800.1.3/SERT-LPTI/2026',
@@ -667,22 +710,154 @@ async function activateEventById(eventId) {
   const now = new Date().toISOString();
   if (useSqlite) {
     await run('UPDATE events SET active = 0');
-    await run('UPDATE events SET active = 1, updated_at = ? WHERE id = ?', [now, eventId]);
+    await run("UPDATE events SET active = 1, status = 'active', updated_at = ? WHERE id = ?", [now, eventId]);
     return getEventById(eventId);
   } else {
     const dbData = readJson();
     (dbData.events || []).forEach(e => {
       e.active = (e.id === eventId);
-      if (e.id === eventId) e.updatedAt = now;
+      if (e.id === eventId) {
+        e.status = 'active';
+        e.updatedAt = now;
+      }
     });
     const found = (dbData.events || []).find(e => e.id === eventId);
     if (found) {
       found.active = true;
+      found.status = 'active';
       found.updatedAt = now;
       dbData.event = found;
     }
     writeJson(dbData);
     return found;
+  }
+}
+
+async function completeEventById(eventId) {
+  const now = new Date().toISOString();
+  if (useSqlite) {
+    await run(`
+      UPDATE events SET
+        active = 0,
+        status = 'completed',
+        completed_at = ?,
+        updated_at = ?
+      WHERE id = ?
+    `, [now, now, eventId]);
+    return getEventById(eventId);
+  } else {
+    const dbData = readJson();
+    let target = null;
+    (dbData.events || []).forEach(e => {
+      if (e.id === eventId) {
+        e.active = false;
+        e.status = 'completed';
+        e.completedAt = now;
+        e.updatedAt = now;
+        target = e;
+      }
+    });
+    if (dbData.event && dbData.event.id === eventId) {
+      dbData.event.active = false;
+      dbData.event.status = 'completed';
+      dbData.event.completedAt = now;
+      dbData.event.updatedAt = now;
+    }
+    writeJson(dbData);
+    return target || getEventById(eventId);
+  }
+}
+
+async function syncEvents(clientEvents) {
+  if (!Array.isArray(clientEvents) || clientEvents.length === 0) {
+    return getAllEvents();
+  }
+
+  const now = new Date().toISOString();
+
+  if (useSqlite) {
+    for (const ev of clientEvents) {
+      if (!ev || !ev.id || !ev.title) continue;
+      const existing = await get('SELECT * FROM events WHERE id = ?', [ev.id]);
+      if (!existing) {
+        await run(`
+          INSERT INTO events (
+            id, title, jp, category, schedule, location, organizer, active, status, completed_at, certificate_template, cert_settings, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          ev.id,
+          ev.title,
+          ev.jp || 32,
+          ev.category || 'Teknis',
+          ev.schedule || '',
+          ev.location || '',
+          ev.organizer || 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
+          ev.active ? 1 : 0,
+          ev.status || (ev.active ? 'active' : 'completed'),
+          ev.completedAt || null,
+          ev.certificateTemplate ? JSON.stringify(ev.certificateTemplate) : null,
+          ev.certSettings ? JSON.stringify(ev.certSettings) : null,
+          ev.createdAt || now,
+          ev.updatedAt || now
+        ]);
+      } else {
+        const clientUp = new Date(ev.updatedAt || 0).getTime();
+        const serverUp = new Date(existing.updated_at || 0).getTime();
+        if (clientUp > serverUp) {
+          await run(`
+            UPDATE events SET
+              title = ?, jp = ?, category = ?, schedule = ?, location = ?,
+              active = ?, status = ?, completed_at = ?, updated_at = ?
+            WHERE id = ?
+          `, [
+            ev.title,
+            ev.jp || 32,
+            ev.category || 'Teknis',
+            ev.schedule || '',
+            ev.location || '',
+            ev.active ? 1 : 0,
+            ev.status || (ev.active ? 'active' : 'completed'),
+            ev.completedAt || null,
+            ev.updatedAt || now,
+            ev.id
+          ]);
+        }
+      }
+    }
+    return getAllEvents();
+  } else {
+    const dbData = readJson();
+    if (!dbData.events) dbData.events = [];
+
+    clientEvents.forEach(cEv => {
+      if (!cEv || !cEv.id || !cEv.title) return;
+      const idx = dbData.events.findIndex(e => e.id === cEv.id);
+      if (idx === -1) {
+        dbData.events.push({
+          ...cEv,
+          createdAt: cEv.createdAt || now,
+          updatedAt: cEv.updatedAt || now
+        });
+      } else {
+        const clientUp = new Date(cEv.updatedAt || 0).getTime();
+        const serverUp = new Date(dbData.events[idx].updatedAt || 0).getTime();
+        if (clientUp > serverUp) {
+          dbData.events[idx] = { ...dbData.events[idx], ...cEv };
+        }
+      }
+    });
+
+    // Urutkan event terbaru
+    dbData.events.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    // Sinkronkan active event
+    const activeEv = dbData.events.find(e => e.active);
+    if (activeEv) {
+      dbData.event = activeEv;
+    }
+
+    writeJson(dbData);
+    return dbData.events;
   }
 }
 
@@ -864,6 +1039,8 @@ module.exports = {
   getEventById,
   saveEvent,
   activateEventById,
+  completeEventById,
+  syncEvents,
   deleteEventById,
   toggleActiveEventStatus,
   updateEventTemplate,

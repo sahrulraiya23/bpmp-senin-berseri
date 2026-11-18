@@ -207,12 +207,16 @@ app.get('/api/qr/current', async (req, res) => {
       targetEvent = await sqliteDb.getActiveEvent();
     }
 
-    if (!targetEvent || !targetEvent.title) {
+    if (!targetEvent || !targetEvent.title || !targetEvent.active || targetEvent.status === 'completed') {
       return res.json({
         success: true,
         active: false,
-        message: 'Belum ada event pelatihan yang aktif di layar presensi aula.',
-        event: null
+        status: targetEvent ? targetEvent.status : 'inactive',
+        message: (targetEvent && targetEvent.status === 'completed')
+          ? `Kegiatan pelatihan "${targetEvent.title}" (${targetEvent.id}) telah SELESAI. Presensi mandiri ditutup.`
+          : 'Belum ada event pelatihan yang aktif di layar presensi aula.',
+        eventId: targetEvent ? targetEvent.id : null,
+        eventTitle: targetEvent ? targetEvent.title : ''
       });
     }
 
@@ -456,6 +460,45 @@ app.post('/api/events/:id/activate', async (req, res) => {
     event: activated,
     events: allEvents
   });
+});
+
+// Endpoint Selesaikan Event Pelatihan
+app.post('/api/events/:id/complete', async (req, res) => {
+  try {
+    const completed = await sqliteDb.completeEventById(req.params.id);
+    if (!completed) {
+      return res.status(404).json({ success: false, message: 'Event tidak ditemukan dalam daftar.' });
+    }
+    const allEvents = await sqliteDb.getAllEvents();
+    res.json({
+      success: true,
+      message: `Event "${completed.title}" (${completed.id}) resmi diselesaikan! Presensi ditutup & data diarsipkan.`,
+      event: completed,
+      events: allEvents
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menyelesaikan event: ' + err.message });
+  }
+});
+
+// Endpoint Sinkronisasi Event Lintas Serverless Vercel
+app.post('/api/events/sync', async (req, res) => {
+  try {
+    const clientEvents = req.body.events;
+    if (Array.isArray(clientEvents) && clientEvents.length > 0) {
+      await sqliteDb.syncEvents(clientEvents);
+    }
+    const allEvents = await sqliteDb.getAllEvents();
+    const activeEvent = await sqliteDb.getActiveEvent();
+    res.json({
+      success: true,
+      message: 'Event berhasil disinkronkan.',
+      events: allEvents,
+      event: activeEvent
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal sinkronisasi event: ' + err.message });
+  }
 });
 
 app.delete('/api/events/:id', async (req, res) => {

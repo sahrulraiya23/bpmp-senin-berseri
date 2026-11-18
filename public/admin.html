@@ -561,9 +561,14 @@
           </div>
 
           <div class="col-lg-4 mt-3 mt-lg-0 text-lg-right">
-            <button id="btnActivateCurrentEvent" onclick="activateCurrentSelectedEvent()" class="btn btn-warning btn-sm font-weight-bold d-none mb-2">
-              <i class="fas fa-bolt mr-1"></i> Terbitkan Sesi Ini ke Layar Aula
-            </button>
+            <div class="mb-2">
+              <button id="btnActivateCurrentEvent" onclick="activateCurrentSelectedEvent()" class="btn btn-warning btn-sm font-weight-bold d-none mr-2">
+                <i class="fas fa-bolt mr-1"></i> Terbitkan Sesi Ini ke Layar Aula
+              </button>
+              <button id="btnCompleteCurrentEvent" onclick="completeCurrentSelectedEvent()" class="btn btn-danger btn-sm font-weight-bold d-none" title="Tutup presensi aula dan selesaikan event ini">
+                <i class="fas fa-flag-checkered mr-1"></i> Selesaikan Event Ini
+              </button>
+            </div>
             <div class="d-flex flex-wrap justify-content-lg-end gap-2">
               <button onclick="switchMainTab('qr')" class="btn btn-gov-emerald btn-sm">
                 <i class="fas fa-qrcode mr-1"></i> Layar QR Aula
@@ -1171,12 +1176,17 @@
       const badgeId = document.getElementById('displayStep2EventId');
       if (badgeId) badgeId.textContent = ev.id || 'EVT';
 
-      const isActive = Boolean(ev.active || (eventData && eventData.id === ev.id && eventData.active));
+      const isCompleted = ev.status === 'completed';
+      const isActive = Boolean(ev.active && !isCompleted);
       const statusBadge = document.getElementById('displayActiveStatusBadge');
       const btnActivate = document.getElementById('btnActivateCurrentEvent');
+      const btnComplete = document.getElementById('btnCompleteCurrentEvent');
 
       if (statusBadge) {
-        if (isActive) {
+        if (isCompleted) {
+          statusBadge.className = 'badge badge-dark text-white px-2.5 py-1 font-weight-bold';
+          statusBadge.innerHTML = '<i class="fas fa-flag-checkered text-warning mr-1"></i>KEGIATAN SELESAI (ARSIP)';
+        } else if (isActive) {
           statusBadge.className = 'badge-gov-active';
           statusBadge.innerHTML = '<i class="fas fa-circle text-success mr-1"></i>SESI AKTIF DI AULA';
         } else {
@@ -1190,6 +1200,15 @@
           btnActivate.classList.add('d-none');
         } else {
           btnActivate.classList.remove('d-none');
+          btnActivate.innerHTML = `<i class="fas fa-bolt mr-1"></i> ${isCompleted ? 'Buka Kembali Sesi Ini' : 'Terbitkan Sesi Ini ke Layar Aula'}`;
+        }
+      }
+
+      if (btnComplete) {
+        if (isActive) {
+          btnComplete.classList.remove('d-none');
+        } else {
+          btnComplete.classList.add('d-none');
         }
       }
 
@@ -1222,9 +1241,45 @@
     }
 
     async function activateCurrentSelectedEvent() {
-      if (currentSelectedEventId) {
-        await activateEvent(currentSelectedEventId);
-        openEventDetail(currentSelectedEventId, false);
+      const targetId = currentSelectedEventId || (eventData && eventData.id);
+      if (targetId) {
+        await activateEvent(targetId);
+        openEventDetail(targetId, false);
+      }
+    }
+
+    async function completeCurrentSelectedEvent() {
+      const targetId = currentSelectedEventId || (eventData && eventData.id);
+      if (targetId) {
+        await completeEvent(targetId);
+      }
+    }
+
+    async function completeEvent(eventId) {
+      const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
+      const title = ev ? ev.title : eventId;
+      if (!confirm(`Selesaikan Kegiatan Pelatihan:\n"${title}" (${eventId})?\n\nSesi presensi mandiri di aula dan rotasi QR Code akan ditutup, dan seluruh rekap kehadiran serta sertifikat peserta akan dibukukan sebagai arsip resmi yang tuntas.`)) return;
+      
+      try {
+        const res = await fetch(`/api/events/${eventId}/complete`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          if (data.events) {
+            allEventsList = data.events;
+            localStorage.setItem('bpmp_events_cache', JSON.stringify(data.events));
+          }
+          await loadEventData();
+          await loadEmployees();
+          updateDynamicQr();
+          if (currentSelectedEventId === eventId) {
+            openEventDetail(eventId, false);
+          }
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyelesaikan event: ' + err.message, 'error');
       }
     }
 
@@ -1257,6 +1312,11 @@
           currentSelectedEventId = result.event.id;
           editingEventId = null;
           
+          if (result.events && result.events.length > 0) {
+            allEventsList = result.events;
+            localStorage.setItem('bpmp_events_cache', JSON.stringify(result.events));
+          }
+
           await loadEventData();
           await loadEmployees();
           await updateDynamicQr();
@@ -1279,6 +1339,10 @@
         const data = await res.json();
         if (data.success) {
           showToast(data.message, 'success');
+          if (data.events) {
+            allEventsList = data.events;
+            localStorage.setItem('bpmp_events_cache', JSON.stringify(data.events));
+          }
           await loadEventData();
           await loadEmployees();
           updateDynamicQr();
@@ -1300,6 +1364,8 @@
         const data = await res.json();
         if (data.success) {
           showToast(data.message, 'success');
+          allEventsList = allEventsList.filter(e => e.id !== eventId);
+          localStorage.setItem('bpmp_events_cache', JSON.stringify(allEventsList));
           if (currentSelectedEventId === eventId) {
             closeEventWorkflow();
           }
@@ -1544,23 +1610,59 @@
     }
 
     // ==============================================================
-    // SINKRONISASI EVENT & KATALOG
+    // SINKRONISASI EVENT & KATALOG (PERSISTENSI LINTAS REFRESH VERCEL)
     // ==============================================================
     async function loadEventData() {
       try {
+        // Baca cache lokal untuk memulihkan event jika Vercel Serverless baru restart
+        let localEvents = [];
+        try {
+          const cached = localStorage.getItem('bpmp_events_cache');
+          if (cached) localEvents = JSON.parse(cached);
+        } catch (e) {}
+
         const res = await fetch('/api/event');
         const data = await res.json();
-        if (data.success && data.event) {
-          eventData = data.event;
-          
-          if (data.events && data.events.length > 0) {
-            allEventsList = data.events;
-            populateEventFilterDropdown(allEventsList);
-            renderEventsList();
+        
+        if (data.success) {
+          let serverEvents = data.events || [];
+
+          // Jika ada event lokal yang belum ada di server (akibat Vercel cold boot), sinkronkan otomatis
+          if (localEvents.length > 0) {
+            const missingInServer = localEvents.filter(le => !serverEvents.some(se => se.id === le.id));
+            if (missingInServer.length > 0) {
+              try {
+                const syncRes = await fetch('/api/events/sync', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ events: localEvents })
+                });
+                const syncData = await syncRes.json();
+                if (syncData.success && syncData.events) {
+                  serverEvents = syncData.events;
+                  if (syncData.event) data.event = syncData.event;
+                }
+              } catch (syncErr) {
+                console.warn('Sync serverless notice:', syncErr);
+              }
+            }
           }
+
+          eventData = data.event;
+          allEventsList = serverEvents;
+
+          // Simpan ke localStorage agar tidak pernah hilang saat refresh
+          if (allEventsList && allEventsList.length > 0) {
+            localStorage.setItem('bpmp_events_cache', JSON.stringify(allEventsList));
+          }
+
+          populateEventFilterDropdown(allEventsList);
+          renderEventsList();
 
           if (currentSelectedEventId) {
             openEventDetail(currentSelectedEventId, false);
+          } else if (eventData && eventData.id) {
+            openEventDetail(eventData.id, false);
           }
         }
       } catch (err) {
@@ -1588,22 +1690,30 @@
       }
 
       container.innerHTML = allEventsList.map(ev => {
-        const isActive = Boolean(ev.active || (eventData && eventData.id === ev.id && eventData.active));
+        const isCompleted = ev.status === 'completed';
+        const isActive = Boolean(ev.active && !isCompleted);
         const participants = employeesData.filter(e => (e.eventId || 'EVT-2026-001') === ev.id);
         const totalCount = participants.length;
         const attendedCount = participants.filter(e => e.attended).length;
         const certCount = participants.filter(e => e.certificate).length;
 
+        let statusBadge = '';
+        if (isCompleted) {
+          statusBadge = '<span class="badge badge-dark font-weight-bold"><i class="fas fa-flag-checkered text-warning mr-1"></i>SELESAI</span>';
+        } else if (isActive) {
+          statusBadge = '<span class="badge badge-success font-weight-bold"><i class="fas fa-circle text-white mr-1"></i>AKTIF DI AULA</span>';
+        } else {
+          statusBadge = '<span class="badge badge-secondary">Arsip</span>';
+        }
+
         return `
           <div class="col-md-6 col-xl-4 mb-4">
-            <div class="card h-100 ${isActive ? 'border-primary shadow' : 'border shadow-sm'}">
+            <div class="card h-100 ${isActive ? 'border-primary shadow' : (isCompleted ? 'border-dark shadow-sm bg-light' : 'border shadow-sm')}">
               <div class="card-body d-flex flex-column justify-content-between p-4">
                 <div>
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="badge ${isActive ? 'badge-primary' : 'badge-light'} font-weight-bold px-2 py-1">${ev.id || 'EVT'}</span>
-                    ${isActive 
-                      ? '<span class="badge badge-success font-weight-bold"><i class="fas fa-circle text-white mr-1"></i>AKTIF DI AULA</span>' 
-                      : '<span class="badge badge-secondary">Arsip</span>'}
+                    ${statusBadge}
                   </div>
 
                   <h6 class="font-weight-bold text-dark mb-2">${ev.title}</h6>
@@ -1611,7 +1721,8 @@
                   <div class="small text-muted mb-3">
                     <div class="mb-1"><i class="fas fa-award text-info mr-1"></i> ${ev.jp || 32} Jam Pelajaran (JP)</div>
                     <div class="mb-1"><i class="fas fa-calendar-alt text-warning mr-1"></i> ${ev.schedule || 'Jadwal Ditentukan'}</div>
-                    <div><i class="fas fa-map-marker-alt text-danger mr-1"></i> ${ev.location || 'Auditorium BPMP Sultra'}</div>
+                    <div class="mb-1"><i class="fas fa-map-marker-alt text-danger mr-1"></i> ${ev.location || 'Auditorium BPMP Sultra'}</div>
+                    ${isCompleted && ev.completedAt ? `<div class="text-success font-weight-bold small mt-1"><i class="fas fa-check-double mr-1"></i> Selesai: ${new Date(ev.completedAt).toLocaleDateString('id-ID')}</div>` : ''}
                   </div>
                 </div>
 
@@ -1620,18 +1731,22 @@
                     <button onclick="openEventDetail('${ev.id}')" class="btn btn-sm btn-outline-primary font-weight-bold">
                       <i class="fas fa-eye mr-1"></i> Rincian & QR
                     </button>
-                    ${!isActive ? `
-                      <button onclick="activateEvent('${ev.id}')" class="btn btn-sm btn-outline-success font-weight-bold" title="Aktifkan di Layar Aula">
-                        <i class="fas fa-bolt"></i>
+                    ${isActive ? `
+                      <button onclick="completeEvent('${ev.id}')" class="btn btn-sm btn-outline-danger font-weight-bold" title="Selesaikan Event Pelatihan">
+                        <i class="fas fa-flag-checkered mr-1"></i> Selesaikan
                       </button>
-                    ` : ''}
+                    ` : `
+                      <button onclick="activateEvent('${ev.id}')" class="btn btn-sm btn-outline-success font-weight-bold" title="${isCompleted ? 'Buka Kembali Sesi Ini' : 'Aktifkan di Layar Aula'}">
+                        <i class="fas fa-bolt mr-1"></i> ${isCompleted ? 'Buka Lagi' : 'Aktifkan'}
+                      </button>
+                    `}
                     <button onclick="editEventById('${ev.id}')" class="btn btn-sm btn-outline-secondary" title="Edit Data Sesi">
                       <i class="fas fa-edit"></i>
                     </button>
                   </div>
 
                   ${allEventsList.length > 1 ? `
-                    <button onclick="deleteEventById('${ev.id}')" class="btn btn-sm btn-link text-danger p-0" title="Hapus Event">
+                    <button onclick="deleteEventById('${ev.id}')" class="btn btn-sm btn-link text-danger p-0 ml-2" title="Hapus Event">
                       <i class="fas fa-trash-alt"></i>
                     </button>
                   ` : ''}
