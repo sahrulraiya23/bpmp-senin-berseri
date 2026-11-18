@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 // Paths & Environment
 const IS_VERCEL = Boolean(process.env.VERCEL);
 const BASE_DIR = __dirname;
-const PUBLIC_DIR = path.join(BASE_DIR, 'public');
+const TEMPLATES_DIR = path.join(BASE_DIR, 'templates');
 const DATA_DIR = IS_VERCEL ? os.tmpdir() : BASE_DIR;
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'lpti');
 const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
@@ -35,8 +35,9 @@ const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
   }
 });
 
-// Static File Serving
-app.use(express.static(PUBLIC_DIR));
+// Static File Serving - Semua Frontend Berada di TEMPLATES_DIR
+app.use(express.static(TEMPLATES_DIR));
+app.use('/azia', express.static(TEMPLATES_DIR));
 app.use('/uploads/lpti', express.static(UPLOAD_DIR));
 app.use('/uploads/templates', express.static(TEMPLATE_DIR));
 if (IS_VERCEL) {
@@ -714,44 +715,17 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
 });
 
 // ========================================================
-// SYSTEM DIAGNOSTICS
+// SYSTEM HEALTH CHECK
 // ========================================================
 app.get('/api/system/status', async (req, res) => {
-  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-  const key = (process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
   const isAvailable = Boolean(sqliteDb.isSupabaseAvailable && sqliteDb.isSupabaseAvailable());
-
-  const info = {
+  res.json({
+    status: 'healthy',
     time: new Date().toISOString(),
     isVercel: Boolean(process.env.VERCEL),
-    supabase: {
-      hasUrl: Boolean(url),
-      hasKey: Boolean(key),
-      urlDomain: url ? url.replace(/^https?:\/\//, '').split('/')[0] : null,
-      keyLength: key ? key.length : 0,
-      isAvailable
-    }
-  };
-
-  if (isAvailable) {
-    try {
-      const client = require('@supabase/supabase-js').createClient(url, key, { auth: { persistSession: false } });
-      const { data: rawEmps, error: rawEmpError } = await client.from('employees').select('*').limit(5);
-      const { data: rawEvts, error: rawEvtError } = await client.from('events').select('*').limit(5);
-      
-      info.supabase.directQuery = {
-        empError: rawEmpError ? { message: rawEmpError.message, details: rawEmpError.details, hint: rawEmpError.hint, code: rawEmpError.code } : null,
-        evtError: rawEvtError ? { message: rawEvtError.message, details: rawEvtError.details, hint: rawEvtError.hint, code: rawEvtError.code } : null,
-        rawEmpsCount: rawEmps ? rawEmps.length : 0,
-        rawEvtsCount: rawEvts ? rawEvts.length : 0,
-        sample: rawEmps && rawEmps[0] ? rawEmps[0] : null
-      };
-    } catch (e) {
-      info.supabase.testError = e.message;
-    }
-  }
-
-  res.json(info);
+    database: isAvailable ? 'Supabase PostgreSQL (Cloud)' : 'Local Storage Fallback',
+    supabaseConnected: isAvailable
+  });
 });
 
 // ========================================================
@@ -1026,35 +1000,39 @@ app.post('/api/reset-data', async (req, res) => {
 });
 
 // ========================================================
-// PAGE ROUTES
+// PAGE ROUTES (Alur Utama: Langsung Login Pegawai di "/")
 // ========================================================
+app.get('/', (req, res) => {
+  res.sendFile(path.join(TEMPLATES_DIR, 'index.html'));
+});
+
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'admin-login.html'));
-});
-
-app.get('/admin/login', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'admin-login.html'));
-});
-
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
+  res.sendFile(path.join(TEMPLATES_DIR, 'index.html'));
 });
 
 app.get('/pegawai', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'pegawai.html'));
+  res.sendFile(path.join(TEMPLATES_DIR, 'index.html'));
+});
+
+app.get('/admin/login', (req, res) => {
+  res.sendFile(path.join(TEMPLATES_DIR, 'admin-login.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(TEMPLATES_DIR, 'admin.html'));
 });
 
 app.get('/proyektor', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'proyektor.html'));
+  res.sendFile(path.join(TEMPLATES_DIR, 'proyektor.html'));
 });
 
 app.get('/qr', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'proyektor.html'));
+  res.sendFile(path.join(TEMPLATES_DIR, 'proyektor.html'));
 });
 
 // 404 Handler
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  res.status(404).sendFile(path.join(TEMPLATES_DIR, 'index.html'));
 });
 
 // Export Express app untuk Vercel Serverless Function (@vercel/node)
