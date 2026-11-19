@@ -1,12 +1,58 @@
 /**
- * Supabase Database & Storage Adapter
- * Menyediakan integrasi PostgreSQL dan Cloud Storage untuk aplikasi
- * BPMP Senin Berseri di Vercel Production.
+ * Supabase Database & Cloud Storage Adapter
+ * 100% Cloud-Native PostgreSQL & Cloud Storage untuk BPMP Senin Berseri
+ * Menggantikan SQLite sepenuhnya tanpa native compilation dependencies.
  */
 
+const path = require('path');
+const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 
+// Load environment variables automatically jika belum dimuat
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile();
+  } catch (e) {
+    // Silently continue jika .env tidak ada
+  }
+}
+
 let _supabaseInstance = null;
+let _isConfigured = false;
+
+// In-Memory store untuk development lokal sebelum file .env diisi credential Supabase
+let _memoryStore = null;
+
+function getMemoryStore() {
+  if (_memoryStore) return _memoryStore;
+  const jsonPath = path.join(__dirname, 'db.json');
+  if (fs.existsSync(jsonPath)) {
+    try {
+      _memoryStore = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    } catch (e) {
+      _memoryStore = { employees: [], events: [], event: null, admins: [] };
+    }
+  } else {
+    _memoryStore = { employees: [], events: [], event: null, admins: [] };
+  }
+
+  // Normalisasi events
+  if (!_memoryStore.events) _memoryStore.events = [];
+  if (_memoryStore.event && !_memoryStore.events.some(e => e.id === _memoryStore.event.id)) {
+    _memoryStore.events.push(_memoryStore.event);
+  }
+  // Normalisasi admins
+  if (!_memoryStore.admins || _memoryStore.admins.length === 0) {
+    _memoryStore.admins = [{
+      id: 1,
+      username: 'admin',
+      password: process.env.ADMIN_PASSWORD || 'Bpmp2026!',
+      name: 'Administrator Kepegawaian BPMP Sultra',
+      role: 'superadmin'
+    }];
+  }
+  return _memoryStore;
+}
 
 function getClient() {
   if (_supabaseInstance) return _supabaseInstance;
@@ -28,6 +74,7 @@ function getClient() {
       _supabaseInstance = createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth: { persistSession: false }
       });
+      _isConfigured = true;
       console.log('✅ Supabase Client berhasil diinisialisasi:', SUPABASE_URL);
     } catch (err) {
       console.warn('⚠️ Gagal inisialisasi Supabase client:', err.message);
@@ -40,12 +87,12 @@ function isSupabaseAvailable() {
   return Boolean(getClient());
 }
 
-// Proxy agar pemanggilan supabase.<method> selalu otomatis menggunakan client aktif
+// Proxy agar pemanggilan supabase.<method> langsung menggunakan client aktif
 const supabase = new Proxy({}, {
   get(target, prop) {
     const client = getClient();
     if (!client) {
-      throw new Error('Supabase client belum diinisialisasi (SUPABASE_URL atau SUPABASE_KEY belum terisi)');
+      throw new Error('Supabase client belum diinisialisasi (SUPABASE_URL atau SUPABASE_KEY belum terisi di .env)');
     }
     const val = client[prop];
     return typeof val === 'function' ? val.bind(client) : val;
@@ -83,7 +130,7 @@ function formatSupabaseEmployee(row) {
 
   return {
     id: row.id,
-    nip: row.nip,
+    nip: String(row.nip || '').trim(),
     name: row.name,
     password: row.password || 'Bpmp2026!',
     panggol: row.panggol || '',
@@ -145,34 +192,192 @@ function formatSupabaseEvent(row) {
 }
 
 // ==============================================================
+// SEEDING DARI DB.JSON JIKA TABEL SUPABASE MASIH KOSONG
+// ==============================================================
+async function seedFromDbJson() {
+  const client = getClient();
+  if (!client) return;
+
+  try {
+    const jsonPath = path.join(__dirname, 'db.json');
+    if (!fs.existsSync(jsonPath)) return;
+    const dbData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+    // 1. Seed Admin
+    await client.from('admins').upsert({
+      username: 'admin',
+      password: process.env.ADMIN_PASSWORD || 'Bpmp2026!',
+      name: 'Administrator Kepegawaian BPMP Sultra',
+      role: 'superadmin'
+    }, { onConflict: 'username' });
+
+    // 2. Seed Default Event
+    if (dbData.event && dbData.event.id) {
+      const ev = dbData.event;
+      await client.from('events').upsert({
+        id: ev.id,
+        title: ev.title || 'Pelatihan Transformasi Digital BPMP Sultra',
+        jp: parseInt(ev.jp, 10) || 32,
+        category: ev.category || 'Teknis & Manajerial Kepegawaian',
+        schedule: ev.schedule || '18 - 20 November 2026',
+        location: ev.location || 'Auditorium BPMP Sultra',
+        organizer: ev.organizer || 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
+        active: true,
+        status: 'active'
+      }, { onConflict: 'id' });
+    }
+
+    // 3. Seed 104 Pegawai BPMP Sultra
+    if (Array.isArray(dbData.employees) && dbData.employees.length > 0) {
+      const records = dbData.employees.map(emp => ({
+        id: emp.id,
+        nip: String(emp.nip).trim(),
+        name: emp.name,
+        password: emp.password || 'Bpmp2026!',
+        panggol: emp.panggol || '',
+        jabatan: emp.jabatan || '',
+        instansi: emp.instansi || 'BPMP Provinsi Sulawesi Tenggara',
+        pendidikan: emp.pendidikan || '',
+        event_id: emp.eventId || (dbData.event?.id || null),
+        event_title: emp.eventTitle || (dbData.event?.title || null),
+        attended: Boolean(emp.attended),
+        attended_at: emp.attendedAt || null,
+        accumulated_jp: Number(emp.accumulatedJp) || 0
+      }));
+
+      // Batch 50 data agar tidak melampaui limit payload
+      for (let i = 0; i < records.length; i += 50) {
+        const batch = records.slice(i, i + 50);
+        await client.from('employees').upsert(batch, { onConflict: 'nip' });
+      }
+      console.log(`✅ [Supabase PostgreSQL] Berhasil seeding ${records.length} data pegawai ke cloud!`);
+    }
+  } catch (err) {
+    console.warn('⚠️ [Supabase] Auto-seeding exception:', err.message);
+  }
+}
+
+// ==============================================================
+// INITIALIZE DATABASE
+// ==============================================================
+async function initDb() {
+  const client = getClient();
+  if (!client) {
+    console.log('ℹ️ [Database] Berjalan dalam mode In-Memory Store (db.json)');
+    console.log('💡 Untuk mengaktifkan Supabase PostgreSQL Cloud: Atur SUPABASE_URL & SUPABASE_KEY di file .env');
+    return true;
+  }
+
+  try {
+    const { count, error } = await client
+      .from('employees')
+      .select('id', { count: 'exact', head: true });
+
+    if (error) {
+      console.warn('⚠️ [Supabase] Koneksi database berhasil, namun tabel belum dibuat:', error.message);
+      console.log('💡 Jalankan script supabase_schema.sql di Supabase SQL Editor jika tabel belum tersedia.');
+      return false;
+    }
+
+    console.log(`✅ [Supabase PostgreSQL] Terhubung dengan sukses! (${count || 0} pegawai terdaftar di cloud database)`);
+    if (count === 0) {
+      await seedFromDbJson();
+    }
+    return true;
+  } catch (err) {
+    console.warn('⚠️ [Supabase] Inisialisasi error:', err.message);
+    return false;
+  }
+}
+
+// ==============================================================
 // EMPLOYEES CRUD
 // ==============================================================
 async function getAllEmployees() {
-  const { data, error } = await supabase
-    .from('employees')
-    .select('*')
-    .order('id', { ascending: true });
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('employees')
+      .select('*')
+      .order('id', { ascending: true });
 
-  if (error) {
-    console.error('Supabase getAllEmployees error:', error.message);
-    return [];
+    if (!error && data) {
+      return data.map(formatSupabaseEmployee);
+    }
+    console.error('Supabase getAllEmployees error:', error?.message);
   }
-  return (data || []).map(formatSupabaseEmployee);
+
+  // Memory fallback
+  const mem = getMemoryStore();
+  return (mem.employees || []).map(emp => {
+    const isAttended = Boolean(emp.attended);
+    return {
+      ...emp,
+      nip: String(emp.nip || '').trim(),
+      attendance: {
+        status: isAttended ? 'present' : 'absent',
+        time: isAttended ? (emp.attendedAt || 'Pukul 08:30:00 WITA') : null
+      }
+    };
+  });
 }
 
 async function getEmployeeByIdOrNip(idOrNip) {
   if (!idOrNip) return null;
   const clean = String(idOrNip).trim();
 
-  const { data, error } = await supabase
-    .from('employees')
-    .select('*')
-    .or(`id.eq."${clean}",nip.eq."${clean}"`)
-    .limit(1)
-    .maybeSingle();
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('employees')
+      .select('*')
+      .or(`id.eq."${clean}",nip.eq."${clean}"`)
+      .limit(1)
+      .maybeSingle();
 
-  if (error || !data) return null;
-  return formatSupabaseEmployee(data);
+    if (!error && data) {
+      return formatSupabaseEmployee(data);
+    }
+  }
+
+  // Memory fallback
+  const mem = getMemoryStore();
+  const found = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
+  if (!found) return null;
+  const isAttended = Boolean(found.attended);
+  return {
+    ...found,
+    nip: String(found.nip || '').trim(),
+    attendance: {
+      status: isAttended ? 'present' : 'absent',
+      time: isAttended ? (found.attendedAt || 'Pukul 08:30:00 WITA') : null
+    }
+  };
+}
+
+async function ensureEmployeeJp(id, eventJp = 32) {
+  const clean = String(id).trim();
+  const emp = await getEmployeeByIdOrNip(clean);
+  if (!emp) return null;
+
+  const jpVal = parseInt(eventJp, 10) || 32;
+  if (!emp.accumulatedJp || emp.accumulatedJp === 0) {
+    const client = getClient();
+    if (client) {
+      const { data, error } = await client
+        .from('employees')
+        .update({ accumulated_jp: jpVal, updated_at: new Date().toISOString() })
+        .eq('id', emp.id)
+        .select()
+        .single();
+
+      if (!error && data) return formatSupabaseEmployee(data);
+    } else {
+      emp.accumulatedJp = jpVal;
+      return emp;
+    }
+  }
+  return emp;
 }
 
 async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32) {
@@ -180,171 +385,246 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32) {
   const clean = String(id).trim();
   const jpToAdd = parseInt(eventJp, 10) || 32;
 
-  // Ambil pegawai untuk cek accumulated_jp terkini
-  const { data: existing } = await supabase
-    .from('employees')
-    .select('id, accumulated_jp')
-    .or(`id.eq."${clean}",nip.eq."${clean}"`)
-    .limit(1)
-    .maybeSingle();
+  const existing = await getEmployeeByIdOrNip(clean);
+  if (!existing) return null;
 
-  const currentJp = Number(existing?.accumulated_jp) || 0;
+  const currentJp = Number(existing.accumulatedJp) || 0;
   const newJp = currentJp > 0 ? currentJp + jpToAdd : jpToAdd;
-  const targetId = existing?.id || id;
+  const targetId = existing.id;
 
-  const { data, error } = await supabase
-    .from('employees')
-    .update({
-      attended: true,
-      attended_at: now,
-      event_id: eventId || null,
-      event_title: eventTitle || null,
-      accumulated_jp: newJp,
-      updated_at: now
-    })
-    .eq('id', targetId)
-    .select()
-    .single();
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('employees')
+      .update({
+        attended: true,
+        attended_at: now,
+        event_id: eventId || null,
+        event_title: eventTitle || null,
+        accumulated_jp: newJp,
+        updated_at: now
+      })
+      .eq('id', targetId)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Supabase markEmployeeAttended error:', error.message);
-    return null;
+    if (error) {
+      console.error('Supabase markEmployeeAttended error:', error.message);
+      return null;
+    }
+    return formatSupabaseEmployee(data);
   }
-  return formatSupabaseEmployee(data);
+
+  // Memory fallback
+  existing.attended = true;
+  existing.attendedAt = now;
+  existing.eventId = eventId || null;
+  existing.eventTitle = eventTitle || null;
+  existing.accumulatedJp = newJp;
+  existing.attendance = {
+    status: 'present',
+    time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+  };
+  return existing;
 }
 
 async function updateEmployeeLpti(id, lptiData) {
   const now = new Date().toISOString();
   const clean = String(id).trim();
 
-  // Ambil pegawai dulu untuk memastikan id/nip
-  const { data: existing } = await supabase
-    .from('employees')
-    .select('id')
-    .or(`id.eq."${clean}",nip.eq."${clean}"`)
-    .limit(1)
-    .maybeSingle();
-
+  const existing = await getEmployeeByIdOrNip(clean);
   if (!existing) return null;
 
-  const { data, error } = await supabase
-    .from('employees')
-    .update({
-      lpti_status: 'pending',
-      lpti_file_name: lptiData.fileName,
-      lpti_file_original_name: lptiData.fileOriginalName,
-      lpti_file_path: lptiData.filePath,
-      lpti_file_size: lptiData.fileSize,
-      lpti_uploaded_at: lptiData.uploadedAt || now,
-      lpti_revision_note: '',
-      updated_at: now
-    })
-    .eq('id', existing.id)
-    .select()
-    .single();
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('employees')
+      .update({
+        lpti_status: 'pending',
+        lpti_file_name: lptiData.fileName,
+        lpti_file_original_name: lptiData.fileOriginalName,
+        lpti_file_path: lptiData.filePath,
+        lpti_file_size: lptiData.fileSize,
+        lpti_uploaded_at: lptiData.uploadedAt || now,
+        lpti_revision_note: '',
+        updated_at: now
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Supabase updateEmployeeLpti error:', error.message);
-    return null;
+    if (error) {
+      console.error('Supabase updateEmployeeLpti error:', error.message);
+      return null;
+    }
+    return formatSupabaseEmployee(data);
   }
-  return formatSupabaseEmployee(data);
+
+  // Memory fallback
+  existing.lpti = {
+    status: 'pending',
+    fileName: lptiData.fileName,
+    fileOriginalName: lptiData.fileOriginalName,
+    filePath: lptiData.filePath,
+    fileSize: lptiData.fileSize,
+    uploadedAt: lptiData.uploadedAt || now,
+    revisionNote: ''
+  };
+  return existing;
 }
 
-async function verifyEmployeeLpti(id, certData = null, revisionNote = null) {
+async function verifyEmployeeLpti(employeeId, actionOrCertData = null, revisionNote = null, eventJp = 32) {
   const now = new Date().toISOString();
-  const clean = String(id).trim();
+  const clean = String(employeeId).trim();
 
-  const { data: existing } = await supabase
-    .from('employees')
-    .select('id, accumulated_jp')
-    .or(`id.eq."${clean}",nip.eq."${clean}"`)
-    .limit(1)
-    .maybeSingle();
-
+  const existing = await getEmployeeByIdOrNip(clean);
   if (!existing) return null;
 
   let updatePayload = { updated_at: now };
+  const isApprove = actionOrCertData === 'approve' || (typeof actionOrCertData === 'object' && actionOrCertData !== null && !revisionNote && Boolean(actionOrCertData.number));
+  const isRevise = actionOrCertData === 'revise' || (typeof actionOrCertData === 'string' && actionOrCertData !== 'approve');
 
-  if (certData) {
-    const addJp = parseInt(certData.eventJp, 10) || 32;
+  if (isApprove) {
+    let certNumber = null;
+    let issuedAt = now;
+    let verifier = 'Junaiddin Pagala, ST, M.T.';
+    let verifierTitle = 'Kepala Balai Penjaminan Mutu Pendidikan Sultra';
+    let jpToAdd = parseInt(eventJp, 10) || 32;
+
+    if (typeof actionOrCertData === 'object' && actionOrCertData !== null) {
+      certNumber = actionOrCertData.number;
+      if (actionOrCertData.issuedAt) issuedAt = actionOrCertData.issuedAt;
+      if (actionOrCertData.verifier) verifier = actionOrCertData.verifier;
+      if (actionOrCertData.verifierTitle) verifierTitle = actionOrCertData.verifierTitle;
+      if (actionOrCertData.eventJp) jpToAdd = parseInt(actionOrCertData.eventJp, 10) || jpToAdd;
+    }
+
+    if (!certNumber) {
+      const sysSettings = await getSystemSettings();
+      const yr = new Date().getFullYear();
+      const pfx = sysSettings.certPrefix || `800.1.3/SERT-LPTI/${yr}`;
+      certNumber = `${pfx}/${String(sysSettings.certCounter || 1).padStart(3, '0')}`;
+    }
+
     updatePayload.lpti_status = 'approved';
     updatePayload.lpti_revision_note = '';
-    updatePayload.certificate_number = certData.number;
-    updatePayload.certificate_issued_at = certData.issuedAt;
-    updatePayload.certificate_verifier = certData.verifier;
-    updatePayload.certificate_verifier_title = certData.verifierTitle;
-    updatePayload.accumulated_jp = (Number(existing.accumulated_jp) || 0) + addJp;
-  } else if (revisionNote !== null) {
+    updatePayload.certificate_number = certNumber;
+    updatePayload.certificate_issued_at = issuedAt;
+    updatePayload.certificate_verifier = verifier;
+    updatePayload.certificate_verifier_title = verifierTitle;
+    updatePayload.accumulated_jp = (Number(existing.accumulatedJp) || 0) + jpToAdd;
+  } else if (isRevise || revisionNote !== null) {
+    const note = (typeof revisionNote === 'string' ? revisionNote : (typeof actionOrCertData === 'string' && actionOrCertData !== 'revise' ? actionOrCertData : '')) || 'Perlu perbaikan berkas LPTI.';
     updatePayload.lpti_status = 'revision';
-    updatePayload.lpti_revision_note = revisionNote;
+    updatePayload.lpti_revision_note = note;
     updatePayload.certificate_number = null;
     updatePayload.certificate_issued_at = null;
     updatePayload.certificate_verifier = null;
     updatePayload.certificate_verifier_title = null;
   }
 
-  const { data, error } = await supabase
-    .from('employees')
-    .update(updatePayload)
-    .eq('id', existing.id)
-    .select()
-    .single();
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('employees')
+      .update(updatePayload)
+      .eq('id', existing.id)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Supabase verifyEmployeeLpti error:', error.message);
-    return null;
+    if (error) {
+      console.error('Supabase verifyEmployeeLpti error:', error.message);
+      return null;
+    }
+    return formatSupabaseEmployee(data);
   }
-  return formatSupabaseEmployee(data);
+
+  // Memory fallback
+  if (isApprove) {
+    existing.lpti.status = 'approved';
+    existing.lpti.revisionNote = '';
+    existing.certificate = {
+      number: updatePayload.certificate_number,
+      issuedAt: updatePayload.certificate_issued_at,
+      verifier: updatePayload.certificate_verifier,
+      verifierTitle: updatePayload.certificate_verifier_title
+    };
+    existing.accumulatedJp = updatePayload.accumulated_jp;
+  } else {
+    existing.lpti.status = 'revision';
+    existing.lpti.revisionNote = updatePayload.lpti_revision_note;
+    existing.certificate = null;
+  }
+  return existing;
 }
 
 // ==============================================================
 // EVENTS CRUD
 // ==============================================================
 async function getAllEvents() {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Supabase getAllEvents error:', error.message);
-    return [];
+    if (!error && data) {
+      return data.map(formatSupabaseEvent);
+    }
+    console.error('Supabase getAllEvents error:', error?.message);
   }
-  return (data || []).map(formatSupabaseEvent);
+
+  const mem = getMemoryStore();
+  return (mem.events || []).map(formatSupabaseEvent);
 }
 
 async function getActiveEvent() {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('active', true)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('events')
+      .select('*')
+      .eq('active', true)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (error || !data) {
+    if (!error && data) return formatSupabaseEvent(data);
+
     // Fallback: ambil event paling baru jika belum ada yang active
-    const fallback = await supabase
+    const fallback = await client
       .from('events')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    return fallback.data ? formatSupabaseEvent(fallback.data) : null;
+    if (fallback.data) return formatSupabaseEvent(fallback.data);
   }
-  return formatSupabaseEvent(data);
+
+  const mem = getMemoryStore();
+  const active = (mem.events || []).find(e => e.active);
+  if (active) return formatSupabaseEvent(active);
+  if (mem.events && mem.events.length > 0) return formatSupabaseEvent(mem.events[0]);
+  return mem.event ? formatSupabaseEvent(mem.event) : null;
 }
 
 async function getEventById(id) {
   if (!id) return null;
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error || !data) return null;
-  return formatSupabaseEvent(data);
+    if (!error && data) return formatSupabaseEvent(data);
+  }
+
+  const mem = getMemoryStore();
+  const found = (mem.events || []).find(e => e.id === id);
+  return found ? formatSupabaseEvent(found) : null;
 }
 
 async function saveEvent(eventData, isNew = false) {
@@ -353,15 +633,27 @@ async function saveEvent(eventData, isNew = false) {
 
   let eventId = eventData.id;
   if (shouldBeNew || !eventId || eventId === 'new') {
-    const { data: allEvts } = await supabase.from('events').select('id');
     let maxSeq = 0;
-    (allEvts || []).forEach(r => {
-      const match = (r.id || '').match(/EVT-(\d{4})-(\d+)/);
-      if (match) {
-        const seq = parseInt(match[2], 10);
-        if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
-      }
-    });
+    const client = getClient();
+    if (client) {
+      const { data: allEvts } = await client.from('events').select('id');
+      (allEvts || []).forEach(r => {
+        const match = (r.id || '').match(/EVT-(\d{4})-(\d+)/);
+        if (match) {
+          const seq = parseInt(match[2], 10);
+          if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+        }
+      });
+    } else {
+      const mem = getMemoryStore();
+      (mem.events || []).forEach(r => {
+        const match = (r.id || '').match(/EVT-(\d{4})-(\d+)/);
+        if (match) {
+          const seq = parseInt(match[2], 10);
+          if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+        }
+      });
+    }
     eventId = `EVT-${new Date().getFullYear()}-${String(maxSeq + 1).padStart(3, '0')}`;
   }
 
@@ -392,150 +684,343 @@ async function saveEvent(eventData, isNew = false) {
     };
   }
 
-  // Nonaktifkan event lain terlebih dahulu
-  await supabase.from('events').update({ active: false, updated_at: now }).neq('id', eventId);
+  const client = getClient();
+  if (client) {
+    // Nonaktifkan event lain terlebih dahulu
+    await client.from('events').update({ active: false, updated_at: now }).neq('id', eventId);
 
-  const { data, error } = await supabase
-    .from('events')
-    .upsert(record, { onConflict: 'id' })
-    .select()
-    .single();
+    const { data, error } = await client
+      .from('events')
+      .upsert(record, { onConflict: 'id' })
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Supabase saveEvent error:', error.message);
-    throw new Error(error.message);
+    if (error) {
+      console.error('Supabase saveEvent error:', error.message);
+      throw new Error(error.message);
+    }
+    return formatSupabaseEvent(data);
   }
-  return formatSupabaseEvent(data);
+
+  // Memory fallback
+  const mem = getMemoryStore();
+  (mem.events || []).forEach(e => { e.active = false; });
+  const existingIdx = (mem.events || []).findIndex(e => e.id === eventId);
+  const formatted = { ...record, certificateTemplate: record.certificate_template, certSettings: record.cert_settings };
+  if (existingIdx >= 0) {
+    mem.events[existingIdx] = { ...mem.events[existingIdx], ...formatted };
+  } else {
+    mem.events.unshift(formatted);
+  }
+  return formatSupabaseEvent(formatted);
 }
 
 async function activateEventById(eventId) {
   const now = new Date().toISOString();
-  // Matikan event lain
-  await supabase.from('events').update({ active: false, updated_at: now }).neq('id', eventId);
+  const client = getClient();
+  if (client) {
+    await client.from('events').update({ active: false, updated_at: now }).neq('id', eventId);
 
-  const { data, error } = await supabase
-    .from('events')
-    .update({ active: true, status: 'active', updated_at: now })
-    .eq('id', eventId)
-    .select()
-    .single();
+    const { data, error } = await client
+      .from('events')
+      .update({ active: true, status: 'active', updated_at: now })
+      .eq('id', eventId)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Supabase activateEventById error:', error.message);
-    return null;
+    if (error) {
+      console.error('Supabase activateEventById error:', error.message);
+      return null;
+    }
+    return formatSupabaseEvent(data);
   }
-  return formatSupabaseEvent(data);
+
+  const mem = getMemoryStore();
+  let activated = null;
+  (mem.events || []).forEach(e => {
+    if (e.id === eventId) {
+      e.active = true;
+      e.status = 'active';
+      activated = e;
+    } else {
+      e.active = false;
+    }
+  });
+  return activated ? formatSupabaseEvent(activated) : null;
 }
 
 async function completeEventById(eventId) {
   const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('events')
-    .update({ active: false, status: 'completed', completed_at: now, updated_at: now })
-    .eq('id', eventId)
-    .select()
-    .single();
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('events')
+      .update({ active: false, status: 'completed', completed_at: now, updated_at: now })
+      .eq('id', eventId)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Supabase completeEventById error:', error.message);
-    return null;
+    if (error) {
+      console.error('Supabase completeEventById error:', error.message);
+      return null;
+    }
+    return formatSupabaseEvent(data);
   }
-  return formatSupabaseEvent(data);
+
+  const mem = getMemoryStore();
+  const ev = (mem.events || []).find(e => e.id === eventId);
+  if (ev) {
+    ev.active = false;
+    ev.status = 'completed';
+    ev.completedAt = now;
+    return formatSupabaseEvent(ev);
+  }
+  return null;
+}
+
+async function syncEvents(clientEvents) {
+  if (!Array.isArray(clientEvents) || clientEvents.length === 0) return [];
+  const client = getClient();
+  if (client) {
+    const rows = clientEvents.map(ev => ({
+      id: ev.id,
+      title: ev.title,
+      jp: parseInt(ev.jp, 10) || 32,
+      category: ev.category || 'Teknis',
+      schedule: ev.schedule || '',
+      location: ev.location || 'Auditorium BPMP Sultra',
+      organizer: ev.organizer || 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
+      active: Boolean(ev.active),
+      status: ev.status || (ev.active ? 'active' : 'completed'),
+      completed_at: ev.completedAt || null,
+      certificate_template: ev.certificateTemplate || null,
+      cert_settings: ev.certSettings || null,
+      updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await client
+      .from('events')
+      .upsert(rows, { onConflict: 'id' })
+      .select();
+
+    if (error) {
+      console.error('Supabase syncEvents error:', error.message);
+      return [];
+    }
+    return (data || []).map(formatSupabaseEvent);
+  }
+
+  const mem = getMemoryStore();
+  mem.events = clientEvents.map(formatSupabaseEvent);
+  return mem.events;
 }
 
 async function deleteEventById(eventId) {
-  const { error } = await supabase
-    .from('events')
-    .delete()
-    .eq('id', eventId);
+  const client = getClient();
+  if (client) {
+    const { error } = await client
+      .from('events')
+      .delete()
+      .eq('id', eventId);
 
-  if (error) {
-    console.error('Supabase deleteEventById error:', error.message);
-    return false;
+    if (error) {
+      console.error('Supabase deleteEventById error:', error.message);
+      return false;
+    }
+
+    const { data: latest } = await client
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latest) {
+      await client.from('events').update({ active: true }).eq('id', latest.id);
+    }
+    return true;
   }
 
-  // Jika event aktif terhapus, aktifkan event terbaru lainnya jika ada
-  const { data: latest } = await supabase
-    .from('events')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (latest) {
-    await supabase.from('events').update({ active: true }).eq('id', latest.id);
+  const mem = getMemoryStore();
+  const idx = (mem.events || []).findIndex(e => e.id === eventId);
+  if (idx >= 0) {
+    mem.events.splice(idx, 1);
+    if (mem.events.length > 0 && !mem.events.some(e => e.active)) {
+      mem.events[0].active = true;
+    }
+    return true;
   }
-  return true;
+  return false;
+}
+
+async function toggleActiveEventStatus() {
+  const current = await getActiveEvent();
+  const now = new Date().toISOString();
+
+  if (current && current.active) {
+    const client = getClient();
+    if (client) {
+      const { data } = await client
+        .from('events')
+        .update({ active: false, status: 'inactive', updated_at: now })
+        .eq('id', current.id)
+        .select()
+        .single();
+      return data ? formatSupabaseEvent(data) : null;
+    } else {
+      current.active = false;
+      current.status = 'inactive';
+      return current;
+    }
+  } else {
+    const all = await getAllEvents();
+    if (all.length > 0) {
+      return await activateEventById(all[0].id);
+    }
+    return null;
+  }
 }
 
 async function updateEventTemplate(eventId, templateObj) {
   const now = new Date().toISOString();
-  let query = supabase.from('events').update({
-    certificate_template: templateObj,
-    updated_at: now
-  });
+  const client = getClient();
+  if (client) {
+    let query = client.from('events').update({
+      certificate_template: templateObj,
+      updated_at: now
+    });
 
-  if (eventId) {
-    query = query.eq('id', eventId);
-  } else {
-    query = query.eq('active', true);
+    if (eventId) {
+      query = query.eq('id', eventId);
+    } else {
+      query = query.eq('active', true);
+    }
+
+    const { data, error } = await query.select().maybeSingle();
+    if (error) console.error('Supabase updateEventTemplate error:', error.message);
+    return data ? formatSupabaseEvent(data) : await getActiveEvent();
   }
 
-  const { data, error } = await query.select().maybeSingle();
-  if (error) {
-    console.error('Supabase updateEventTemplate error:', error.message);
-  }
-  return data ? formatSupabaseEvent(data) : await getActiveEvent();
+  const activeEvt = (await getEventById(eventId)) || (await getActiveEvent());
+  if (activeEvt) activeEvt.certificateTemplate = templateObj;
+  return activeEvt;
 }
 
 async function updateEventCertSettings(eventId, certSettings) {
   const now = new Date().toISOString();
-  let query = supabase.from('events').update({
-    cert_settings: certSettings,
-    updated_at: now
-  });
+  const client = getClient();
+  if (client) {
+    let query = client.from('events').update({
+      cert_settings: certSettings,
+      updated_at: now
+    });
 
-  if (eventId) {
-    query = query.eq('id', eventId);
-  } else {
-    query = query.eq('active', true);
+    if (eventId) {
+      query = query.eq('id', eventId);
+    } else {
+      query = query.eq('active', true);
+    }
+
+    const { data, error } = await query.select().maybeSingle();
+    if (error) console.error('Supabase updateEventCertSettings error:', error.message);
+    return data ? formatSupabaseEvent(data) : await getActiveEvent();
   }
 
-  const { data, error } = await query.select().maybeSingle();
-  if (error) {
-    console.error('Supabase updateEventCertSettings error:', error.message);
-  }
-  return data ? formatSupabaseEvent(data) : await getActiveEvent();
+  const activeEvt = (await getEventById(eventId)) || (await getActiveEvent());
+  if (activeEvt) activeEvt.certSettings = certSettings;
+  return activeEvt;
 }
 
 // ==============================================================
 // ADMIN AUTH
 // ==============================================================
 async function verifyAdminCredentials(username, password) {
-  const { data, error } = await supabase
-    .from('admins')
-    .select('*')
-    .eq('username', username)
-    .eq('password', password)
-    .maybeSingle();
+  if (!username || !password) return null;
+  const cleanU = String(username).trim();
+  const cleanP = String(password).trim();
 
-  if (error || !data) return null;
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('admins')
+      .select('*')
+      .eq('username', cleanU)
+      .eq('password', cleanP)
+      .maybeSingle();
+
+    if (!error && data) {
+      return {
+        id: data.id,
+        username: data.username,
+        name: data.name,
+        role: data.role || 'superadmin'
+      };
+    }
+  }
+
+  // Memory fallback / Default check
+  const mem = getMemoryStore();
+  const found = (mem.admins || []).find(a => a.username === cleanU && a.password === cleanP);
+  if (found) {
+    return {
+      id: found.id,
+      username: found.username,
+      name: found.name,
+      role: found.role || 'superadmin'
+    };
+  }
+
+  // Fallback superadmin password jika env cocok
+  if (cleanU === 'admin' && cleanP === (process.env.ADMIN_PASSWORD || 'Bpmp2026!')) {
+    return {
+      id: 1,
+      username: 'admin',
+      name: 'Administrator Kepegawaian BPMP Sultra',
+      role: 'superadmin'
+    };
+  }
+
+  return null;
+}
+
+// ==============================================================
+// SYSTEM SETTINGS & COUNTER
+// ==============================================================
+async function getSystemSettings() {
+  const activeEvt = await getActiveEvent();
+  const prefix = activeEvt?.certSettings?.prefix || '800.1.3/SERT-LPTI/2026';
+
+  let counter = 1;
+  const client = getClient();
+  if (client) {
+    try {
+      const { count } = await client
+        .from('employees')
+        .select('id', { count: 'exact', head: true })
+        .not('certificate_number', 'is', null);
+      counter = (count || 0) + 1;
+    } catch (e) {}
+  } else {
+    const mem = getMemoryStore();
+    const certCount = (mem.employees || []).filter(e => e.certificate && e.certificate.number).length;
+    counter = certCount + 1;
+  }
+
   return {
-    id: data.id,
-    username: data.username,
-    name: data.name,
-    role: data.role || 'superadmin'
+    certPrefix: prefix,
+    certCounter: counter
   };
 }
 
 // ==============================================================
-// STORAGE UPLOAD (SUPABASE BUCKET)
+// STORAGE UPLOAD (SUPABASE CLOUD BUCKET)
 // ==============================================================
 async function uploadToStorage(bucketName, fileName, fileBuffer, contentType) {
-  if (!supabase) return null;
+  const client = getClient();
+  if (!client) return null;
 
   try {
-    const { data, error } = await supabase.storage
+    const { data, error } = await client.storage
       .from(bucketName)
       .upload(fileName, fileBuffer, {
         contentType: contentType || 'application/octet-stream',
@@ -547,7 +1032,7 @@ async function uploadToStorage(bucketName, fileName, fileBuffer, contentType) {
       return null;
     }
 
-    const { data: pubData } = supabase.storage
+    const { data: pubData } = client.storage
       .from(bucketName)
       .getPublicUrl(fileName);
 
@@ -559,40 +1044,67 @@ async function uploadToStorage(bucketName, fileName, fileBuffer, contentType) {
 }
 
 // ==============================================================
-// RESET TESTING DATA
+// RESET TESTING DATA (Jaga 104 NIP Pegawai Asli Tetap Utuh)
 // ==============================================================
 async function resetTestingData() {
   const now = new Date().toISOString();
-  // 1. Reset kehadiran & LPTI pegawai
-  await supabase
-    .from('employees')
-    .update({
-      attended: false,
-      attended_at: null,
-      event_id: null,
-      event_title: null,
-      lpti_status: 'none',
-      lpti_file_name: null,
-      lpti_file_original_name: null,
-      lpti_file_path: null,
-      lpti_file_size: null,
-      lpti_uploaded_at: null,
-      lpti_revision_note: null,
-      certificate_number: null,
-      certificate_issued_at: null,
-      certificate_verifier: null,
-      certificate_verifier_title: null,
-      updated_at: now
-    })
-    .neq('id', '');
+  const client = getClient();
+
+  if (client) {
+    await client
+      .from('employees')
+      .update({
+        attended: false,
+        attended_at: null,
+        event_id: null,
+        event_title: null,
+        accumulated_jp: 0,
+        lpti_status: 'none',
+        lpti_file_name: null,
+        lpti_file_original_name: null,
+        lpti_file_path: null,
+        lpti_file_size: null,
+        lpti_uploaded_at: null,
+        lpti_revision_note: null,
+        certificate_number: null,
+        certificate_issued_at: null,
+        certificate_verifier: null,
+        certificate_verifier_title: null,
+        updated_at: now
+      })
+      .neq('id', '');
+
+    return { success: true };
+  }
+
+  const mem = getMemoryStore();
+  (mem.employees || []).forEach(emp => {
+    emp.attended = false;
+    emp.attendedAt = null;
+    emp.accumulatedJp = 0;
+    emp.eventId = null;
+    emp.eventTitle = null;
+    emp.lpti = {
+      status: 'none',
+      fileName: null,
+      fileOriginalName: null,
+      filePath: null,
+      fileSize: null,
+      uploadedAt: null,
+      revisionNote: ''
+    };
+    emp.certificate = null;
+  });
 
   return { success: true };
 }
 
 module.exports = {
   isSupabaseAvailable,
+  initDb,
   getAllEmployees,
   getEmployeeByIdOrNip,
+  ensureEmployeeJp,
   markEmployeeAttended,
   updateEmployeeLpti,
   verifyEmployeeLpti,
@@ -604,10 +1116,13 @@ module.exports = {
   saveEvent,
   activateEventById,
   completeEventById,
+  syncEvents,
   deleteEventById,
+  toggleActiveEventStatus,
   updateEventTemplate,
   updateEventCertSettings,
   verifyAdminCredentials,
+  getSystemSettings,
   uploadToStorage,
   resetTestingData
 };

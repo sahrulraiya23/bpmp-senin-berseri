@@ -7,8 +7,16 @@ const fs = require('fs');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { generateCertificatePdf } = require('./certificate-generator');
-const sqliteDb = require('./sqlite-db');
-const supabaseAdapter = require('./supabase-adapter');
+// Auto-load .env environment file (Node.js 20+)
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile();
+  } catch (e) {}
+}
+
+const db = require('./supabase-adapter');
+const supabaseAdapter = db;
+const sqliteDb = db;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -205,10 +213,10 @@ app.get('/api/qr/current', async (req, res) => {
     let targetEvent = null;
     const requestedId = req.query.eventId || req.query.id;
     if (requestedId) {
-      targetEvent = await sqliteDb.getEventById(requestedId);
+      targetEvent = await db.getEventById(requestedId);
     }
     if (!targetEvent) {
-      targetEvent = await sqliteDb.getActiveEvent();
+      targetEvent = await db.getActiveEvent();
     }
 
     if (!targetEvent || !targetEvent.title || !targetEvent.active || targetEvent.status === 'completed') {
@@ -268,7 +276,7 @@ app.post('/api/auth/admin-login', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Username dan Password admin wajib diisi!' });
   }
 
-  const admin = await sqliteDb.verifyAdminCredentials(username, password);
+  const admin = await db.verifyAdminCredentials(username, password);
   if (!admin) {
     return res.status(401).json({
       success: false,
@@ -319,7 +327,7 @@ app.post('/api/auth/login', async (req, res) => {
   const cleanNip = String(nip).trim();
   const cleanPassword = String(password).trim();
 
-  const employee = await sqliteDb.getEmployeeByIdOrNip(cleanNip);
+  const employee = await db.getEmployeeByIdOrNip(cleanNip);
   if (!employee) {
     return res.status(401).json({
       success: false,
@@ -337,7 +345,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 
-  const activeEvent = await sqliteDb.getActiveEvent();
+  const activeEvent = await db.getActiveEvent();
   const { password: _, ...safeEmployee } = employee;
 
   return res.json({
@@ -360,10 +368,10 @@ app.post('/api/presensi/verify-token', async (req, res) => {
   let activeEvent = null;
   const requestedId = eventId || req.query.eventId || req.query.id;
   if (requestedId) {
-    activeEvent = await sqliteDb.getEventById(requestedId);
+    activeEvent = await db.getEventById(requestedId);
   }
   if (!activeEvent || !activeEvent.title) {
-    activeEvent = await sqliteDb.getActiveEvent();
+    activeEvent = await db.getActiveEvent();
   }
 
   if (!activeEvent || !activeEvent.title) {
@@ -384,7 +392,7 @@ app.post('/api/presensi/verify-token', async (req, res) => {
     });
   }
 
-  const employee = await sqliteDb.getEmployeeByIdOrNip(employeeId);
+  const employee = await db.getEmployeeByIdOrNip(employeeId);
   if (!employee) {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
   }
@@ -394,8 +402,8 @@ app.post('/api/presensi/verify-token', async (req, res) => {
   if (isAlreadyAttendedThisEvent) {
     let finalEmp = employee;
     if (!employee.accumulatedJp || employee.accumulatedJp === 0) {
-      if (typeof sqliteDb.ensureEmployeeJp === 'function') {
-        finalEmp = await sqliteDb.ensureEmployeeJp(employee.id, activeEvent.jp || 32);
+      if (typeof db.ensureEmployeeJp === 'function') {
+        finalEmp = await db.ensureEmployeeJp(employee.id, activeEvent.jp || 32);
       }
     }
     return res.json({
@@ -407,7 +415,7 @@ app.post('/api/presensi/verify-token', async (req, res) => {
     });
   }
 
-  const updatedEmployee = await sqliteDb.markEmployeeAttended(
+  const updatedEmployee = await db.markEmployeeAttended(
     employee.id,
     activeEvent.id,
     activeEvent.title,
@@ -429,18 +437,18 @@ app.get('/api/event', async (req, res) => {
   let targetEvent = null;
   const requestedId = req.query.eventId || req.query.id;
   if (requestedId) {
-    targetEvent = await sqliteDb.getEventById(requestedId);
+    targetEvent = await db.getEventById(requestedId);
   }
   if (!targetEvent) {
-    targetEvent = await sqliteDb.getActiveEvent();
+    targetEvent = await db.getActiveEvent();
   }
-  const allEvents = await sqliteDb.getAllEvents();
+  const allEvents = await db.getAllEvents();
   res.json({ success: true, event: targetEvent, events: allEvents });
 });
 
 app.get('/api/events', async (req, res) => {
-  const allEvents = await sqliteDb.getAllEvents();
-  const activeEvent = await sqliteDb.getActiveEvent();
+  const allEvents = await db.getAllEvents();
+  const activeEvent = await db.getActiveEvent();
   res.json({ success: true, events: allEvents, currentEvent: activeEvent });
 });
 
@@ -457,10 +465,10 @@ const handleSaveEvent = async (req, res) => {
 
   try {
     const isNew = Boolean(req.body.isNew || req.body.isNewEvent || !req.body.id || req.body.id === 'new');
-    const saved = await sqliteDb.saveEvent(req.body, isNew);
+    const saved = await db.saveEvent(req.body, isNew);
     // Pastikan event baru/tersimpan ini langsung menjadi sesi resmi yang aktif di aula & QR
-    await sqliteDb.activateEventById(saved.id);
-    const allEvents = await sqliteDb.getAllEvents();
+    await db.activateEventById(saved.id);
+    const allEvents = await db.getAllEvents();
     res.json({
       success: true,
       message: `Event "${saved.title}" (${saved.id}) berhasil disimpan & diaktifkan di layar aula!`,
@@ -476,11 +484,11 @@ app.put('/api/event', handleSaveEvent);
 app.post('/api/event', handleSaveEvent);
 
 app.post('/api/events/:id/activate', async (req, res) => {
-  const activated = await sqliteDb.activateEventById(req.params.id);
+  const activated = await db.activateEventById(req.params.id);
   if (!activated) {
     return res.status(404).json({ success: false, message: 'Event tidak ditemukan dalam daftar.' });
   }
-  const allEvents = await sqliteDb.getAllEvents();
+  const allEvents = await db.getAllEvents();
   res.json({
     success: true,
     message: `Event "${activated.title}" (${activated.id}) kini aktif sebagai sesi resmi di aula!`,
@@ -492,11 +500,11 @@ app.post('/api/events/:id/activate', async (req, res) => {
 // Endpoint Selesaikan Event Pelatihan
 app.post('/api/events/:id/complete', async (req, res) => {
   try {
-    const completed = await sqliteDb.completeEventById(req.params.id);
+    const completed = await db.completeEventById(req.params.id);
     if (!completed) {
       return res.status(404).json({ success: false, message: 'Event tidak ditemukan dalam daftar.' });
     }
-    const allEvents = await sqliteDb.getAllEvents();
+    const allEvents = await db.getAllEvents();
     res.json({
       success: true,
       message: `Event "${completed.title}" (${completed.id}) resmi diselesaikan! Presensi ditutup & data diarsipkan.`,
@@ -513,10 +521,10 @@ app.post('/api/events/sync', async (req, res) => {
   try {
     const clientEvents = req.body.events;
     if (Array.isArray(clientEvents) && clientEvents.length > 0) {
-      await sqliteDb.syncEvents(clientEvents);
+      await db.syncEvents(clientEvents);
     }
-    const allEvents = await sqliteDb.getAllEvents();
-    const activeEvent = await sqliteDb.getActiveEvent();
+    const allEvents = await db.getAllEvents();
+    const activeEvent = await db.getActiveEvent();
     res.json({
       success: true,
       message: 'Event berhasil disinkronkan.',
@@ -529,12 +537,12 @@ app.post('/api/events/sync', async (req, res) => {
 });
 
 app.delete('/api/events/:id', async (req, res) => {
-  const deleted = await sqliteDb.deleteEventById(req.params.id);
+  const deleted = await db.deleteEventById(req.params.id);
   if (!deleted) {
     return res.status(404).json({ success: false, message: 'Event tidak ditemukan.' });
   }
-  const allEvents = await sqliteDb.getAllEvents();
-  const activeEvent = await sqliteDb.getActiveEvent();
+  const allEvents = await db.getAllEvents();
+  const activeEvent = await db.getActiveEvent();
   res.json({
     success: true,
     message: `Event "${deleted.title}" berhasil dihapus dari sistem.`,
@@ -544,7 +552,7 @@ app.delete('/api/events/:id', async (req, res) => {
 });
 
 app.post('/api/event/toggle-status', async (req, res) => {
-  const toggled = await sqliteDb.toggleActiveEventStatus();
+  const toggled = await db.toggleActiveEventStatus();
   const isActive = Boolean(toggled && toggled.active);
   res.json({
     success: true,
@@ -596,7 +604,7 @@ app.post('/api/event/upload-template', (req, res) => {
       uploadedAt: new Date().toISOString()
     };
 
-    const updatedEvent = await sqliteDb.updateEventTemplate(targetEventId, newTemplate);
+    const updatedEvent = await db.updateEventTemplate(targetEventId, newTemplate);
 
     res.json({
       success: true,
@@ -631,7 +639,7 @@ function resolveTemplatePath(filePath) {
 
 app.delete('/api/event/template', async (req, res) => {
   const targetEventId = req.body?.eventId || req.query?.eventId;
-  await sqliteDb.updateEventTemplate(targetEventId, null);
+  await db.updateEventTemplate(targetEventId, null);
   res.json({ success: true, message: 'Template kustom berhasil dihapus. Event kembali menggunakan desain piagam standar resmi.' });
 });
 
@@ -656,7 +664,7 @@ app.post('/api/event/cert-settings', async (req, res) => {
     showUnderline: showUnderline !== false
   };
 
-  const updated = await sqliteDb.updateEventCertSettings(targetEventId, certSettings);
+  const updated = await db.updateEventCertSettings(targetEventId, certSettings);
 
   res.json({
     success: true,
@@ -670,7 +678,7 @@ app.post('/api/event/cert-settings', async (req, res) => {
 app.get('/api/event/sample-certificate.pdf', async (req, res) => {
   try {
     const targetEventId = req.query.eventId;
-    const event = (targetEventId ? await sqliteDb.getEventById(targetEventId) : await sqliteDb.getActiveEvent()) || {};
+    const event = (targetEventId ? await db.getEventById(targetEventId) : await db.getActiveEvent()) || {};
     const certConfig = event.certSettings || {};
 
     const templatePath = resolveTemplatePath(event.certificateTemplate?.filePath);
@@ -731,7 +739,7 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
 // SYSTEM HEALTH CHECK
 // ========================================================
 app.get('/api/system/status', async (req, res) => {
-  const isAvailable = Boolean(sqliteDb.isSupabaseAvailable && sqliteDb.isSupabaseAvailable());
+  const isAvailable = Boolean(db.isSupabaseAvailable && db.isSupabaseAvailable());
   res.json({
     status: 'healthy',
     time: new Date().toISOString(),
@@ -745,22 +753,22 @@ app.get('/api/system/status', async (req, res) => {
 // EMPLOYEES & LPTI VERIFICATION APIs
 // ========================================================
 app.get('/api/employees', async (req, res) => {
-  const employees = await sqliteDb.getAllEmployees();
-  const activeEvent = await sqliteDb.getActiveEvent();
-  const allEvents = await sqliteDb.getAllEvents();
+  const employees = await db.getAllEmployees();
+  const activeEvent = await db.getActiveEvent();
+  const allEvents = await db.getAllEvents();
   res.json({ success: true, employees, event: activeEvent, events: allEvents });
 });
 
 app.get('/api/employees/:id', async (req, res) => {
-  const emp = await sqliteDb.getEmployeeByIdOrNip(req.params.id);
+  const emp = await db.getEmployeeByIdOrNip(req.params.id);
   if (!emp) return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
   let targetEvent = null;
   const requestedEventId = req.query.eventId || req.query.event;
   if (requestedEventId) {
-    targetEvent = await sqliteDb.getEventById(requestedEventId);
+    targetEvent = await db.getEventById(requestedEventId);
   }
   if (!targetEvent) {
-    targetEvent = await sqliteDb.getActiveEvent();
+    targetEvent = await db.getActiveEvent();
   }
   res.json({ success: true, employee: emp, event: targetEvent });
 });
@@ -780,7 +788,7 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
       return res.status(400).json({ success: false, message: 'Silakan pilih berkas PDF asli LPTI terlebih dahulu!' });
     }
 
-    const employee = await sqliteDb.getEmployeeByIdOrNip(req.params.id);
+    const employee = await db.getEmployeeByIdOrNip(req.params.id);
     if (!employee) {
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
@@ -805,7 +813,7 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
       }
     }
 
-    const updatedEmployee = await sqliteDb.updateEmployeeLpti(employee.id, {
+    const updatedEmployee = await db.updateEmployeeLpti(employee.id, {
       fileName: req.file.filename,
       fileOriginalName: req.file.originalname,
       filePath: uploadedFilePath,
@@ -826,15 +834,15 @@ app.post('/api/employees/:id/verify-lpti', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Aksi verifikasi harus "approve" atau "revise".' });
   }
 
-  const employee = await sqliteDb.getEmployeeByIdOrNip(req.params.id);
+  const employee = await db.getEmployeeByIdOrNip(req.params.id);
   if (!employee) {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
   }
 
   const empEvtId = employee.eventId;
-  const event = (empEvtId ? await sqliteDb.getEventById(empEvtId) : await sqliteDb.getActiveEvent()) || {};
+  const event = (empEvtId ? await db.getEventById(empEvtId) : await db.getActiveEvent()) || {};
 
-  const updatedEmployee = await sqliteDb.verifyEmployeeLpti(employee.id, action, revisionNote, event.jp || 32);
+  const updatedEmployee = await db.verifyEmployeeLpti(employee.id, action, revisionNote, event.jp || 32);
 
   if (action === 'approve') {
     return res.json({
@@ -853,7 +861,7 @@ app.post('/api/employees/:id/verify-lpti', async (req, res) => {
 
 // Metadata E-Sertifikat
 app.get('/api/employees/:id/certificate', async (req, res) => {
-  const employee = await sqliteDb.getEmployeeByIdOrNip(req.params.id);
+  const employee = await db.getEmployeeByIdOrNip(req.params.id);
   if (!employee) return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
 
   if (employee.lpti?.status !== 'approved' || !employee.certificate) {
@@ -864,7 +872,7 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
   }
 
   const empEvtId = employee.eventId;
-  const event = (empEvtId ? await sqliteDb.getEventById(empEvtId) : await sqliteDb.getActiveEvent()) || {};
+  const event = (empEvtId ? await db.getEventById(empEvtId) : await db.getActiveEvent()) || {};
 
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
   const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
@@ -905,7 +913,7 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
 // Unduh / Streaming Asli PDF E-Sertifikat Pegawai
 app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
   try {
-    const employee = await sqliteDb.getEmployeeByIdOrNip(req.params.id);
+    const employee = await db.getEmployeeByIdOrNip(req.params.id);
     if (!employee) return res.status(404).send('Data pegawai tidak ditemukan.');
 
     if (employee.lpti?.status !== 'approved' || !employee.certificate) {
@@ -913,7 +921,7 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
     }
 
     const empEvtId = employee.eventId;
-    const event = (empEvtId ? await sqliteDb.getEventById(empEvtId) : await sqliteDb.getActiveEvent()) || {};
+    const event = (empEvtId ? await db.getEventById(empEvtId) : await db.getActiveEvent()) || {};
     const certConfig = event.certSettings || {};
 
     const templatePath = resolveTemplatePath(event.certificateTemplate?.filePath);
@@ -963,7 +971,7 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
 // Verifikasi Publik Keabsahan Sertifikat
 app.get('/api/verify-cert/:certNumber', async (req, res) => {
   const certNumber = decodeURIComponent(req.params.certNumber);
-  const employees = await sqliteDb.getAllEmployees();
+  const employees = await db.getAllEmployees();
   const employee = employees.find(e => e.certificate && e.certificate.number === certNumber);
 
   if (!employee) {
@@ -1008,7 +1016,7 @@ app.get('/api/verify-cert/:certNumber', async (req, res) => {
 
 // Reset Testing Data API
 app.post('/api/reset-data', async (req, res) => {
-  await sqliteDb.resetTestingData();
+  await db.resetTestingData();
   res.json({ success: true, message: 'Seluruh data pengujian berhasil dibersihkan! 104 data pegawai asli tetap tersimpan rapi.' });
 });
 
@@ -1053,11 +1061,11 @@ module.exports = app;
 
 // Jalankan standalone server jika file dieksekusi langsung
 if (require.main === module) {
-  sqliteDb.initDb().then(() => {
+  db.initDb().then(() => {
     app.listen(PORT, () => {
       console.log(`====================================================`);
       console.log(`🚀 BPMP Sultra - Senin Berseri running on port ${PORT}`);
-      console.log(`💾 Storage: ${sqliteDb.useSqlite ? 'SQLite (database.sqlite)' : 'JSON Engine (/tmp/db.json)'}`);
+      console.log(`💾 Storage: ${db.isSupabaseAvailable() ? 'Supabase PostgreSQL (Cloud Database & Storage)' : 'Local In-Memory Cache (db.json)'}`);
       console.log(`🔐 Admin Login: http://localhost:${PORT}/admin/login`);
       console.log(`📊 Dashboard Admin: http://localhost:${PORT}/admin`);
       console.log(`📽️ Layar Proyektor: http://localhost:${PORT}/proyektor`);
