@@ -9,5 +9,7 @@ uploads/lpti/*
 !uploads/lpti/.gitkeep
 uploads/templates/*
 !uploads/templates/.gitkeep
+uploads/faces/*
+!uploads/faces/.gitkeep
 .DS_Store
 Thumbs.db

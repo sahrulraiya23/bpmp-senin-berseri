@@ -52,6 +52,28 @@
       font-family: 'Cinzel', Georgia, serif;
     }
 
+    @keyframes scanLineAnim {
+      0% { top: 5%; opacity: 0.2; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 5%; opacity: 0.2; }
+    }
+    .face-scanner-line {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 3px;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981, 0 0 20px #34d399;
+      border-radius: 2px;
+      animation: scanLineAnim 2.2s infinite ease-in-out;
+    }
+    .btn-xs {
+      padding: 0.15rem 0.5rem;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      border-radius: 0.25rem;
+    }
+
     /* 1. Official Government Top Strip */
     .gov-top-bar {
       background: linear-gradient(90deg, #001b38 0%, #002d5b 50%, #001b38 100%);
@@ -559,6 +581,12 @@
                   <td class="text-muted pl-0 py-1.5">Total JP Terkumpul</td>
                   <td id="empAccumulatedJp" class="font-weight-bold text-success text-right pr-0 py-1.5">0 JP</td>
                 </tr>
+                <tr class="border-bottom">
+                  <td class="text-muted pl-0 py-1.5 align-middle">Biometrik Wajah</td>
+                  <td class="text-right pr-0 py-1.5" id="empFaceStatusCell">
+                    <span class="badge badge-light border text-muted px-2 py-0.5">Belum Terdaftar</span>
+                  </td>
+                </tr>
                 <tr>
                   <td class="text-muted pl-0 py-1.5 align-middle">Status Kehadiran</td>
                   <td class="text-right pr-0 py-1.5">
@@ -569,6 +597,24 @@
                 </tr>
               </tbody>
             </table>
+
+            <!-- BANNER PROMPT DAFTAR WAJAH JIKA BELUM -->
+            <div id="faceEnrollmentPrompt" class="alert alert-warning border-0 rounded-10 p-3 mb-3 d-none shadow-xs">
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                  <div class="rounded-circle bg-white text-warning d-flex align-items-center justify-content-center mr-2.5" style="width: 32px; height: 32px; min-width: 32px;">
+                    <i class="fas fa-camera font-14"></i>
+                  </div>
+                  <div>
+                    <div class="font-weight-bold text-dark" style="font-size: 13px;">Wajah Belum Terdaftar</div>
+                    <div class="text-muted" style="font-size: 11px;">Daftarkan foto wajah sekali (3 detik) untuk verifikasi presensi.</div>
+                  </div>
+                </div>
+                <button type="button" onclick="openFaceModal('register')" class="btn btn-warning btn-sm font-weight-bold rounded-pill px-3 py-1 text-nowrap ml-2">
+                  <i class="fas fa-plus-circle mr-1"></i> Daftar
+                </button>
+              </div>
+            </div>
 
             <!-- SECTION PRESENSI MANDIRI -->
             <div id="attendanceActionBox" class="p-3 rounded bg-light border">
@@ -809,6 +855,60 @@
           </button>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: BIOMETRIK VERIFIKASI WAJAH ASN                   -->
+  <!-- ======================================================== -->
+  <div class="modal fade" id="faceBiometricModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+        <div class="modal-header bg-dark text-white py-3 px-4 border-0 d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="modal-title font-weight-bold mb-0 text-white" id="faceModalTitle">
+              <i class="fas fa-user-check text-warning mr-2"></i> Verifikasi Biometrik Wajah
+            </h6>
+            <small class="text-white-50" id="faceModalSubtitle">Aparatur Sipil Negara BPMP Prov. Sultra</small>
+          </div>
+          <button type="button" class="close text-white opacity-75" data-dismiss="modal" onclick="closeFaceCamera()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4 text-center bg-light">
+          <!-- Kamera Video & Scanner Frame -->
+          <div class="position-relative mx-auto rounded-15 overflow-hidden bg-black shadow-sm" style="width: 100%; max-width: 320px; height: 320px; border-radius: 16px;">
+            <video id="faceCameraVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+            <canvas id="faceCaptureCanvas" class="d-none" width="400" height="400"></canvas>
+            
+            <!-- Oval Guide Overlay -->
+            <div class="position-absolute" style="top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">
+              <div id="faceOvalGuide" style="width: 190px; height: 250px; border: 3px dashed #10b981; border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); position: relative; transition: all 0.3s ease;">
+                <div class="face-scanner-line"></div>
+              </div>
+            </div>
+
+            <!-- Live Status Indicator -->
+            <div class="position-absolute" style="bottom: 12px; left: 0; right: 0; text-align: center;">
+              <span id="faceStatusBadge" class="badge badge-dark px-3 py-1.5 rounded-pill shadow-sm" style="background: rgba(0,0,0,0.75); font-size: 11px;">
+                <i class="fas fa-spinner fa-spin mr-1"></i> Membuka kamera depan...
+              </span>
+            </div>
+          </div>
+
+          <p class="small text-muted mt-3 mb-0" id="faceInstructionText">
+            Posisikan wajah Anda tepat di dalam lingkaran oval. Pastikan pencahayaan cukup dan wajah tidak tertutup masker.
+          </p>
+        </div>
+        <div class="modal-footer bg-white border-top py-2.5 px-4 d-flex justify-content-between">
+          <button type="button" class="btn btn-light btn-sm rounded-pill font-weight-bold" data-dismiss="modal" onclick="closeFaceCamera()">
+            Batal
+          </button>
+          <button type="button" id="btnCaptureFace" onclick="captureAndProcessFace()" class="btn btn-gov-emerald btn-sm rounded-pill px-4 font-weight-bold">
+            <i class="fas fa-camera mr-1.5"></i> <span id="btnCaptureText">Ambil & Simpan Foto</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1125,12 +1225,41 @@
     function renderEmployeeProfile(emp) {
       if (!emp) return;
       const initial = emp.name ? emp.name.charAt(0).toUpperCase() : 'P';
-      document.getElementById('empAvatarInitial').textContent = initial;
+      const avatarBox = document.getElementById('empAvatarInitial');
+      if (avatarBox) {
+        if (emp.facePhotoUrl) {
+          avatarBox.innerHTML = `<img src="${emp.facePhotoUrl}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;" alt="${emp.name}" />`;
+        } else {
+          avatarBox.textContent = initial;
+        }
+      }
       document.getElementById('empName').textContent = emp.name;
       document.getElementById('empNip').textContent = `NIP: ${emp.nip}`;
       document.getElementById('empJabatan').textContent = emp.position || emp.jabatan || '-';
       document.getElementById('empPanggol').textContent = emp.rank || emp.panggol || '-';
       document.getElementById('empInstansi').textContent = emp.institution || emp.instansi || 'BPMP Prov. Sultra';
+
+      // Status Biometrik Wajah
+      const faceCell = document.getElementById('empFaceStatusCell');
+      const facePrompt = document.getElementById('faceEnrollmentPrompt');
+      if (emp.faceRegistered) {
+        if (faceCell) {
+          faceCell.innerHTML = `
+            <span class="badge badge-success px-2 py-1 font-weight-bold"><i class="fas fa-smile mr-1"></i> Terdaftar</span>
+            <button onclick="openFaceModal('register')" class="btn btn-link btn-xs text-primary p-0 ml-1.5" title="Perbarui Foto Wajah"><i class="fas fa-sync-alt"></i></button>
+          `;
+        }
+        if (facePrompt) facePrompt.classList.add('d-none');
+      } else {
+        if (faceCell) {
+          faceCell.innerHTML = `
+            <button onclick="openFaceModal('register')" class="btn btn-warning btn-xs font-weight-bold px-2 py-0.5 rounded-pill">
+              <i class="fas fa-camera mr-1"></i> Daftarkan
+            </button>
+          `;
+        }
+        if (facePrompt) facePrompt.classList.remove('d-none');
+      }
 
       // Cek Kehadiran pada Event Aktif (Dukung boolean emp.attended & objek emp.attendance)
       const isAttendedThisEvent = Boolean(
@@ -1275,8 +1404,22 @@
       tokenInput.value = '';
     }
 
-    async function executeAutoPresence(token, targetEventId) {
+    async function executeAutoPresence(token, targetEventId, attendancePhoto = null) {
       if (!currentAuthUser) return;
+
+      // Jika belum verifikasi wajah dan attendancePhoto belum disediakan:
+      if (!attendancePhoto) {
+        if (!currentAuthUser.faceRegistered) {
+          showToast('📸 Ambil 1 foto wajah terlebih dahulu untuk aktivasi biometrik & verifikasi presensi.', 'info');
+          openFaceModal('register', token, targetEventId);
+          return;
+        } else {
+          // Buka kamera verifikasi wajah presensi
+          openFaceModal('verify', token, targetEventId);
+          return;
+        }
+      }
+
       const cleanToken = token.trim().toUpperCase();
       const eventIdToSend = targetEventId || currentEvent?.id;
 
@@ -1287,7 +1430,8 @@
           body: JSON.stringify({
             employeeId: currentAuthUser.nip,
             token: cleanToken,
-            eventId: eventIdToSend
+            eventId: eventIdToSend,
+            attendancePhoto: attendancePhoto
           })
         });
         const result = await res.json();
@@ -1305,6 +1449,154 @@
         }
       } catch (err) {
         showToast('Gagal memverifikasi presensi: ' + err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // FEATURE: BIOMETRIK VERIFIKASI WAJAH ASN (FRONTEND CAMERA)
+    // ========================================================
+    let faceStream = null;
+    let currentFaceMode = 'register'; // 'register' atau 'verify'
+    let pendingPresenceToken = null;
+    let pendingPresenceEventId = null;
+
+    async function openFaceModal(mode = 'register', token = null, eventId = null) {
+      currentFaceMode = mode;
+      pendingPresenceToken = token;
+      pendingPresenceEventId = eventId;
+
+      const title = document.getElementById('faceModalTitle');
+      const sub = document.getElementById('faceModalSubtitle');
+      const btnText = document.getElementById('btnCaptureText');
+
+      if (mode === 'register') {
+        if (title) title.innerHTML = '<i class="fas fa-user-plus text-warning mr-2"></i> Pendaftaran Biometrik Wajah ASN';
+        if (sub) sub.textContent = 'Ambil 1 foto wajah resmi untuk data master presensi Anda';
+        if (btnText) btnText.textContent = 'Daftarkan Wajah Saya';
+      } else {
+        if (title) title.innerHTML = '<i class="fas fa-user-check text-success mr-2"></i> Verifikasi Wajah Presensi';
+        if (sub) sub.textContent = 'Arahkan wajah ke kamera untuk mencatat kehadiran resmi';
+        if (btnText) btnText.textContent = 'Verifikasi Kehadiran';
+      }
+
+      $('#faceBiometricModal').modal('show');
+      setTimeout(startFaceCamera, 300);
+    }
+
+    async function startFaceCamera() {
+      const video = document.getElementById('faceCameraVideo');
+      const badge = document.getElementById('faceStatusBadge');
+      const oval = document.getElementById('faceOvalGuide');
+
+      if (badge) badge.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Mengakses kamera depan...';
+
+      try {
+        if (faceStream) {
+          faceStream.getTracks().forEach(t => t.stop());
+        }
+
+        faceStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 480 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+
+        if (video) {
+          video.srcObject = faceStream;
+          video.onloadedmetadata = () => {
+            video.play();
+            if (badge) {
+              badge.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i> Kamera siap. Posisikan wajah di lingkaran';
+            }
+            if (oval) oval.style.borderColor = '#10b981';
+          };
+        }
+      } catch (err) {
+        console.error('Kamera error:', err);
+        if (badge) {
+          badge.innerHTML = '<i class="fas fa-exclamation-triangle text-warning mr-1"></i> Kamera diblokir / tidak tersedia';
+        }
+        showToast('Izin kamera depan diperlukan untuk biometrik wajah: ' + err.message, 'error');
+      }
+    }
+
+    function closeFaceCamera() {
+      if (faceStream) {
+        faceStream.getTracks().forEach(t => t.stop());
+        faceStream = null;
+      }
+    }
+
+    $('#faceBiometricModal').on('hidden.bs.modal', function () {
+      closeFaceCamera();
+    });
+
+    async function captureAndProcessFace() {
+      const video = document.getElementById('faceCameraVideo');
+      const canvas = document.getElementById('faceCaptureCanvas');
+      const badge = document.getElementById('faceStatusBadge');
+      const btn = document.getElementById('btnCaptureFace');
+
+      if (!video || !canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      canvas.width = 400;
+      canvas.height = 400;
+
+      // Mirror canvas agar orientasi sama persis dengan preview selfie
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+      const photoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+      if (btn) btn.disabled = true;
+      if (badge) badge.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses foto biometrik...';
+
+      try {
+        if (currentFaceMode === 'register') {
+          const res = await fetch(`/api/employees/${currentAuthUser.nip}/register-face`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              facePhoto: photoBase64
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast('Foto biometrik wajah berhasil didaftarkan!', 'success');
+            currentAuthUser = data.employee;
+            renderEmployeeProfile(currentAuthUser);
+            closeFaceCamera();
+            $('#faceBiometricModal').modal('hide');
+
+            // Jika ada pending presensi token, langsung eksekusi sekarang
+            if (pendingPresenceToken) {
+              await executeAutoPresence(pendingPresenceToken, pendingPresenceEventId, photoBase64);
+              pendingPresenceToken = null;
+              pendingPresenceEventId = null;
+            }
+          } else {
+            showToast(data.message || 'Gagal mendaftarkan wajah.', 'error');
+          }
+        } else {
+          // Mode Verifikasi Presensi
+          closeFaceCamera();
+          $('#faceBiometricModal').modal('hide');
+          if (pendingPresenceToken) {
+            await executeAutoPresence(pendingPresenceToken, pendingPresenceEventId, photoBase64);
+            pendingPresenceToken = null;
+            pendingPresenceEventId = null;
+          }
+        }
+      } catch (err) {
+        showToast('Terjadi kesalahan memproses foto: ' + err.message, 'error');
+      } finally {
+        if (btn) btn.disabled = false;
       }
     }
 

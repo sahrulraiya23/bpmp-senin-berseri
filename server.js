@@ -23,8 +23,8 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Paths & Environment
 const IS_VERCEL = Boolean(process.env.VERCEL);
@@ -35,9 +35,10 @@ const PUBLIC_DIR = fs.existsSync(path.join(BASE_DIR, 'public'))
 const DATA_DIR = IS_VERCEL ? os.tmpdir() : BASE_DIR;
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'lpti');
 const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
+const FACES_DIR = path.join(DATA_DIR, 'uploads', 'faces');
 
 // Ensure upload directories exist
-[UPLOAD_DIR, TEMPLATE_DIR].forEach(dir => {
+[UPLOAD_DIR, TEMPLATE_DIR, FACES_DIR].forEach(dir => {
   try {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   } catch (e) {
@@ -50,9 +51,11 @@ app.use(express.static(PUBLIC_DIR));
 app.use('/azia', express.static(PUBLIC_DIR));
 app.use('/uploads/lpti', express.static(UPLOAD_DIR));
 app.use('/uploads/templates', express.static(TEMPLATE_DIR));
+app.use('/uploads/faces', express.static(FACES_DIR));
 if (IS_VERCEL) {
   app.use('/uploads/lpti', express.static(path.join(BASE_DIR, 'uploads', 'lpti')));
   app.use('/uploads/templates', express.static(path.join(BASE_DIR, 'uploads', 'templates')));
+  app.use('/uploads/faces', express.static(path.join(BASE_DIR, 'uploads', 'faces')));
 }
 
 // Admin session store (Stateless HMAC-signed token + fallback memory map)
@@ -360,7 +363,7 @@ app.post('/api/auth/login', async (req, res) => {
 // PRESENSI SCAN TOKEN (AULA PROYEKTOR)
 // ========================================================
 app.post('/api/presensi/verify-token', async (req, res) => {
-  const { employeeId, token, eventId } = req.body;
+  const { employeeId, token, eventId, attendancePhoto } = req.body;
   if (!employeeId || !token) {
     return res.status(400).json({ success: false, message: 'Identitas Pegawai dan Kode Token QR wajib diisi!' });
   }
@@ -397,6 +400,27 @@ app.post('/api/presensi/verify-token', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
   }
 
+  // Simpan foto bukti presensi (jika ada snapshot selfie)
+  let attendancePhotoUrl = null;
+  if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
+    try {
+      const base64Data = attendancePhoto.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      const filename = `ATTEND-${employee.nip || employee.id}-${Date.now()}.jpg`;
+      const localFilePath = path.join(FACES_DIR, filename);
+      fs.writeFileSync(localFilePath, buffer);
+      attendancePhotoUrl = `/uploads/faces/${filename}`;
+
+      // Upload ke Supabase Storage bucket 'faces' jika tersedia
+      try {
+        const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
+        if (cloudUrl) attendancePhotoUrl = cloudUrl;
+      } catch (storageErr) {}
+    } catch (photoErr) {
+      console.warn('Gagal menyimpan attendancePhoto:', photoErr.message);
+    }
+  }
+
   // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini
   const isAlreadyAttendedThisEvent = Boolean(employee.attended && employee.eventId === activeEvent.id);
   if (isAlreadyAttendedThisEvent) {
@@ -419,14 +443,71 @@ app.post('/api/presensi/verify-token', async (req, res) => {
     employee.id,
     activeEvent.id,
     activeEvent.title,
-    activeEvent.jp || 32
+    activeEvent.jp || 32,
+    attendancePhotoUrl
   );
 
   return res.json({
     success: true,
-    message: `Presensi Berhasil! Status kehadiran ${employee.name} kini resmi HADIR pada kegiatan "${activeEvent.title}".`,
+    message: `Presensi & Verifikasi Wajah Berhasil! Status kehadiran ${employee.name} kini resmi HADIR pada kegiatan "${activeEvent.title}".`,
     employee: updatedEmployee,
     event: activeEvent
+  });
+});
+
+// ========================================================
+// BIOMETRIK WAJAH ASN: PENDAFTARAN & RESET
+// ========================================================
+app.post('/api/employees/:id/register-face', async (req, res) => {
+  const { facePhoto, faceDescriptor } = req.body;
+  const employee = await db.getEmployeeByIdOrNip(req.params.id);
+  if (!employee) {
+    return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
+  }
+
+  let facePhotoUrl = employee.facePhotoUrl || null;
+  if (facePhoto && typeof facePhoto === 'string' && facePhoto.startsWith('data:image')) {
+    try {
+      const base64Data = facePhoto.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      const filename = `MASTER-FACE-${employee.nip || employee.id}-${Date.now()}.jpg`;
+      const localFilePath = path.join(FACES_DIR, filename);
+      fs.writeFileSync(localFilePath, buffer);
+      facePhotoUrl = `/uploads/faces/${filename}`;
+
+      // Upload ke Supabase Storage bucket 'faces' jika tersedia
+      try {
+        const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
+        if (cloudUrl) facePhotoUrl = cloudUrl;
+      } catch (storageErr) {}
+    } catch (photoErr) {
+      console.warn('Gagal menyimpan master facePhoto:', photoErr.message);
+    }
+  }
+
+  const updated = await db.registerEmployeeFace(employee.id, {
+    faceDescriptor: faceDescriptor || null,
+    facePhotoUrl: facePhotoUrl
+  });
+
+  return res.json({
+    success: true,
+    message: `Data biometrik wajah pegawai ${employee.name} berhasil didaftarkan secara mandiri!`,
+    employee: updated
+  });
+});
+
+app.post('/api/employees/:id/reset-face', async (req, res) => {
+  const employee = await db.getEmployeeByIdOrNip(req.params.id);
+  if (!employee) {
+    return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
+  }
+
+  const updated = await db.resetEmployeeFace(employee.id);
+  return res.json({
+    success: true,
+    message: `Data biometrik wajah ${employee.name} berhasil di-reset. Pegawai dapat mendaftarkan ulang wajahnya.`,
+    employee: updated
   });
 });
 

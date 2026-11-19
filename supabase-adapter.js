@@ -157,7 +157,12 @@ function formatSupabaseEmployee(row) {
       issuedAt: row.certificate_issued_at,
       verifier: row.certificate_verifier || 'Junaiddin Pagala, ST, M.T.',
       verifierTitle: row.certificate_verifier_title || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra'
-    } : null
+    } : null,
+    faceRegistered: Boolean(row.face_photo_url || row.face_descriptor),
+    facePhotoUrl: row.face_photo_url || null,
+    faceDescriptor: row.face_descriptor ? (typeof row.face_descriptor === 'string' ? JSON.parse(row.face_descriptor) : row.face_descriptor) : null,
+    faceRegisteredAt: row.face_registered_at || null,
+    attendancePhotoUrl: row.attendance_photo_url || null
   };
 }
 
@@ -314,6 +319,9 @@ async function getAllEmployees() {
     return {
       ...emp,
       nip: String(emp.nip || '').trim(),
+      faceRegistered: Boolean(emp.facePhotoUrl || emp.face_photo_url || emp.faceRegistered),
+      facePhotoUrl: emp.facePhotoUrl || emp.face_photo_url || null,
+      attendancePhotoUrl: emp.attendancePhotoUrl || emp.attendance_photo_url || null,
       attendance: {
         status: isAttended ? 'present' : 'absent',
         time: isAttended ? (emp.attendedAt || 'Pukul 08:30:00 WITA') : null
@@ -348,6 +356,9 @@ async function getEmployeeByIdOrNip(idOrNip) {
   return {
     ...found,
     nip: String(found.nip || '').trim(),
+    faceRegistered: Boolean(found.facePhotoUrl || found.face_photo_url || found.faceRegistered),
+    facePhotoUrl: found.facePhotoUrl || found.face_photo_url || null,
+    attendancePhotoUrl: found.attendancePhotoUrl || found.attendance_photo_url || null,
     attendance: {
       status: isAttended ? 'present' : 'absent',
       time: isAttended ? (found.attendedAt || 'Pukul 08:30:00 WITA') : null
@@ -380,7 +391,7 @@ async function ensureEmployeeJp(id, eventJp = 32) {
   return emp;
 }
 
-async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32) {
+async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, attendancePhotoUrl = null) {
   const now = new Date().toISOString();
   const clean = String(id).trim();
   const jpToAdd = parseInt(eventJp, 10) || 32;
@@ -394,37 +405,167 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32) {
 
   const client = getClient();
   if (client) {
+    const updatePayload = {
+      attended: true,
+      attended_at: now,
+      event_id: eventId || null,
+      event_title: eventTitle || null,
+      accumulated_jp: newJp,
+      updated_at: now
+    };
+    if (attendancePhotoUrl) {
+      updatePayload.attendance_photo_url = attendancePhotoUrl;
+    }
+
     const { data, error } = await client
       .from('employees')
-      .update({
-        attended: true,
-        attended_at: now,
-        event_id: eventId || null,
-        event_title: eventTitle || null,
-        accumulated_jp: newJp,
-        updated_at: now
-      })
+      .update(updatePayload)
       .eq('id', targetId)
       .select()
       .single();
 
     if (error) {
-      console.error('Supabase markEmployeeAttended error:', error.message);
+      console.warn('Supabase markEmployeeAttended note:', error.message);
+      // Jika kolom attendance_photo_url belum ada di Supabase, update tanpa kolom tersebut
+      if (error.message && error.message.includes('attendance_photo_url')) {
+        delete updatePayload.attendance_photo_url;
+        const retry = await client.from('employees').update(updatePayload).eq('id', targetId).select().single();
+        if (!retry.error && retry.data) return formatSupabaseEmployee(retry.data);
+      }
       return null;
     }
     return formatSupabaseEmployee(data);
   }
 
   // Memory fallback
+  const mem = getMemoryStore();
+  const rawEmp = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
+  if (rawEmp) {
+    rawEmp.attended = true;
+    rawEmp.attendedAt = now;
+    rawEmp.eventId = eventId || null;
+    rawEmp.eventTitle = eventTitle || null;
+    rawEmp.accumulatedJp = newJp;
+    if (attendancePhotoUrl) {
+      rawEmp.attendancePhotoUrl = attendancePhotoUrl;
+      rawEmp.attendance_photo_url = attendancePhotoUrl;
+    }
+    rawEmp.attendance = {
+      status: 'present',
+      time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+    };
+  }
   existing.attended = true;
   existing.attendedAt = now;
   existing.eventId = eventId || null;
   existing.eventTitle = eventTitle || null;
   existing.accumulatedJp = newJp;
+  if (attendancePhotoUrl) existing.attendancePhotoUrl = attendancePhotoUrl;
   existing.attendance = {
     status: 'present',
     time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
   };
+  return existing;
+}
+
+async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = null }) {
+  const now = new Date().toISOString();
+  const clean = String(id).trim();
+
+  const existing = await getEmployeeByIdOrNip(clean);
+  if (!existing) return null;
+
+  const descStr = faceDescriptor ? (typeof faceDescriptor === 'string' ? faceDescriptor : JSON.stringify(faceDescriptor)) : null;
+
+  const client = getClient();
+  if (client) {
+    const updatePayload = {
+      face_photo_url: facePhotoUrl,
+      face_descriptor: descStr,
+      face_registered_at: now,
+      updated_at: now
+    };
+
+    const { data, error } = await client
+      .from('employees')
+      .update(updatePayload)
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Supabase registerEmployeeFace note:', error.message);
+      console.log('💡 Jalankan script supabase_face_verification.sql di Supabase SQL Editor untuk mengaktifkan kolom biometrik di PostgreSQL.');
+    } else if (data) {
+      return formatSupabaseEmployee(data);
+    }
+  }
+
+  // Memory fallback
+  const mem = getMemoryStore();
+  const rawEmp = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
+  if (rawEmp) {
+    rawEmp.faceRegistered = true;
+    rawEmp.facePhotoUrl = facePhotoUrl;
+    rawEmp.face_photo_url = facePhotoUrl;
+    rawEmp.faceDescriptor = faceDescriptor;
+    rawEmp.face_descriptor = descStr;
+    rawEmp.faceRegisteredAt = now;
+  }
+  existing.faceRegistered = true;
+  existing.facePhotoUrl = facePhotoUrl;
+  existing.faceDescriptor = faceDescriptor;
+  existing.faceRegisteredAt = now;
+  return existing;
+}
+
+async function resetEmployeeFace(id) {
+  const now = new Date().toISOString();
+  const clean = String(id).trim();
+
+  const existing = await getEmployeeByIdOrNip(clean);
+  if (!existing) return null;
+
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('employees')
+      .update({
+        face_photo_url: null,
+        face_descriptor: null,
+        face_registered_at: null,
+        attendance_photo_url: null,
+        updated_at: now
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Supabase resetEmployeeFace note:', error.message);
+    } else if (data) {
+      return formatSupabaseEmployee(data);
+    }
+  }
+
+  // Memory fallback
+  const mem = getMemoryStore();
+  const rawEmp = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
+  if (rawEmp) {
+    rawEmp.faceRegistered = false;
+    rawEmp.facePhotoUrl = null;
+    rawEmp.face_photo_url = null;
+    rawEmp.faceDescriptor = null;
+    rawEmp.face_descriptor = null;
+    rawEmp.faceRegisteredAt = null;
+    rawEmp.attendancePhotoUrl = null;
+    rawEmp.attendance_photo_url = null;
+  }
+  existing.faceRegistered = false;
+  existing.facePhotoUrl = null;
+  existing.faceDescriptor = null;
+  existing.faceRegisteredAt = null;
+  existing.attendancePhotoUrl = null;
   return existing;
 }
 
@@ -1124,5 +1265,7 @@ module.exports = {
   verifyAdminCredentials,
   getSystemSettings,
   uploadToStorage,
+  registerEmployeeFace,
+  resetEmployeeFace,
   resetTestingData
 };
