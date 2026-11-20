@@ -63,10 +63,11 @@ const JWT_SECRET = process.env.SESSION_SECRET || 'bpmp-senin-berseri-secret-key-
 const adminSessions = new Map();
 
 function createAdminToken(admin) {
+  const isSuper = admin.role === 'superadmin' || admin.username === 'superadmin';
   const payload = {
     u: admin.username,
-    r: admin.role || 'admin',
-    n: admin.name || 'Administrator BPMP',
+    r: isSuper ? 'superadmin' : 'kepegawaian',
+    n: admin.name || (isSuper ? 'Super Administrator BPMP Sultra' : 'Bagian Kepegawaian BPMP Sultra'),
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 hari persisten
   };
@@ -91,10 +92,11 @@ function verifyAdminToken(token) {
         try {
           const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
           if (!payload.exp || payload.exp > Math.floor(Date.now() / 1000)) {
+            const isSuper = payload.r === 'superadmin' || payload.u === 'superadmin';
             return {
-              username: payload.u || 'admin',
-              role: payload.r || 'admin',
-              name: payload.n || 'Administrator BPMP'
+              username: payload.u || (isSuper ? 'superadmin' : 'admin'),
+              role: isSuper ? 'superadmin' : 'kepegawaian',
+              name: payload.n || (isSuper ? 'Super Administrator BPMP Sultra' : 'Bagian Kepegawaian BPMP Sultra')
             };
           }
         } catch (e) {}
@@ -283,7 +285,7 @@ app.post('/api/auth/admin-login', async (req, res) => {
   if (!admin) {
     return res.status(401).json({
       success: false,
-      message: 'Username atau Password Administrator salah! (Default: admin / Bpmp2026!)'
+      message: 'Username atau Password salah! (Superadmin: superadmin | Kepegawaian: admin | Sandi: Bpmp2026!)'
     });
   }
 
@@ -1095,8 +1097,15 @@ app.get('/api/verify-cert/:certNumber', async (req, res) => {
   `);
 });
 
-// Reset Testing Data API
+// Reset Testing Data API (Khusus Super Administrator)
 app.post('/api/reset-data', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin || admin.role !== 'superadmin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak: Operasi reset data pengujian hanya diizinkan untuk Super Administrator.'
+    });
+  }
   await db.resetTestingData();
   res.json({ success: true, message: 'Seluruh data pengujian berhasil dibersihkan! 104 data pegawai asli tetap tersimpan rapi.' });
 });

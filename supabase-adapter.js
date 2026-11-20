@@ -41,15 +41,30 @@ function getMemoryStore() {
   if (_memoryStore.event && !_memoryStore.events.some(e => e.id === _memoryStore.event.id)) {
     _memoryStore.events.push(_memoryStore.event);
   }
-  // Normalisasi admins
-  if (!_memoryStore.admins || _memoryStore.admins.length === 0) {
-    _memoryStore.admins = [{
-      id: 1,
-      username: 'admin',
-      password: process.env.ADMIN_PASSWORD || 'Bpmp2026!',
-      name: 'Administrator Kepegawaian BPMP Sultra',
-      role: 'superadmin'
-    }];
+  // Normalisasi akun admins (Superadmin & Bagian Kepegawaian)
+  if (!_memoryStore.admins || _memoryStore.admins.length === 0 || !_memoryStore.admins.some(a => a.username === 'superadmin')) {
+    _memoryStore.admins = [
+      {
+        id: 1,
+        username: 'superadmin',
+        password: process.env.SUPERADMIN_PASSWORD || 'Bpmp2026!',
+        name: 'Super Administrator BPMP Sultra',
+        role: 'superadmin'
+      },
+      {
+        id: 2,
+        username: 'admin',
+        password: process.env.ADMIN_PASSWORD || 'Bpmp2026!',
+        name: 'Bagian Kepegawaian BPMP Sultra',
+        role: 'kepegawaian'
+      }
+    ];
+  } else {
+    const adminObj = _memoryStore.admins.find(a => a.username === 'admin');
+    if (adminObj) {
+      adminObj.role = 'kepegawaian';
+      adminObj.name = 'Bagian Kepegawaian BPMP Sultra';
+    }
   }
   return _memoryStore;
 }
@@ -208,13 +223,21 @@ async function seedFromDbJson() {
     if (!fs.existsSync(jsonPath)) return;
     const dbData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 
-    // 1. Seed Admin
-    await client.from('admins').upsert({
-      username: 'admin',
-      password: process.env.ADMIN_PASSWORD || 'Bpmp2026!',
-      name: 'Administrator Kepegawaian BPMP Sultra',
-      role: 'superadmin'
-    }, { onConflict: 'username' });
+    // 1. Seed Superadmin & Bagian Kepegawaian
+    await client.from('admins').upsert([
+      {
+        username: 'superadmin',
+        password: process.env.SUPERADMIN_PASSWORD || 'Bpmp2026!',
+        name: 'Super Administrator BPMP Sultra',
+        role: 'superadmin'
+      },
+      {
+        username: 'admin',
+        password: process.env.ADMIN_PASSWORD || 'Bpmp2026!',
+        name: 'Bagian Kepegawaian BPMP Sultra',
+        role: 'kepegawaian'
+      }
+    ], { onConflict: 'username' });
 
     // 2. Seed Default Event
     if (dbData.event && dbData.event.id) {
@@ -1085,7 +1108,7 @@ async function verifyAdminCredentials(username, password) {
     const { data, error } = await client
       .from('admins')
       .select('*')
-      .eq('username', cleanU)
+      .ilike('username', cleanU)
       .eq('password', cleanP)
       .maybeSingle();
 
@@ -1094,30 +1117,42 @@ async function verifyAdminCredentials(username, password) {
         id: data.id,
         username: data.username,
         name: data.name,
-        role: data.role || 'superadmin'
+        role: data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian')
       };
     }
   }
 
   // Memory fallback / Default check
   const mem = getMemoryStore();
-  const found = (mem.admins || []).find(a => a.username === cleanU && a.password === cleanP);
+  const found = (mem.admins || []).find(a => (a.username.toLowerCase() === cleanU || (cleanU === 'kepegawaian' && a.username === 'admin')) && a.password === cleanP);
   if (found) {
     return {
       id: found.id,
       username: found.username,
       name: found.name,
-      role: found.role || 'superadmin'
+      role: found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian')
     };
   }
 
-  // Fallback superadmin password jika env cocok
-  if (cleanU === 'admin' && cleanP === (process.env.ADMIN_PASSWORD || 'Bpmp2026!')) {
+  // Fallback kredensial bawaan jika env cocok atau database bootstrap
+  const superPwd = process.env.SUPERADMIN_PASSWORD || 'Bpmp2026!';
+  const adminPwd = process.env.ADMIN_PASSWORD || 'Bpmp2026!';
+
+  if (cleanU === 'superadmin' && cleanP === superPwd) {
     return {
       id: 1,
-      username: 'admin',
-      name: 'Administrator Kepegawaian BPMP Sultra',
+      username: 'superadmin',
+      name: 'Super Administrator BPMP Sultra',
       role: 'superadmin'
+    };
+  }
+
+  if ((cleanU === 'admin' || cleanU === 'kepegawaian') && cleanP === adminPwd) {
+    return {
+      id: 2,
+      username: 'admin',
+      name: 'Bagian Kepegawaian BPMP Sultra',
+      role: 'kepegawaian'
     };
   }
 

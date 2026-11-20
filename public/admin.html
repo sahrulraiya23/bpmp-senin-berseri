@@ -429,17 +429,27 @@
         <!-- Admin Profile Dropdown -->
         <div class="dropdown">
           <button class="btn btn-light btn-sm rounded-pill font-weight-bold dropdown-toggle d-flex align-items-center px-3 py-1.5 border" type="button" id="userMenuDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-2" style="width: 24px; height: 24px; font-size: 11px;">
+            <div id="sideAdminAvatar" class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-2" style="width: 24px; height: 24px; font-size: 11px;">
               <i class="fas fa-user-shield"></i>
             </div>
             <span id="sideAdminName" class="text-dark">admin</span>
+            <span id="sideAdminRoleBadge" class="badge badge-primary ml-2 px-2 py-0.5" style="font-size: 10px;">Kepegawaian</span>
           </button>
-          <div class="dropdown-menu dropdown-menu-right shadow-sm border-0" aria-labelledby="userMenuDropdown">
+          <div class="dropdown-menu dropdown-menu-right shadow-sm border-0" aria-labelledby="userMenuDropdown" style="min-width: 240px;">
             <div class="dropdown-header font-weight-bold text-uppercase text-muted" style="font-size: 10px;">
-              Hak Akses: Administrator BPMP
+              Tingkat Akses: <span id="sideAdminRoleText" class="text-primary font-weight-bold">Bagian Kepegawaian</span>
+            </div>
+            <div class="px-3 py-1 text-muted small border-bottom mb-2" id="sideAdminSubTitle" style="font-size: 11px;">
+              Pengelola Harian Kepegawaian BPMP
             </div>
             <a class="dropdown-item small" href="/" target="_blank"><i class="fas fa-id-card text-muted mr-2"></i> Buka Portal Pegawai</a>
             <a class="dropdown-item small" href="/proyektor" target="_blank"><i class="fas fa-tv text-muted mr-2"></i> Buka Layar Aula (Proyektor)</a>
+            <div id="superadminActionGroup" class="d-none">
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item small text-danger font-weight-bold" href="javascript:void(0)" onclick="handleResetTestingData()">
+                <i class="fas fa-trash-alt mr-2 text-danger"></i> Reset Data Pengujian
+              </a>
+            </div>
             <div class="dropdown-divider"></div>
             <a class="dropdown-item small text-danger font-weight-bold" href="javascript:void(0)" onclick="handleAdminLogout()"><i class="fas fa-sign-out-alt mr-2"></i> Keluar (Logout)</a>
           </div>
@@ -1057,8 +1067,32 @@
           window.location.replace('/admin/login');
           return false;
         }
-        if (data.admin && document.getElementById('sideAdminName')) {
-          document.getElementById('sideAdminName').textContent = data.admin.username || 'admin';
+        if (data.admin) {
+          window.currentAdminUser = data.admin;
+          const isSuper = data.admin.role === 'superadmin' || data.admin.username === 'superadmin';
+
+          const nameEl = document.getElementById('sideAdminName');
+          const badgeEl = document.getElementById('sideAdminRoleBadge');
+          const roleTextEl = document.getElementById('sideAdminRoleText');
+          const subTitleEl = document.getElementById('sideAdminSubTitle');
+          const superActionEl = document.getElementById('superadminActionGroup');
+          const avatarEl = document.getElementById('sideAdminAvatar');
+
+          if (nameEl) nameEl.textContent = data.admin.username || (isSuper ? 'superadmin' : 'admin');
+          if (badgeEl) {
+            badgeEl.textContent = isSuper ? 'Superadmin' : 'Kepegawaian';
+            badgeEl.className = isSuper ? 'badge badge-warning text-dark ml-2 px-2 py-0.5 font-weight-bold' : 'badge badge-primary ml-2 px-2 py-0.5 font-weight-bold';
+          }
+          if (avatarEl) {
+            avatarEl.className = isSuper ? 'rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center mr-2' : 'rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-2';
+            avatarEl.innerHTML = isSuper ? '<i class="fas fa-crown font-11"></i>' : '<i class="fas fa-user-shield font-11"></i>';
+          }
+          if (roleTextEl) roleTextEl.textContent = isSuper ? 'Super Administrator' : 'Bagian Kepegawaian';
+          if (subTitleEl) subTitleEl.textContent = isSuper ? 'Hak Akses Penuh Sistem (Master)' : 'Pengelola Harian Kepegawaian BPMP';
+          if (superActionEl) {
+            if (isSuper) superActionEl.classList.remove('d-none');
+            else superActionEl.classList.add('d-none');
+          }
         }
         return true;
       } catch (e) {
@@ -1082,6 +1116,28 @@
       sessionStorage.removeItem('adminToken');
       sessionStorage.removeItem('adminUser');
       window.location.replace('/admin/login');
+    }
+
+    async function handleResetTestingData() {
+      if (!confirm('⚠️ PERINGATAN SUPERADMIN:\nApakah Anda yakin ingin membersihkan seluruh data pengujian (kehadiran, LPTI, sertifikat)?\n\n104 data pegawai ASN BPMP Sultra akan tetap aman dan utuh.')) {
+        return;
+      }
+      try {
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        const res = await fetch('/api/reset-data', {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          setTimeout(() => location.reload(), 800);
+        } else {
+          showToast(data.message || 'Gagal reset data pengujian.', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal terhubung ke server: ' + err.message, 'error');
+      }
     }
 
     // Smooth Scroll to Section

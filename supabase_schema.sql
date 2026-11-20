@@ -60,8 +60,14 @@ CREATE TABLE IF NOT EXISTS public.admins (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. INSERT DATA ADMIN DEFAULT
-INSERT INTO public.admins (username, password, name, role) VALUES ('admin', 'Bpmp2026!', 'Administrator Kepegawaian BPMP Sultra', 'superadmin') ON CONFLICT (username) DO NOTHING;
+-- 4. INSERT DATA ADMIN DEFAULT (Superadmin & Bagian Kepegawaian)
+INSERT INTO public.admins (username, password, name, role) 
+VALUES ('superadmin', 'Bpmp2026!', 'Super Administrator BPMP Sultra', 'superadmin') 
+ON CONFLICT (username) DO UPDATE SET name = EXCLUDED.name, role = 'superadmin';
+
+INSERT INTO public.admins (username, password, name, role) 
+VALUES ('admin', 'Bpmp2026!', 'Bagian Kepegawaian BPMP Sultra', 'kepegawaian') 
+ON CONFLICT (username) DO UPDATE SET name = EXCLUDED.name, role = 'kepegawaian';
 
 -- 5. INSERT DATA EVENTS DEFAULT
 INSERT INTO public.events (id, title, jp, category, schedule, location, organizer, active, status, certificate_template, cert_settings) VALUES ('EVT-2026-001', 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra', 32, 'Teknis & Manajerial Kepegawaian', '18 - 20 November 2026', 'Auditorium BPMP Sultra', 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara', true, 'active', NULL, '{"prefix":"800.1.3/SERT-LPTI/2026","nomorYRatio":0.75,"namaYRatio":0.48,"namaFontSize":28,"nomorFontSize":12,"showUnderline":true}'::jsonb) ON CONFLICT (id) DO UPDATE SET active = EXCLUDED.active, status = EXCLUDED.status;

@@ -2654,11 +2654,19 @@
   "admins": [
     {
       "id": 1,
+      "username": "superadmin",
+      "password": "Bpmp2026!",
+      "name": "Super Administrator BPMP Sultra",
+      "role": "superadmin",
+      "createdAt": "2026-11-20T05:08:46.030Z"
+    },
+    {
+      "id": 2,
       "username": "admin",
       "password": "Bpmp2026!",
-      "name": "Administrator Kepegawaian BPMP Sultra",
-      "role": "superadmin",
-      "createdAt": "2026-11-17T04:39:51.158Z"
+      "name": "Bagian Kepegawaian BPMP Sultra",
+      "role": "kepegawaian",
+      "createdAt": "2026-11-20T05:08:46.030Z"
     }
   ]
 }
