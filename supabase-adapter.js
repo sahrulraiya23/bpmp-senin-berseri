@@ -1275,11 +1275,282 @@ async function resetTestingData() {
   return { success: true };
 }
 
+// ==============================================================
+// CRUD PEGAWAI (KHUSUS SUPERADMIN / KELOLA PEGAWAI)
+// ==============================================================
+async function createEmployee(empData) {
+  const cleanNip = String(empData.nip || '').trim();
+  if (!cleanNip) throw new Error('NIP Pegawai wajib diisi!');
+  if (!empData.name || !empData.name.trim()) throw new Error('Nama Pegawai wajib diisi!');
+
+  const now = new Date().toISOString();
+  const newId = empData.id || `EMP-${Date.now()}`;
+  const record = {
+    id: newId,
+    nip: cleanNip,
+    name: empData.name.trim(),
+    password: empData.password || 'Bpmp2026!',
+    panggol: empData.panggol || '',
+    jabatan: empData.jabatan || 'Staf ASN',
+    instansi: empData.instansi || 'BPMP Provinsi Sulawesi Tenggara',
+    pendidikan: empData.pendidikan || '',
+    accumulated_jp: parseInt(empData.accumulatedJp || empData.accumulated_jp || 0, 10),
+    attended: false,
+    lpti_status: 'none',
+    created_at: now,
+    updated_at: now
+  };
+
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('employees')
+      .insert(record)
+      .select()
+      .single();
+    if (error) {
+      console.error('Supabase createEmployee error:', error.message);
+      throw new Error(error.message);
+    }
+    return formatSupabaseEmployee(data);
+  }
+
+  const mem = getMemoryStore();
+  const existing = (mem.employees || []).find(e => String(e.nip).trim() === cleanNip);
+  if (existing) {
+    throw new Error(`Pegawai dengan NIP ${cleanNip} sudah ada.`);
+  }
+  const formatted = {
+    ...record,
+    accumulatedJp: record.accumulated_jp,
+    lpti: { status: 'none', fileName: null, revisionNote: '' },
+    certificate: null
+  };
+  mem.employees.push(formatted);
+  return formatSupabaseEmployee(formatted);
+}
+
+async function updateEmployee(idOrNip, empData) {
+  const clean = String(idOrNip).trim();
+  const now = new Date().toISOString();
+
+  const client = getClient();
+  if (client) {
+    const updatePayload = { updated_at: now };
+    if (empData.name) updatePayload.name = empData.name.trim();
+    if (empData.nip) updatePayload.nip = String(empData.nip).trim();
+    if (empData.panggol !== undefined) updatePayload.panggol = empData.panggol;
+    if (empData.jabatan !== undefined) updatePayload.jabatan = empData.jabatan;
+    if (empData.instansi !== undefined) updatePayload.instansi = empData.instansi;
+    if (empData.pendidikan !== undefined) updatePayload.pendidikan = empData.pendidikan;
+    if (empData.accumulatedJp !== undefined || empData.accumulated_jp !== undefined) {
+      updatePayload.accumulated_jp = parseInt(empData.accumulatedJp || empData.accumulated_jp || 0, 10);
+    }
+    if (empData.password) updatePayload.password = String(empData.password).trim();
+
+    const { data, error } = await client
+      .from('employees')
+      .update(updatePayload)
+      .or(`id.eq."${clean}",nip.eq."${clean}"`)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase updateEmployee error:', error.message);
+      throw new Error(error.message);
+    }
+    return formatSupabaseEmployee(data);
+  }
+
+  const mem = getMemoryStore();
+  const target = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
+  if (!target) throw new Error('Data pegawai tidak ditemukan.');
+
+  if (empData.name) target.name = empData.name.trim();
+  if (empData.nip) target.nip = String(empData.nip).trim();
+  if (empData.panggol !== undefined) target.panggol = empData.panggol;
+  if (empData.jabatan !== undefined) target.jabatan = empData.jabatan;
+  if (empData.instansi !== undefined) target.instansi = empData.instansi;
+  if (empData.pendidikan !== undefined) target.pendidikan = empData.pendidikan;
+  if (empData.accumulatedJp !== undefined || empData.accumulated_jp !== undefined) {
+    target.accumulatedJp = parseInt(empData.accumulatedJp || empData.accumulated_jp || 0, 10);
+  }
+  if (empData.password) target.password = String(empData.password).trim();
+  target.updatedAt = now;
+
+  return formatSupabaseEmployee(target);
+}
+
+async function deleteEmployee(idOrNip) {
+  const clean = String(idOrNip).trim();
+  const client = getClient();
+  if (client) {
+    const { error } = await client
+      .from('employees')
+      .delete()
+      .or(`id.eq."${clean}",nip.eq."${clean}"`);
+    if (error) {
+      console.error('Supabase deleteEmployee error:', error.message);
+      throw new Error(error.message);
+    }
+    return true;
+  }
+
+  const mem = getMemoryStore();
+  const idx = (mem.employees || []).findIndex(e => e.id === clean || String(e.nip).trim() === clean);
+  if (idx >= 0) {
+    mem.employees.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+async function resetEmployeePassword(idOrNip, newPassword = 'Bpmp2026!') {
+  return updateEmployee(idOrNip, { password: newPassword });
+}
+
+// ==============================================================
+// CRUD ADMIN & PENGGUNA SISTEM (KHUSUS SUPERADMIN)
+// ==============================================================
+async function getAllAdmins() {
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('admins')
+      .select('id, username, name, role, created_at, updated_at')
+      .order('id', { ascending: true });
+    if (!error && data) {
+      return data;
+    }
+  }
+
+  const mem = getMemoryStore();
+  return (mem.admins || []).map(a => ({
+    id: a.id,
+    username: a.username,
+    name: a.name,
+    role: a.role,
+    created_at: a.createdAt || null
+  }));
+}
+
+async function createAdmin(adminData) {
+  const username = String(adminData.username || '').trim().toLowerCase();
+  if (!username) throw new Error('Username wajib diisi!');
+  if (!adminData.password) throw new Error('Password wajib diisi!');
+
+  const record = {
+    username: username,
+    password: String(adminData.password).trim(),
+    name: (adminData.name || 'Petugas Kepegawaian').trim(),
+    role: adminData.role === 'superadmin' ? 'superadmin' : 'kepegawaian'
+  };
+
+  const client = getClient();
+  if (client) {
+    const { data, error } = await client
+      .from('admins')
+      .insert(record)
+      .select('id, username, name, role, created_at')
+      .single();
+    if (error) {
+      console.error('Supabase createAdmin error:', error.message);
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  const mem = getMemoryStore();
+  const exists = (mem.admins || []).some(a => a.username === username);
+  if (exists) throw new Error(`Admin dengan username "${username}" sudah ada.`);
+
+  const newAdmin = {
+    id: (mem.admins && mem.admins.length) ? Math.max(...mem.admins.map(a => a.id || 0)) + 1 : 1,
+    ...record,
+    createdAt: new Date().toISOString()
+  };
+  mem.admins.push(newAdmin);
+  return { id: newAdmin.id, username: newAdmin.username, name: newAdmin.name, role: newAdmin.role };
+}
+
+async function updateAdmin(idOrUsername, adminData) {
+  const clean = String(idOrUsername).trim();
+  const now = new Date().toISOString();
+
+  const client = getClient();
+  if (client) {
+    const updatePayload = { updated_at: now };
+    if (adminData.name) updatePayload.name = adminData.name.trim();
+    if (adminData.role) updatePayload.role = adminData.role;
+    if (adminData.password) updatePayload.password = String(adminData.password).trim();
+
+    const isNum = !isNaN(parseInt(clean, 10));
+    let query = client.from('admins').update(updatePayload);
+    if (isNum) {
+      query = query.eq('id', parseInt(clean, 10));
+    } else {
+      query = query.eq('username', clean);
+    }
+    const { data, error } = await query.select('id, username, name, role, updated_at').single();
+    if (error) {
+      console.error('Supabase updateAdmin error:', error.message);
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  const mem = getMemoryStore();
+  const target = (mem.admins || []).find(a => String(a.id) === clean || a.username === clean);
+  if (!target) throw new Error('Admin tidak ditemukan.');
+
+  if (adminData.name) target.name = adminData.name.trim();
+  if (adminData.role) target.role = adminData.role;
+  if (adminData.password) target.password = String(adminData.password).trim();
+  target.updatedAt = now;
+  return { id: target.id, username: target.username, name: target.name, role: target.role };
+}
+
+async function deleteAdmin(idOrUsername) {
+  const clean = String(idOrUsername).trim();
+  if (clean === 'superadmin' || clean === '1') {
+    throw new Error('Akun Super Administrator utama tidak boleh dihapus!');
+  }
+
+  const client = getClient();
+  if (client) {
+    const isNum = !isNaN(parseInt(clean, 10));
+    let query = client.from('admins').delete();
+    if (isNum) {
+      query = query.eq('id', parseInt(clean, 10));
+    } else {
+      query = query.eq('username', clean);
+    }
+    const { error } = await query;
+    if (error) {
+      console.error('Supabase deleteAdmin error:', error.message);
+      throw new Error(error.message);
+    }
+    return true;
+  }
+
+  const mem = getMemoryStore();
+  const idx = (mem.admins || []).findIndex(a => String(a.id) === clean || a.username === clean);
+  if (idx >= 0) {
+    mem.admins.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
 module.exports = {
   isSupabaseAvailable,
   initDb,
   getAllEmployees,
   getEmployeeByIdOrNip,
+  createEmployee,
+  updateEmployee,
+  deleteEmployee,
+  resetEmployeePassword,
   ensureEmployeeJp,
   markEmployeeAttended,
   updateEmployeeLpti,
@@ -1298,6 +1569,10 @@ module.exports = {
   updateEventTemplate,
   updateEventCertSettings,
   verifyAdminCredentials,
+  getAllAdmins,
+  createAdmin,
+  updateAdmin,
+  deleteAdmin,
   getSystemSettings,
   uploadToStorage,
   registerEmployeeFace,

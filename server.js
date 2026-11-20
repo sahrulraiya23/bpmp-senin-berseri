@@ -294,11 +294,14 @@ app.post('/api/auth/admin-login', async (req, res) => {
   // Set HTTP Cookie untuk keamanan ganda dan persistensi lintas serverless Vercel
   res.setHeader('Set-Cookie', `admin_token=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax`);
 
+  const isSuper = admin.role === 'superadmin' || admin.username === 'superadmin';
+
   res.json({
     success: true,
     message: `Selamat datang, ${admin.name}!`,
     token: token,
-    admin: admin
+    admin: admin,
+    redirectUrl: isSuper ? '/superadmin' : '/admin'
   });
 });
 
@@ -1111,6 +1114,178 @@ app.post('/api/reset-data', async (req, res) => {
 });
 
 // ========================================================
+// SUPERADMIN & CRUD MANAGEMENT APIs (SB ADMIN 2)
+// ========================================================
+function requireSuperAdminMiddleware(req, res, next) {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin || admin.role !== 'superadmin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak: Operasi ini hanya diizinkan untuk Super Administrator.'
+    });
+  }
+  req.admin = admin;
+  next();
+}
+
+function requireAdminMiddleware(req, res, next) {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) {
+    return res.status(401).json({
+      success: false,
+      message: 'Sesi admin kedaluwarsa. Silakan login kembali.'
+    });
+  }
+  req.admin = admin;
+  next();
+}
+
+// 1. Ringkasan Statistik untuk SB Admin 2 Dashboard
+app.get('/api/superadmin/summary', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const employees = await db.getAllEmployees();
+    const events = await db.getAllEvents();
+    const activeEvent = await db.getActiveEvent();
+    const admins = await db.getAllAdmins();
+
+    const totalEmployees = employees.length;
+    const totalPresent = employees.filter(e => e.attended).length;
+    const totalPendingLpti = employees.filter(e => e.lpti && e.lpti.status === 'pending').length;
+    const totalApprovedLpti = employees.filter(e => e.lpti && e.lpti.status === 'approved').length;
+    const totalCertificates = employees.filter(e => e.certificate && e.certificate.number).length;
+    const totalFaces = employees.filter(e => e.faceRegistered).length;
+
+    res.json({
+      success: true,
+      data: {
+        totalEmployees,
+        totalPresent,
+        totalPendingLpti,
+        totalApprovedLpti,
+        totalCertificates,
+        totalFaces,
+        totalEvents: events.length,
+        activeEvent,
+        totalAdmins: admins.length,
+        isCloudConnected: db.isSupabaseAvailable()
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memuat ringkasan superadmin: ' + err.message });
+  }
+});
+
+// 2. CRUD Pegawai (Kelola Pegawai)
+app.post('/api/employees', requireAdminMiddleware, async (req, res) => {
+  try {
+    const created = await db.createEmployee(req.body);
+    res.status(201).json({ success: true, message: `Pegawai ${created.name} berhasil ditambahkan!`, employee: created });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.put('/api/employees/:id', requireAdminMiddleware, async (req, res) => {
+  try {
+    const updated = await db.updateEmployee(req.params.id, req.body);
+    res.json({ success: true, message: `Data pegawai ${updated.name} berhasil diperbarui!`, employee: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/employees/:id', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const success = await db.deleteEmployee(req.params.id);
+    if (!success) return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
+    res.json({ success: true, message: 'Data pegawai berhasil dihapus dari sistem.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/employees/:id/reset-password', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const newPass = req.body.newPassword || 'Bpmp2026!';
+    const updated = await db.resetEmployeePassword(req.params.id, newPass);
+    res.json({ success: true, message: `Password pegawai ${updated.name} berhasil di-reset ke "${newPass}".`, employee: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 3. CRUD Administrator & Petugas Kepegawaian (Kelola Admin)
+app.get('/api/admins', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const admins = await db.getAllAdmins();
+    res.json({ success: true, admins });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/admins', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const created = await db.createAdmin(req.body);
+    res.status(201).json({ success: true, message: `Akun administrator "${created.username}" berhasil dibuat!`, admin: created });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.put('/api/admins/:id', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const updated = await db.updateAdmin(req.params.id, req.body);
+    res.json({ success: true, message: `Akun admin "${updated.username}" berhasil diperbarui!`, admin: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/admins/:id', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    await db.deleteAdmin(req.params.id);
+    res.json({ success: true, message: 'Akun admin berhasil dihapus.' });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 4. Hapus Event Pelatihan
+app.delete('/api/events/:id', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    await db.deleteEventById(req.params.id);
+    res.json({ success: true, message: 'Event berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 5. Export Backup Data
+app.get('/api/superadmin/export-data', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const employees = await db.getAllEmployees();
+    const events = await db.getAllEvents();
+    const admins = await db.getAllAdmins();
+    const backupData = {
+      exportedAt: new Date().toISOString(),
+      system: 'BPMP Sulawesi Tenggara - Senin Berseri',
+      totalEmployees: employees.length,
+      totalEvents: events.length,
+      employees,
+      events,
+      admins
+    };
+    const filename = `BACKUP_SENIN_BERSERI_${new Date().toISOString().slice(0, 10)}.json`;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(backupData, null, 2));
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ========================================================
 // PAGE ROUTES (Alur Utama: Langsung Login Pegawai di "/")
 // ========================================================
 app.get('/', (req, res) => {
@@ -1127,6 +1302,10 @@ app.get('/pegawai', (req, res) => {
 
 app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'admin-login.html'));
+});
+
+app.get('/superadmin', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'superadmin.html'));
 });
 
 app.get('/admin', (req, res) => {

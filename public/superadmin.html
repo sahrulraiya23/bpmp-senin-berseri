@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Super Administrator — SB Admin 2 | BPMP Provinsi Sulawesi Tenggara</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234e73df'><path d='M12 2L2 7l10 5 10-5-10-5zm0 8.5L4.5 7 12 3.5 19.5 7 12 10.5zM3 9.5v5c0 3.5 4 6.5 9 6.5s9-3 9-6.5v-5l-9 4.5L3 9.5z'/></svg>">
+
+  <!-- Font Awesome Free & Nunito Font -->
+  <link href="/lib/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+  <!-- SB Admin 2 CSS (Local & Fallback CDN) -->
+  <link href="/css/sb-admin-2.min.css" rel="stylesheet">
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    body { font-family: 'Nunito', sans-serif; background-color: #f8f9fc; }
+    .sidebar-brand-icon svg { vertical-align: middle; }
+    .nav-link { cursor: pointer; }
+    .badge-superadmin { background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%); color: #4b3600; font-weight: 800; border: 1px solid rgba(0,0,0,0.08); }
+    .badge-kepegawaian { background: #4e73df; color: #fff; font-weight: 700; }
+    .table td, .table th { vertical-align: middle !important; font-size: 13px; }
+    .avatar-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .pulse-dot.online { background-color: #1cc88a; box-shadow: 0 0 0 rgba(28, 200, 138, 0.4); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(28, 200, 138, 0.6); } 70% { box-shadow: 0 0 0 6px rgba(28, 200, 138, 0); } 100% { box-shadow: 0 0 0 0 rgba(28, 200, 138, 0); } }
+    .btn-xs { padding: 0.15rem 0.4rem; font-size: 0.75rem; border-radius: 0.2rem; }
+  </style>
+</head>
+
+<body id="page-top">
+
+  <!-- Page Wrapper -->
+  <div id="wrapper">
+
+    <!-- Sidebar (SB Admin 2 Classic) -->
+    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+      <!-- Sidebar - Brand -->
+      <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/superadmin">
+        <div class="sidebar-brand-icon">
+          <i class="fas fa-crown text-warning"></i>
+        </div>
+        <div class="sidebar-brand-text mx-2 text-left">
+          BPMP SULTRA
+          <div style="font-size: 9px; opacity: 0.8; font-weight: 400; letter-spacing: 0.5px;">SB ADMIN <sup>2</sup></div>
+        </div>
+      </a>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider my-0">
+
+      <!-- Nav Item - Dashboard -->
+      <li class="nav-item active" id="navItemDashboard">
+        <a class="nav-link" onclick="switchSection('dashboard')">
+          <i class="fas fa-fw fa-tachometer-alt"></i>
+          <span>Dashboard Utama</span>
+        </a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider">
+
+      <!-- Heading -->
+      <div class="sidebar-heading">
+        Fitur Kelola Master
+      </div>
+
+      <!-- Nav Item - Kelola Pegawai ASN -->
+      <li class="nav-item" id="navItemEmployees">
+        <a class="nav-link" onclick="switchSection('employees')">
+          <i class="fas fa-fw fa-users"></i>
+          <span>Kelola Pegawai ASN</span>
+          <span class="badge badge-light badge-pill float-right mt-1" id="sideBadgeTotalEmp">104</span>
+        </a>
+      </li>
+
+      <!-- Nav Item - Kelola Event Pelatihan -->
+      <li class="nav-item" id="navItemEvents">
+        <a class="nav-link" onclick="switchSection('events')">
+          <i class="fas fa-fw fa-calendar-alt"></i>
+          <span>Kelola Event Pelatihan</span>
+        </a>
+      </li>
+
+      <!-- Nav Item - Kelola Administrator -->
+      <li class="nav-item" id="navItemAdmins">
+        <a class="nav-link" onclick="switchSection('admins')">
+          <i class="fas fa-fw fa-user-shield"></i>
+          <span>Kelola Akun Admin</span>
+        </a>
+      </li>
+
+      <!-- Nav Item - Kurasi LPTI & Sertifikat -->
+      <li class="nav-item" id="navItemLpti">
+        <a class="nav-link" onclick="switchSection('lpti')">
+          <i class="fas fa-fw fa-certificate"></i>
+          <span>Kurasi LPTI & Piagam</span>
+          <span class="badge badge-warning badge-pill float-right mt-1" id="sideBadgePendingLpti">0</span>
+        </a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider">
+
+      <!-- Heading -->
+      <div class="sidebar-heading">
+        Sistem & Pemeliharaan
+      </div>
+
+      <!-- Nav Item - Pemeliharaan & Data -->
+      <li class="nav-item" id="navItemMaintenance">
+        <a class="nav-link" onclick="switchSection('maintenance')">
+          <i class="fas fa-fw fa-database"></i>
+          <span>Pemeliharaan & Data</span>
+        </a>
+      </li>
+
+      <!-- Nav Item - Kepegawaian (Azia) -->
+      <li class="nav-item">
+        <a class="nav-link text-warning" href="/admin" target="_blank">
+          <i class="fas fa-fw fa-external-link-alt text-warning"></i>
+          <span>Portal Kepegawaian (Azia)</span>
+        </a>
+      </li>
+
+      <!-- Nav Item - Layar Proyektor Aula -->
+      <li class="nav-item">
+        <a class="nav-link" href="/proyektor" target="_blank">
+          <i class="fas fa-fw fa-tv text-info"></i>
+          <span>Layar Proyektor Aula</span>
+        </a>
+      </li>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider d-none d-md-block">
+
+      <!-- Sidebar Toggler (Sidebar) -->
+      <div class="text-center d-none d-md-inline">
+        <button class="rounded-circle border-0" id="sidebarToggle" onclick="toggleSidebar()"></button>
+      </div>
+
+      <!-- Sidebar Message -->
+      <div class="sidebar-card d-none d-lg-flex mx-3 mt-3 py-3 px-2 text-center bg-dark" style="border-radius: 8px; opacity: 0.9;">
+        <i class="fas fa-shield-alt text-warning fa-2x mb-2"></i>
+        <p class="text-white text-xs mb-2"><strong>Super Administrator</strong> memiliki wewenang master sistem penuh BPMP Sultra.</p>
+        <button class="btn btn-warning btn-xs font-weight-bold" onclick="switchSection('maintenance')">Perawatan Data</button>
+      </div>
+
+    </ul>
+    <!-- End of Sidebar -->
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <!-- Main Content -->
+      <div id="content">
+
+        <!-- Topbar (SB Admin 2 Classic) -->
+        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+          <!-- Sidebar Toggle (Topbar) -->
+          <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3" onclick="toggleSidebar()">
+            <i class="fa fa-bars"></i>
+          </button>
+
+          <!-- Topbar Info: Status Database & Instansi -->
+          <div class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100">
+            <span class="badge badge-light border px-2 py-1 text-dark" style="font-size: 11px;">
+              <span class="pulse-dot online"></span>
+              <strong id="topbarDbStatus">Supabase Cloud Connected</strong>
+            </span>
+            <span class="ml-2 text-muted small d-none d-lg-inline">
+              <i class="fas fa-map-marker-alt text-danger mr-1"></i> BPMP Provinsi Sulawesi Tenggara
+            </span>
+          </div>
+
+          <!-- Topbar Navbar -->
+          <ul class="navbar-nav ml-auto">
+
+            <!-- Tombol Switcher ke Dashboard Kepegawaian (Azia) -->
+            <li class="nav-item my-auto mr-2">
+              <a href="/admin" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold px-3">
+                <i class="fas fa-chalkboard-teacher mr-1"></i> Mode Kepegawaian (Azia)
+              </a>
+            </li>
+
+            <div class="topbar-divider d-none d-sm-block"></div>
+
+            <!-- Nav Item - User Information -->
+            <li class="nav-item dropdown no-arrow">
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <div class="mr-2 d-none d-lg-inline text-right">
+                  <div class="text-gray-900 small font-weight-bold" id="topbarAdminName">Super Administrator</div>
+                  <span class="badge badge-superadmin" style="font-size: 9px; padding: 2px 6px;">👑 SUPERADMIN</span>
+                </div>
+                <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-weight: bold;">
+                  <i class="fas fa-crown"></i>
+                </div>
+              </a>
+              <!-- Dropdown - User Information -->
+              <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                <a class="dropdown-item" href="javascript:void(0)" onclick="switchSection('admins')">
+                  <i class="fas fa-user-cog fa-sm fa-fw mr-2 text-gray-400"></i>
+                  Kelola Akun & Hak Akses
+                </a>
+                <a class="dropdown-item" href="javascript:void(0)" onclick="switchSection('maintenance')">
+                  <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
+                  Pengaturan & Reset Data
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="handleLogout()">
+                  <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-danger"></i>
+                  Keluar (Logout)
+                </a>
+              </div>
+            </li>
+
+          </ul>
+
+        </nav>
+        <!-- End of Topbar -->
+
+        <!-- Begin Page Content -->
+        <div class="container-fluid">
+
+          <!-- ==================================================== -->
+          <!-- SECTION 1: DASHBOARD UTAMA (OVERVIEW & STATISTIK)    -->
+          <!-- ==================================================== -->
+          <div id="section-dashboard" class="content-section">
+            
+            <!-- Page Heading -->
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+              <div>
+                <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Dashboard Master Superadmin</h1>
+                <p class="text-muted small mb-0">Panel Kendali Utama &bull; Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara</p>
+              </div>
+              <div class="mt-2 mt-sm-0">
+                <button class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm mr-2" onclick="exportDataBackup()">
+                  <i class="fas fa-download fa-sm text-white-50 mr-1"></i> Backup Database (JSON)
+                </button>
+                <button class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm" onclick="openAddEmployeeModal()">
+                  <i class="fas fa-user-plus fa-sm text-white-50 mr-1"></i> Tambah Pegawai
+                </button>
+              </div>
+            </div>
+
+            <!-- Content Row: 4 Metric Cards SB Admin 2 Classic -->
+            <div class="row">
+
+              <!-- Total Pegawai ASN Card -->
+              <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                  <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                      <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Pegawai ASN BPMP</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="statTotalEmployees">104</div>
+                        <div class="text-xs text-muted mt-1"><i class="fas fa-database mr-1"></i> Terdaftar di Pangkalan Data</div>
+                      </div>
+                      <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hadir di Aula Card -->
+              <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                  <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                      <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Peserta Hadir di Aula</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="statTotalPresent">0</div>
+                        <div class="text-xs text-muted mt-1"><i class="fas fa-qrcode mr-1"></i> Terverifikasi Dynamic QR</div>
+                      </div>
+                      <div class="col-auto">
+                        <i class="fas fa-check-double fa-2x text-gray-300"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Menunggu Review LPTI Card -->
+              <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                  <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                      <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">LPTI Menunggu Kurasi</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="statPendingLpti">0</div>
+                        <div class="text-xs text-muted mt-1"><i class="fas fa-file-pdf mr-1"></i> Berkas PDF Menunggu Verifikasi</div>
+                      </div>
+                      <div class="col-auto">
+                        <i class="fas fa-hourglass-half fa-2x text-gray-300"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- E-Sertifikat Terbit Card -->
+              <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                  <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                      <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">E-Sertifikat Diterbitkan</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="statTotalCerts">0</div>
+                        <div class="text-xs text-muted mt-1"><i class="fas fa-stamp mr-1"></i> Nomor Naskah Dinas Terdaftar</div>
+                      </div>
+                      <div class="col-auto">
+                        <i class="fas fa-award fa-2x text-gray-300"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Content Row: Detail Sesi Aktif & Aksi Cepat -->
+            <div class="row">
+              
+              <!-- Sesi Event Aktif -->
+              <div class="col-lg-8 mb-4">
+                <div class="card shadow mb-4">
+                  <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-primary text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-calendar-check mr-2"></i>Sesi Resmi Event Pelatihan Aktif di Aula</h6>
+                    <button class="btn btn-light btn-xs font-weight-bold text-primary" onclick="switchSection('events')">Kelola Event</button>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between flex-wrap">
+                      <div>
+                        <span class="badge badge-success px-2 py-1 mb-2 font-weight-bold">
+                          <i class="fas fa-broadcast-tower mr-1"></i> LIVE DI PROYEKTOR AULA
+                        </span>
+                        <h4 class="font-weight-bold text-gray-900 mb-1" id="dashEventTitle">Pelatihan Transformasi Digital & Manajemen Kepegawaian</h4>
+                        <p class="text-muted small mb-2" id="dashEventDesc">
+                          <i class="fas fa-tag mr-1 text-primary"></i> <span id="dashEventCategory">Teknis & Manajerial</span> &bull; 
+                          <i class="fas fa-clock mr-1 text-info"></i> Bobot: <span id="dashEventJp" class="font-weight-bold text-dark">32 Jam Pelajaran (JP)</span>
+                        </p>
+                        <div class="small text-gray-700">
+                          <i class="fas fa-map-marker-alt text-danger mr-1"></i> <span id="dashEventLocation">Auditorium BPMP Sultra</span> &bull; 
+                          <i class="fas fa-calendar mr-1 text-secondary"></i> <span id="dashEventSchedule">18 - 20 November 2026</span>
+                        </div>
+                      </div>
+                      <div class="mt-3 mt-md-0">
+                        <a href="/proyektor" target="_blank" class="btn btn-outline-primary btn-sm font-weight-bold mb-1">
+                          <i class="fas fa-tv mr-1"></i> Buka Layar QR Aula
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Action Box -->
+              <div class="col-lg-4 mb-4">
+                <div class="card shadow mb-4">
+                  <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-gray-800"><i class="fas fa-bolt text-warning mr-2"></i>Aksi Cepat Superadmin</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="list-group list-group-flush small">
+                      <a href="javascript:void(0)" onclick="openAddEmployeeModal()" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-user-plus text-success mr-2"></i> Tambah Pegawai ASN Baru</span>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                      </a>
+                      <a href="javascript:void(0)" onclick="openAddEventModal()" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar-plus text-primary mr-2"></i> Buat Agenda Pelatihan Baru</span>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                      </a>
+                      <a href="javascript:void(0)" onclick="openAddAdminModal()" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-user-shield text-info mr-2"></i> Tambah Petugas Kepegawaian</span>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                      </a>
+                      <a href="javascript:void(0)" onclick="handleResetTestingData()" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center text-danger font-weight-bold">
+                        <span><i class="fas fa-trash-alt text-danger mr-2"></i> Reset Data Pengujian</span>
+                        <i class="fas fa-chevron-right text-danger"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ==================================================== -->
+          <!-- SECTION 2: KELOLA DATA PEGAWAI ASN (CRUD LENGKAP)    -->
+          <!-- ==================================================== -->
+          <div id="section-employees" class="content-section d-none">
+            
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+              <div>
+                <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Kelola Pangkalan Data Pegawai ASN</h1>
+                <p class="text-muted small mb-0">Tambah, sunting, reset password, dan kelola 104 data master ASN BPMP Sulawesi Tenggara</p>
+              </div>
+              <button class="btn btn-sm btn-success shadow-sm" onclick="openAddEmployeeModal()">
+                <i class="fas fa-user-plus mr-1"></i> + Tambah Pegawai ASN
+              </button>
+            </div>
+
+            <!-- Tabel Pegawai Card -->
+            <div class="card shadow mb-4">
+              <div class="card-header py-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users mr-1"></i> Data Master Pegawai ASN BPMP Sultra</h6>
+                <!-- Search Box -->
+                <div class="mt-2 mt-md-0" style="max-width: 300px;">
+                  <div class="input-group input-group-sm">
+                    <input type="text" id="searchEmployeeInput" class="form-control" placeholder="Cari NIP atau Nama..." onkeyup="filterEmployeeTable()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped mb-0" id="employeeTable">
+                    <thead class="thead-light">
+                      <tr>
+                        <th style="width: 40px;">No</th>
+                        <th>NIP (18 Digit)</th>
+                        <th>Nama Pegawai</th>
+                        <th>Pangkat/Gol.</th>
+                        <th>Jabatan</th>
+                        <th>Akumulasi JP</th>
+                        <th>Presensi Aula</th>
+                        <th>Biometrik Wajah</th>
+                        <th style="width: 160px;" class="text-center">Aksi Master</th>
+                      </tr>
+                    </thead>
+                    <tbody id="employeeTableBody">
+                      <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                          <i class="fas fa-spinner fa-spin mr-2"></i> Memuat data pegawai dari sistem...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="card-footer py-2 d-flex justify-content-between align-items-center bg-white text-muted small">
+                <span id="employeeCountText">Menampilkan 104 pegawai</span>
+                <span class="badge badge-light border">Password Default: <code>Bpmp2026!</code></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ==================================================== -->
+          <!-- SECTION 3: KELOLA EVENT PELATIHAN (CRUD)             -->
+          <!-- ==================================================== -->
+          <div id="section-events" class="content-section d-none">
+            
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+              <div>
+                <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Kelola Event Pelatihan & Workshop</h1>
+                <p class="text-muted small mb-0">Manajemen sesi pelatihan, bobot Jam Pelajaran (JP), jadwal, dan aktivasi layar aula</p>
+              </div>
+              <button class="btn btn-sm btn-primary shadow-sm" onclick="openAddEventModal()">
+                <i class="fas fa-calendar-plus mr-1"></i> + Buat Agenda Pelatihan Baru
+              </button>
+            </div>
+
+            <!-- Tabel Event Card -->
+            <div class="card shadow mb-4">
+              <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-list-alt mr-1"></i> Daftar Seluruh Event Pelatihan</h6>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped mb-0" id="eventTable">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>Kode Event</th>
+                        <th>Judul Kegiatan Pelatihan</th>
+                        <th>Kategori</th>
+                        <th>Alokasi JP</th>
+                        <th>Jadwal Pelaksanaan</th>
+                        <th>Lokasi</th>
+                        <th>Status Layar Aula</th>
+                        <th style="width: 180px;" class="text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="eventTableBody">
+                      <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                          <i class="fas fa-spinner fa-spin mr-2"></i> Memuat daftar kegiatan...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ==================================================== -->
+          <!-- SECTION 4: KELOLA AKUN ADMINISTRATOR & PETUGAS       -->
+          <!-- ==================================================== -->
+          <div id="section-admins" class="content-section d-none">
+            
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+              <div>
+                <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Kelola Administrator & Petugas Kepegawaian</h1>
+                <p class="text-muted small mb-0">Manajemen hak akses, kata sandi, dan akun panitia pengelola sistem BPMP Sultra</p>
+              </div>
+              <button class="btn btn-sm btn-primary shadow-sm" onclick="openAddAdminModal()">
+                <i class="fas fa-user-shield mr-1"></i> + Tambah Petugas Admin
+              </button>
+            </div>
+
+            <!-- Tabel Admin Card -->
+            <div class="card shadow mb-4">
+              <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-shield-alt mr-1"></i> Daftar Akun Pengguna Sistem</h6>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped mb-0">
+                    <thead class="thead-light">
+                      <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Username</th>
+                        <th>Nama Petugas / Administrator</th>
+                        <th>Tingkat Hak Akses (Role)</th>
+                        <th>Kewenangan Fitur</th>
+                        <th style="width: 140px;" class="text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminTableBody">
+                      <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                          <i class="fas fa-spinner fa-spin mr-2"></i> Memuat daftar akun...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ==================================================== -->
+          <!-- SECTION 5: KURASI LPTI & PIAGAM E-SERTIFIKAT         -->
+          <!-- ==================================================== -->
+          <div id="section-lpti" class="content-section d-none">
+            
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+              <div>
+                <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Kurasi LPTI & Penerbitan E-Sertifikat</h1>
+                <p class="text-muted small mb-0">Peninjauan berkas laporan pasca kegiatan dan verifikasi penomoran piagam</p>
+              </div>
+            </div>
+
+            <div class="card shadow mb-4">
+              <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-file-signature mr-1"></i> Daftar Pengunggahan Laporan LPTI Pegawai</h6>
+                <div class="small text-muted">
+                  <span class="badge badge-warning">Pending</span> : Menunggu &bull; 
+                  <span class="badge badge-danger">Revision</span> : Revisi &bull; 
+                  <span class="badge badge-success">Approved</span> : Sah
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped mb-0">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>NIP & Nama Pegawai</th>
+                        <th>Status Kehadiran</th>
+                        <th>Dokumen PDF LPTI</th>
+                        <th>Status Kurasi</th>
+                        <th>Nomor E-Sertifikat</th>
+                        <th class="text-center">Tindakan Admin</th>
+                      </tr>
+                    </thead>
+                    <tbody id="lptiTableBody">
+                      <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                          <i class="fas fa-spinner fa-spin mr-2"></i> Memuat data LPTI...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ==================================================== -->
+          <!-- SECTION 6: PEMELIHARAAN SISTEM & DATABASE            -->
+          <!-- ==================================================== -->
+          <div id="section-maintenance" class="content-section d-none">
+            
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+              <div>
+                <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Pemeliharaan Sistem & Basis Data</h1>
+                <p class="text-muted small mb-0">Operasi kritis, pencadangan basis data, dan pembersihan data uji coba</p>
+              </div>
+            </div>
+
+            <div class="row">
+
+              <!-- Reset Data Testing Card -->
+              <div class="col-lg-6 mb-4">
+                <div class="card shadow border-left-danger mb-4">
+                  <div class="card-header py-3 bg-white">
+                    <h6 class="m-0 font-weight-bold text-danger"><i class="fas fa-trash-alt mr-2"></i>Pembersihan Data Uji Coba (Reset Presensi & LPTI)</h6>
+                  </div>
+                  <div class="card-body">
+                    <p class="small text-muted">
+                      Fitur ini akan mengembalikan seluruh status kehadiran dan berkas LPTI pegawai ke kondisi awal (belum presensi). 
+                      <strong>104 data master pegawai asli BPMP Sultra tetap aman dan tidak akan terhapus.</strong>
+                    </p>
+                    <div class="alert alert-danger py-2 small" role="alert">
+                      <i class="fas fa-exclamation-triangle mr-1"></i> Perhatian: Hanya Super Administrator yang diizinkan mengeksekusi aksi ini.
+                    </div>
+                    <button class="btn btn-danger btn-sm font-weight-bold" onclick="handleResetTestingData()">
+                      <i class="fas fa-trash-alt mr-1"></i> Eksekusi Pembersihan Data Uji Coba
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Backup & Export Card -->
+              <div class="col-lg-6 mb-4">
+                <div class="card shadow border-left-primary mb-4">
+                  <div class="card-header py-3 bg-white">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-download mr-2"></i>Pencadangan Pangkalan Data (Export JSON)</h6>
+                  </div>
+                  <div class="card-body">
+                    <p class="small text-muted">
+                      Unduh seluruh data master pegawai, riwayat presensi aula, dokumen LPTI, nomor sertifikat, dan agenda event dalam satu berkas terstruktur format JSON.
+                    </p>
+                    <button class="btn btn-primary btn-sm font-weight-bold" onclick="exportDataBackup()">
+                      <i class="fas fa-download mr-1"></i> Unduh Salinan Backup (.json)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+        <!-- /.container-fluid -->
+
+      </div>
+      <!-- End of Main Content -->
+
+      <!-- Footer -->
+      <footer class="sticky-footer bg-white shadow-sm mt-4">
+        <div class="container my-auto">
+          <div class="copyright text-center my-auto">
+            <span>Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara &bull; Kemendikbudristek &copy; 2026</span>
+          </div>
+        </div>
+      </footer>
+      <!-- End of Footer -->
+
+    </div>
+    <!-- End of Content Wrapper -->
+
+  </div>
+  <!-- End of Page Wrapper -->
+
+  <!-- ======================================================== -->
+  <!-- MODALS UNTUK FITUR KELOLA MASTER                         -->
+  <!-- ======================================================== -->
+
+  <!-- Modal Tambah / Edit Pegawai -->
+  <div class="modal fade" id="modalEmployee" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold" id="modalEmployeeTitle">Tambah Pegawai ASN Baru</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="formEmployee" onsubmit="handleSaveEmployee(event)">
+          <div class="modal-body small">
+            <input type="hidden" id="empId">
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">NIP Pegawai (18 Digit Angka) <span class="text-danger">*</span></label>
+              <input type="text" id="empNip" class="form-control form-control-sm font-weight-bold font-mono" placeholder="Contoh: 197606122002121004" required maxlength="18">
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
+              <input type="text" id="empName" class="form-control form-control-sm font-weight-bold" placeholder="Contoh: Junaiddin Pagala, ST, M.T." required>
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Pangkat / Golongan</label>
+                <input type="text" id="empPanggol" class="form-control form-control-sm" placeholder="Contoh: Pembina Utama Muda / IV/c">
+              </div>
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Jabatan Kedinasan</label>
+                <input type="text" id="empJabatan" class="form-control form-control-sm" placeholder="Contoh: Kepala BPMP">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Instansi / Unit Kerja</label>
+              <input type="text" id="empInstansi" class="form-control form-control-sm" value="BPMP Provinsi Sulawesi Tenggara">
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Kata Sandi Akun</label>
+              <input type="text" id="empPassword" class="form-control form-control-sm font-mono" placeholder="Biarkan kosong jika tetap Bpmp2026!">
+              <small class="text-muted">Default kata sandi sistem adalah <code>Bpmp2026!</code></small>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm font-weight-bold" id="btnSubmitEmployee">Simpan Pegawai</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah / Edit Event -->
+  <div class="modal fade" id="modalEvent" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold" id="modalEventTitle">Buat Event Pelatihan Baru</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="formEvent" onsubmit="handleSaveEvent(event)">
+          <div class="modal-body small">
+            <input type="hidden" id="evtId">
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Judul Kegiatan Pelatihan <span class="text-danger">*</span></label>
+              <input type="text" id="evtTitle" class="form-control form-control-sm font-weight-bold" placeholder="Contoh: Pelatihan Transformasi Digital & Manajemen Kepegawaian" required>
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Alokasi Jam Pelajaran (JP) <span class="text-danger">*</span></label>
+                <input type="number" id="evtJp" class="form-control form-control-sm" min="1" max="120" value="32" required>
+              </div>
+              <div class="col-md-6 form-group">
+                <label class="font-weight-bold text-dark">Kategori Pelatihan</label>
+                <select id="evtCategory" class="form-control form-control-sm">
+                  <option value="Teknis & Manajerial Kepegawaian">Teknis & Manajerial Kepegawaian</option>
+                  <option value="Penjaminan Mutu Pendidikan">Penjaminan Mutu Pendidikan</option>
+                  <option value="Transformasi Digital ASN">Transformasi Digital ASN</option>
+                  <option value="Pengembangan Kepemimpinan">Pengembangan Kepemimpinan</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Jadwal Pelaksanaan</label>
+              <input type="text" id="evtSchedule" class="form-control form-control-sm" placeholder="Contoh: 18 - 20 November 2026">
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Lokasi Kegiatan</label>
+              <input type="text" id="evtLocation" class="form-control form-control-sm" placeholder="Contoh: Auditorium BPMP Sultra & Hybrid Zoom">
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm font-weight-bold" id="btnSubmitEvent">Simpan & Aktifkan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah / Edit Admin -->
+  <div class="modal fade" id="modalAdmin" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold" id="modalAdminTitle">Tambah Petugas Administrator</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="formAdmin" onsubmit="handleSaveAdmin(event)">
+          <div class="modal-body small">
+            <input type="hidden" id="admId">
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Username <span class="text-danger">*</span></label>
+              <input type="text" id="admUsername" class="form-control form-control-sm font-weight-bold" placeholder="Contoh: kepegawaian2" required>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Nama Petugas <span class="text-danger">*</span></label>
+              <input type="text" id="admName" class="form-control form-control-sm" placeholder="Contoh: Tim Kepegawaian BPMP Sultra" required>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Tingkat Hak Akses (Role) <span class="text-danger">*</span></label>
+              <select id="admRole" class="form-control form-control-sm">
+                <option value="kepegawaian">Bagian Kepegawaian (Kelola Event, LPTI, Presensi)</option>
+                <option value="superadmin">Super Administrator (Akses Penuh Master)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold text-dark">Kata Sandi (Password) <span class="text-danger">*</span></label>
+              <input type="text" id="admPassword" class="form-control form-control-sm font-mono" placeholder="Masukkan password akun" required>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm font-weight-bold" id="btnSubmitAdmin">Simpan Akun</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core JavaScript Libraries -->
+  <script src="/lib/jquery/jquery.min.js"></script>
+  <script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/sb-admin-2.min.js"></script>
+
+  <!-- Superadmin Dashboard Script -->
+  <script>
+    let appState = {
+      adminToken: localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '',
+      adminUser: null,
+      employees: [],
+      events: [],
+      admins: []
+    };
+
+    // Header Authorization Helper
+    function getAuthHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${appState.adminToken}`
+      };
+    }
+
+    // Toggle Sidebar
+    function toggleSidebar() {
+      $('body').toggleClass('sidebar-toggled');
+      $('.sidebar').toggleClass('toggled');
+    }
+
+    // Switch Navigation Sections
+    function switchSection(sectionId) {
+      $('.content-section').addClass('d-none');
+      $(`#section-${sectionId}`).removeClass('d-none');
+
+      $('.nav-item').removeClass('active');
+      if (sectionId === 'dashboard') $('#navItemDashboard').addClass('active');
+      else if (sectionId === 'employees') $('#navItemEmployees').addClass('active');
+      else if (sectionId === 'events') $('#navItemEvents').addClass('active');
+      else if (sectionId === 'admins') $('#navItemAdmins').addClass('active');
+      else if (sectionId === 'lpti') $('#navItemLpti').addClass('active');
+      else if (sectionId === 'maintenance') $('#navItemMaintenance').addClass('active');
+
+      if (sectionId === 'employees') loadEmployees();
+      else if (sectionId === 'events') loadEvents();
+      else if (sectionId === 'admins') loadAdmins();
+      else if (sectionId === 'lpti') loadLpti();
+    }
+
+    // Inisialisasi & Verifikasi Token Superadmin
+    async function initSuperadmin() {
+      if (!appState.adminToken) {
+        window.location.href = '/admin/login';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/admin-check', {
+          headers: { 'Authorization': `Bearer ${appState.adminToken}` }
+        });
+        const data = await res.json();
+
+        if (!data.success || !data.authenticated) {
+          window.location.href = '/admin/login';
+          return;
+        }
+
+        appState.adminUser = data.admin;
+
+        // Cegah pengguna non-superadmin membuka halaman ini
+        if (appState.adminUser.role !== 'superadmin' && appState.adminUser.username !== 'superadmin') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Akses Ditolak',
+            text: 'Panel SB Admin 2 khusus untuk Super Administrator. Mengalihkan ke Dashboard Kepegawaian...',
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            window.location.href = '/admin';
+          });
+          return;
+        }
+
+        document.getElementById('topbarAdminName').innerText = appState.adminUser.name || 'Super Administrator';
+        loadDashboardSummary();
+      } catch (err) {
+        console.error('Init error:', err);
+      }
+    }
+
+    // Load Ringkasan Dashboard
+    async function loadDashboardSummary() {
+      try {
+        const res = await fetch('/api/superadmin/summary', {
+          headers: getAuthHeaders()
+        });
+        const json = await res.json();
+
+        if (json.success && json.data) {
+          const d = json.data;
+          document.getElementById('statTotalEmployees').innerText = d.totalEmployees || 104;
+          document.getElementById('statTotalPresent').innerText = d.totalPresent || 0;
+          document.getElementById('statPendingLpti').innerText = d.totalPendingLpti || 0;
+          document.getElementById('statTotalCerts').innerText = d.totalCertificates || 0;
+          document.getElementById('sideBadgeTotalEmp').innerText = d.totalEmployees || 104;
+          document.getElementById('sideBadgePendingLpti').innerText = d.totalPendingLpti || 0;
+
+          if (d.activeEvent) {
+            document.getElementById('dashEventTitle').innerText = d.activeEvent.title;
+            document.getElementById('dashEventCategory').innerText = d.activeEvent.category || 'Teknis';
+            document.getElementById('dashEventJp').innerText = `${d.activeEvent.jp || 32} Jam Pelajaran (JP)`;
+            document.getElementById('dashEventLocation').innerText = d.activeEvent.location || 'Auditorium BPMP Sultra';
+            document.getElementById('dashEventSchedule').innerText = d.activeEvent.schedule || 'November 2026';
+          }
+
+          document.getElementById('topbarDbStatus').innerText = d.isCloudConnected ? 'Supabase Cloud Connected' : 'In-Memory Cache (db.json)';
+        }
+      } catch (err) {
+        console.warn('Gagal memuat ringkasan:', err.message);
+      }
+    }
+
+    // ========================================================
+    // LOGIKA FITUR KELOLA PEGAWAI (CRUD)
+    // ========================================================
+    async function loadEmployees() {
+      const tbody = document.getElementById('employeeTableBody');
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data pegawai...</td></tr>`;
+
+      try {
+        const res = await fetch('/api/employees');
+        const json = await res.json();
+        const employees = json.employees || [];
+        appState.employees = employees;
+
+        document.getElementById('employeeCountText').innerText = `Menampilkan ${employees.length} pegawai ASN terdaftar`;
+
+        if (employees.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">Belum ada data pegawai.</td></tr>`;
+          return;
+        }
+
+        let html = '';
+        employees.forEach((emp, index) => {
+          const isAttended = Boolean(emp.attended);
+          const hasFace = Boolean(emp.faceRegistered || emp.facePhotoUrl);
+          
+          html += `
+            <tr>
+              <td class="text-muted text-center">${index + 1}</td>
+              <td class="font-weight-bold font-mono text-dark">${emp.nip}</td>
+              <td>
+                <div class="font-weight-bold text-gray-900">${emp.name}</div>
+                <div class="small text-muted">${emp.instansi || 'BPMP Provinsi Sulawesi Tenggara'}</div>
+              </td>
+              <td>${emp.panggol || '-'}</td>
+              <td>${emp.jabatan || 'Staf ASN'}</td>
+              <td>
+                <span class="badge badge-primary px-2 py-1 font-weight-bold">${emp.accumulatedJp || 0} JP</span>
+              </td>
+              <td>
+                ${isAttended 
+                  ? `<span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i> HADIR</span>` 
+                  : `<span class="badge badge-secondary px-2 py-1">Belum Hadir</span>`}
+              </td>
+              <td>
+                ${hasFace 
+                  ? `<span class="badge badge-info px-2 py-1"><i class="fas fa-smile mr-1"></i> Terdaftar</span>` 
+                  : `<span class="badge badge-light border text-muted px-2 py-1">Belum Rekam</span>`}
+              </td>
+              <td class="text-center">
+                <button class="btn btn-info btn-xs mr-1" title="Edit Pegawai" onclick="openEditEmployeeModal('${emp.id || emp.nip}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-warning btn-xs mr-1 text-dark" title="Reset Sandi ke Bpmp2026!" onclick="handleResetEmployeePassword('${emp.id || emp.nip}', '${emp.name}')">
+                  <i class="fas fa-key"></i>
+                </button>
+                ${hasFace ? `
+                  <button class="btn btn-secondary btn-xs mr-1" title="Reset Biometrik Wajah" onclick="handleResetEmployeeFace('${emp.id || emp.nip}', '${emp.name}')">
+                    <i class="fas fa-user-slash"></i>
+                  </button>
+                ` : ''}
+                <button class="btn btn-danger btn-xs" title="Hapus Pegawai" onclick="handleDeleteEmployee('${emp.id || emp.nip}', '${emp.name}')">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">Gagal memuat data: ${err.message}</td></tr>`;
+      }
+    }
+
+    function filterEmployeeTable() {
+      const q = document.getElementById('searchEmployeeInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#employeeTableBody tr');
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+
+    function openAddEmployeeModal() {
+      document.getElementById('modalEmployeeTitle').innerText = 'Tambah Pegawai ASN Baru';
+      document.getElementById('empId').value = '';
+      document.getElementById('empNip').value = '';
+      document.getElementById('empNip').readOnly = false;
+      document.getElementById('empName').value = '';
+      document.getElementById('empPanggol').value = '';
+      document.getElementById('empJabatan').value = '';
+      document.getElementById('empInstansi').value = 'BPMP Provinsi Sulawesi Tenggara';
+      document.getElementById('empPassword').value = '';
+      $('#modalEmployee').modal('show');
+    }
+
+    function openEditEmployeeModal(idOrNip) {
+      const emp = appState.employees.find(e => e.id === idOrNip || String(e.nip).trim() === idOrNip);
+      if (!emp) return;
+
+      document.getElementById('modalEmployeeTitle').innerText = `Sunting Pegawai: ${emp.name}`;
+      document.getElementById('empId').value = emp.id || emp.nip;
+      document.getElementById('empNip').value = emp.nip;
+      document.getElementById('empNip').readOnly = true;
+      document.getElementById('empName').value = emp.name;
+      document.getElementById('empPanggol').value = emp.panggol || '';
+      document.getElementById('empJabatan').value = emp.jabatan || '';
+      document.getElementById('empInstansi').value = emp.instansi || 'BPMP Provinsi Sulawesi Tenggara';
+      document.getElementById('empPassword').value = '';
+      $('#modalEmployee').modal('show');
+    }
+
+    async function handleSaveEmployee(e) {
+      e.preventDefault();
+      const id = document.getElementById('empId').value;
+      const nip = document.getElementById('empNip').value.trim();
+      const name = document.getElementById('empName').value.trim();
+      const panggol = document.getElementById('empPanggol').value.trim();
+      const jabatan = document.getElementById('empJabatan').value.trim();
+      const instansi = document.getElementById('empInstansi').value.trim();
+      const password = document.getElementById('empPassword').value.trim();
+
+      const btn = document.getElementById('btnSubmitEmployee');
+      btn.disabled = true;
+
+      const payload = { nip, name, panggol, jabatan, instansi };
+      if (password) payload.password = password;
+
+      try {
+        const isEdit = Boolean(id);
+        const url = isEdit ? `/api/employees/${id}` : '/api/employees';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          $('#modalEmployee').modal('hide');
+          Swal.fire('Berhasil', data.message, 'success');
+          loadEmployees();
+          loadDashboardSummary();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', 'Gagal menyimpan: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function handleDeleteEmployee(idOrNip, name) {
+      const result = await Swal.fire({
+        title: 'Hapus Pegawai ASN?',
+        html: `Apakah Anda yakin ingin menghapus data <strong>${name}</strong>? Tindakan ini tidak dapat dibatalkan.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74a3b',
+        cancelButtonColor: '#858796',
+        confirmButtonText: 'Ya, Hapus Data',
+        cancelButtonText: 'Batal'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/employees/${idOrNip}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire('Terhapus', data.message, 'success');
+          loadEmployees();
+          loadDashboardSummary();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    async function handleResetEmployeePassword(idOrNip, name) {
+      const result = await Swal.fire({
+        title: 'Reset Kata Sandi?',
+        text: `Kembalikan kata sandi pegawai ${name} ke default "Bpmp2026!"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Reset Password',
+        cancelButtonText: 'Batal'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/employees/${idOrNip}/reset-password`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ newPassword: 'Bpmp2026!' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire('Berhasil', data.message, 'success');
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    async function handleResetEmployeeFace(idOrNip, name) {
+      const result = await Swal.fire({
+        title: 'Hapus Biometrik Wajah?',
+        text: `Hapus rekaman biometrik wajah pegawai ${name}? Pegawai dapat mendaftar ulang wajahnya saat presensi.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Reset Wajah',
+        cancelButtonText: 'Batal'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/employees/${idOrNip}/reset-face`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire('Berhasil', data.message, 'success');
+          loadEmployees();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // LOGIKA FITUR KELOLA EVENT PELATIHAN (CRUD)
+    // ========================================================
+    async function loadEvents() {
+      const tbody = document.getElementById('eventTableBody');
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat daftar kegiatan...</td></tr>`;
+
+      try {
+        const res = await fetch('/api/events');
+        const json = await res.json();
+        const events = json.events || [];
+        appState.events = events;
+
+        if (events.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Belum ada agenda pelatihan tersimpan.</td></tr>`;
+          return;
+        }
+
+        let html = '';
+        events.forEach(evt => {
+          const isActive = Boolean(evt.active);
+          html += `
+            <tr class="${isActive ? 'table-warning font-weight-bold' : ''}">
+              <td class="font-mono text-dark">${evt.id}</td>
+              <td>
+                <div class="font-weight-bold text-gray-900">${evt.title}</div>
+                <div class="small text-muted">${evt.organizer || 'BPMP Sulawesi Tenggara'}</div>
+              </td>
+              <td>${evt.category || 'Teknis'}</td>
+              <td><span class="badge badge-primary px-2 py-1">${evt.jp || 32} JP</span></td>
+              <td>${evt.schedule || '-'}</td>
+              <td>${evt.location || 'Auditorium BPMP'}</td>
+              <td>
+                ${isActive 
+                  ? `<span class="badge badge-success px-2 py-1"><i class="fas fa-broadcast-tower mr-1"></i> AKTIF DI AULA</span>` 
+                  : `<span class="badge badge-secondary px-2 py-1">Tidak Aktif</span>`}
+              </td>
+              <td class="text-center">
+                ${!isActive ? `
+                  <button class="btn btn-success btn-xs mr-1" title="Aktifkan Sesi Ini di Aula" onclick="handleActivateEvent('${evt.id}')">
+                    <i class="fas fa-play"></i> Aktifkan
+                  </button>
+                ` : ''}
+                <button class="btn btn-info btn-xs mr-1" title="Edit Event" onclick="openEditEventModal('${evt.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger btn-xs" title="Hapus Event" onclick="handleDeleteEvent('${evt.id}', '${evt.title}')">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Gagal memuat event: ${err.message}</td></tr>`;
+      }
+    }
+
+    function openAddEventModal() {
+      document.getElementById('modalEventTitle').innerText = 'Buat Event Pelatihan Baru';
+      document.getElementById('evtId').value = '';
+      document.getElementById('evtTitle').value = '';
+      document.getElementById('evtJp').value = 32;
+      document.getElementById('evtSchedule').value = '';
+      document.getElementById('evtLocation').value = 'Auditorium BPMP Sultra & Hybrid Zoom';
+      $('#modalEvent').modal('show');
+    }
+
+    function openEditEventModal(id) {
+      const evt = appState.events.find(e => e.id === id);
+      if (!evt) return;
+
+      document.getElementById('modalEventTitle').innerText = `Sunting Event: ${evt.title}`;
+      document.getElementById('evtId').value = evt.id;
+      document.getElementById('evtTitle').value = evt.title;
+      document.getElementById('evtJp').value = evt.jp || 32;
+      document.getElementById('evtCategory').value = evt.category || 'Teknis & Manajerial Kepegawaian';
+      document.getElementById('evtSchedule').value = evt.schedule || '';
+      document.getElementById('evtLocation').value = evt.location || '';
+      $('#modalEvent').modal('show');
+    }
+
+    async function handleSaveEvent(e) {
+      e.preventDefault();
+      const id = document.getElementById('evtId').value;
+      const title = document.getElementById('evtTitle').value.trim();
+      const jp = parseInt(document.getElementById('evtJp').value, 10);
+      const category = document.getElementById('evtCategory').value;
+      const schedule = document.getElementById('evtSchedule').value.trim();
+      const location = document.getElementById('evtLocation').value.trim();
+
+      const btn = document.getElementById('btnSubmitEvent');
+      btn.disabled = true;
+
+      const payload = { id: id || undefined, isNew: !id, title, jp, category, schedule, location };
+
+      try {
+        const res = await fetch('/api/event', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          $('#modalEvent').modal('hide');
+          Swal.fire('Berhasil', data.message, 'success');
+          loadEvents();
+          loadDashboardSummary();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function handleActivateEvent(id) {
+      try {
+        const res = await fetch(`/api/events/${id}/activate`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire('Sesi Aktif', data.message, 'success');
+          loadEvents();
+          loadDashboardSummary();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    async function handleDeleteEvent(id, title) {
+      const result = await Swal.fire({
+        title: 'Hapus Event?',
+        text: `Hapus agenda pelatihan "${title}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74a3b',
+        confirmButtonText: 'Ya, Hapus'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/events/${id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire('Terhapus', data.message, 'success');
+          loadEvents();
+          loadDashboardSummary();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // LOGIKA FITUR KELOLA ADMINISTRATOR & PETUGAS (CRUD)
+    // ========================================================
+    async function loadAdmins() {
+      const tbody = document.getElementById('adminTableBody');
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat daftar administrator...</td></tr>`;
+
+      try {
+        const res = await fetch('/api/admins', {
+          headers: getAuthHeaders()
+        });
+        const json = await res.json();
+        const admins = json.admins || [];
+        appState.admins = admins;
+
+        if (admins.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada akun admin.</td></tr>`;
+          return;
+        }
+
+        let html = '';
+        admins.forEach(adm => {
+          const isSuper = adm.role === 'superadmin' || adm.username === 'superadmin';
+          html += `
+            <tr>
+              <td>${adm.id}</td>
+              <td class="font-weight-bold font-mono text-dark">${adm.username}</td>
+              <td>${adm.name || 'Petugas'}</td>
+              <td>
+                ${isSuper 
+                  ? `<span class="badge badge-superadmin px-2 py-1">👑 SUPERADMIN</span>` 
+                  : `<span class="badge badge-kepegawaian px-2 py-1">👔 Bagian Kepegawaian</span>`}
+              </td>
+              <td class="small text-muted">
+                ${isSuper 
+                  ? 'Akses Penuh Master + Reset Basis Data' 
+                  : 'Operasional Harian Pelatihan, LPTI & Presensi'}
+              </td>
+              <td class="text-center">
+                <button class="btn btn-info btn-xs mr-1" title="Edit Akun" onclick="openEditAdminModal('${adm.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                ${!isSuper ? `
+                  <button class="btn btn-danger btn-xs" title="Hapus Akun" onclick="handleDeleteAdmin('${adm.id}', '${adm.username}')">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                ` : `
+                  <button class="btn btn-light btn-xs text-muted" disabled title="Akun Superadmin Utama Tidak Boleh Dihapus">
+                    <i class="fas fa-lock"></i>
+                  </button>
+                `}
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Gagal memuat: ${err.message}</td></tr>`;
+      }
+    }
+
+    function openAddAdminModal() {
+      document.getElementById('modalAdminTitle').innerText = 'Tambah Petugas Administrator Baru';
+      document.getElementById('admId').value = '';
+      document.getElementById('admUsername').value = '';
+      document.getElementById('admUsername').readOnly = false;
+      document.getElementById('admName').value = '';
+      document.getElementById('admRole').value = 'kepegawaian';
+      document.getElementById('admPassword').value = 'Bpmp2026!';
+      $('#modalAdmin').modal('show');
+    }
+
+    function openEditAdminModal(id) {
+      const adm = appState.admins.find(a => String(a.id) === String(id));
+      if (!adm) return;
+
+      document.getElementById('modalAdminTitle').innerText = `Sunting Admin: ${adm.username}`;
+      document.getElementById('admId').value = adm.id;
+      document.getElementById('admUsername').value = adm.username;
+      document.getElementById('admUsername').readOnly = true;
+      document.getElementById('admName').value = adm.name || '';
+      document.getElementById('admRole').value = adm.role || 'kepegawaian';
+      document.getElementById('admPassword').value = '';
+      document.getElementById('admPassword').placeholder = 'Biarkan kosong jika tidak ingin mengganti sandi';
+      $('#modalAdmin').modal('show');
+    }
+
+    async function handleSaveAdmin(e) {
+      e.preventDefault();
+      const id = document.getElementById('admId').value;
+      const username = document.getElementById('admUsername').value.trim();
+      const name = document.getElementById('admName').value.trim();
+      const role = document.getElementById('admRole').value;
+      const password = document.getElementById('admPassword').value.trim();
+
+      const btn = document.getElementById('btnSubmitAdmin');
+      btn.disabled = true;
+
+      const payload = { username, name, role };
+      if (password) payload.password = password;
+
+      try {
+        const isEdit = Boolean(id);
+        const url = isEdit ? `/api/admins/${id}` : '/api/admins';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          $('#modalAdmin').modal('hide');
+          Swal.fire('Berhasil', data.message, 'success');
+          loadAdmins();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function handleDeleteAdmin(id, username) {
+      const result = await Swal.fire({
+        title: 'Hapus Petugas Admin?',
+        text: `Hapus akun administrator "${username}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74a3b',
+        confirmButtonText: 'Ya, Hapus'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/admins/${id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire('Terhapus', data.message, 'success');
+          loadAdmins();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // LOGIKA FITUR KURASI LPTI & SERTIFIKAT
+    // ========================================================
+    async function loadLpti() {
+      const tbody = document.getElementById('lptiTableBody');
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data LPTI...</td></tr>`;
+
+      try {
+        const res = await fetch('/api/employees');
+        const json = await res.json();
+        const employees = json.employees || [];
+
+        let html = '';
+        employees.forEach(emp => {
+          const lpti = emp.lpti || {};
+          const status = lpti.status || 'none';
+          const hasPdf = Boolean(lpti.filePath || lpti.file_path);
+          const pdfUrl = lpti.filePath || lpti.file_path || (lpti.fileName ? `/uploads/lpti/${lpti.fileName}` : null);
+
+          let statusBadge = `<span class="badge badge-secondary">Belum Upload</span>`;
+          if (status === 'pending') statusBadge = `<span class="badge badge-warning"><i class="fas fa-clock mr-1"></i> Menunggu Verifikasi</span>`;
+          else if (status === 'revision') statusBadge = `<span class="badge badge-danger"><i class="fas fa-exclamation-circle mr-1"></i> Perlu Revisi</span>`;
+          else if (status === 'approved') statusBadge = `<span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Disetujui</span>`;
+
+          html += `
+            <tr>
+              <td>
+                <div class="font-weight-bold text-gray-900">${emp.name}</div>
+                <div class="small font-mono text-muted">${emp.nip}</div>
+              </td>
+              <td>${emp.attended ? '<span class="badge badge-success">HADIR</span>' : '<span class="badge badge-light border">Belum Hadir</span>'}</td>
+              <td>
+                ${hasPdf ? `
+                  <a href="${pdfUrl}" target="_blank" class="btn btn-outline-danger btn-xs">
+                    <i class="fas fa-file-pdf mr-1"></i> Buka Dokumen LPTI
+                  </a>
+                ` : `<span class="text-muted small">-</span>`}
+              </td>
+              <td>${statusBadge}</td>
+              <td class="font-mono small font-weight-bold text-primary">
+                ${emp.certificate && emp.certificate.number ? emp.certificate.number : '-'}
+              </td>
+              <td class="text-center">
+                ${hasPdf && status !== 'approved' ? `
+                  <button class="btn btn-success btn-xs mr-1" onclick="handleVerifyLpti('${emp.id || emp.nip}', 'approved')">
+                    <i class="fas fa-check"></i> Setujui
+                  </button>
+                  <button class="btn btn-danger btn-xs" onclick="handleVerifyLpti('${emp.id || emp.nip}', 'revision')">
+                    <i class="fas fa-times"></i> Revisi
+                  </button>
+                ` : hasPdf && status === 'approved' ? `
+                  <a href="/api/employees/${emp.nip}/certificate.pdf" target="_blank" class="btn btn-primary btn-xs">
+                    <i class="fas fa-award mr-1"></i> Lihat E-Sertifikat
+                  </a>
+                ` : `<span class="text-muted small">Menunggu Berkas</span>`}
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Gagal memuat: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function handleVerifyLpti(idOrNip, action) {
+      let revisionNote = '';
+      if (action === 'revision') {
+        const { value: note } = await Swal.fire({
+          title: 'Catatan Revisi LPTI',
+          input: 'textarea',
+          inputLabel: 'Masukkan rincian kekurangan laporan untuk diperbaiki pegawai:',
+          inputPlaceholder: 'Contoh: Lembar pengesahan belum dibubuhi tanda tangan & stempel basah.',
+          showCancelButton: true
+        });
+        if (!note) return;
+        revisionNote = note;
+      }
+
+      try {
+        const res = await fetch(`/api/employees/${idOrNip}/verify-lpti`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ action, revisionNote })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire('Tersimpan', data.message, 'success');
+          loadLpti();
+          loadDashboardSummary();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // LOGIKA FITUR PEMELIHARAAN (RESET DATA & EXPORT BACKUP)
+    // ========================================================
+    async function handleResetTestingData() {
+      const result = await Swal.fire({
+        title: 'Pembersihan Data Uji Coba?',
+        html: `
+          <div class="text-left small">
+            <p>Operasi ini akan membersihkan:</p>
+            <ul>
+              <li>Status kehadiran presensi seluruh peserta (kembali ke Belum Hadir)</li>
+              <li>Seluruh berkas LPTI dan status kurasi (kembali ke None)</li>
+              <li>Seluruh e-sertifikat yang diterbitkan selama pengujian</li>
+            </ul>
+            <p class="text-success font-weight-bold mb-0">✓ 104 Data Master Pegawai Asli Tetap Aman & Utuh.</p>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74a3b',
+        cancelButtonColor: '#858796',
+        confirmButtonText: 'Ya, Bersihkan Data Testing',
+        cancelButtonText: 'Batal'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/reset-data', {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          Swal.fire('Berhasil', data.message, 'success');
+          loadDashboardSummary();
+        } else {
+          Swal.fire('Gagal', data.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', 'Gagal reset data: ' + err.message, 'error');
+      }
+    }
+
+    function exportDataBackup() {
+      window.location.href = '/api/superadmin/export-data';
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+      sessionStorage.removeItem('adminToken');
+      sessionStorage.removeItem('adminUser');
+      window.location.href = '/admin/login';
+    }
+
+    // Jalankan Saat Dokumen Siap
+    document.addEventListener('DOMContentLoaded', () => {
+      initSuperadmin();
+    });
+  </script>
+
+</body>
+</html>

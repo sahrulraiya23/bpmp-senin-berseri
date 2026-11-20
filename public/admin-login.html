@@ -381,7 +381,8 @@
           sessionStorage.setItem('adminUser', JSON.stringify(data.admin));
 
           setTimeout(() => {
-            window.location.href = '/admin';
+            const targetUrl = data.redirectUrl || (data.admin && data.admin.role === 'superadmin' ? '/superadmin' : '/admin');
+            window.location.href = targetUrl;
           }, 600);
         } else {
           showAlert(data.message || 'Login gagal, periksa kembali username dan password.');
@@ -407,7 +408,8 @@
         .then(r => r.json())
         .then(data => {
           if (data.success && data.authenticated) {
-            window.location.href = '/admin';
+            const targetUrl = data.admin && data.admin.role === 'superadmin' ? '/superadmin' : '/admin';
+            window.location.href = targetUrl;
           }
         })
         .catch(() => {});

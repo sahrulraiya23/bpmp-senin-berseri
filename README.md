@@ -40,18 +40,21 @@
 * **Verifikasi Biometrik Wajah ASN (*Face Biometrics*)**: Saat pegawai memindai presensi di aula, portal dapat meminta pengambilan swafoto (*selfie camera*) untuk mencocokkan wajah pegawai dengan data biometrik master yang terdaftar.
 * **Layar Proyektor Aula Fullscreen (`/proyektor`)**: Antarmuka khusus panitia aula yang menyajikan QR resolusi tinggi, cincin hitung mundur (*countdown ring*), audio cue lonceng pergantian QR, serta counter jumlah peserta hadir secara langsung.
 
-### 2. 👑 Manajemen Multi-Peran (RBAC)
-* **Super Administrator (`superadmin`)**:
-  * Kendali menyeluruh konfigurasi sistem, database, dan seluruh kegiatan pelatihan.
-  * Otoritas eksklusif untuk menjalankan fitur *Reset Data Pengujian* (`/api/reset-data`).
-  * Badge visual: **👑 SUPERADMIN** pada dashboard.
-* **Bagian Kepegawaian (`admin` / `kepegawaian`)**:
-  * Penanggung jawab operasional kepegawaian harian.
-  * Pembuatan & aktivasi event pelatihan (1–120 JP).
-  * Pengawasan presensi aula & peninjauan dokumen LPTI.
-  * Penerbitan e-sertifikat resmi & pendaftaran/reset data biometrik wajah ASN.
-  * Badge visual: **👔 KEPEGAWAIAN** pada dashboard.
-* **Pegawai ASN BPMP Sultra**:
+### 2. 👑 Manajemen Multi-Peran & Dual Dashboard (SB Admin 2 vs Azia)
+* **👑 Super Administrator (`superadmin` — Panel SB Admin 2 di `/superadmin`)**:
+  * Antarmuka master menggunakan tema klasik **SB Admin 2** (*StartBootstrap*) dengan sidebar gradient biru (`bg-gradient-primary`).
+  * **Fitur Master Kelola-Kelola (CRUD Penuh)**:
+    * **Kelola Pegawai ASN**: Tambah pegawai baru, sunting profil, hapus pegawai, reset sandi akun ke `Bpmp2026!`, serta reset biometrik wajah.
+    * **Kelola Event Pelatihan**: Buat agenda baru (1–120 JP), sunting event, hapus event, dan aktivasi sesi resmi di layar aula.
+    * **Kelola Akun Admin & Petugas**: Buat akun petugas kepegawaian baru, ganti kata sandi, dan kelola hak akses.
+    * **Kurasi LPTI & Piagam**: Pengawasan terpusat seluruh dokumen LPTI dan nomor registrasi e-sertifikat.
+    * **Pemeliharaan & Data Master**: Eksekusi *Reset Data Pengujian* serta unduh *Backup Database JSON*.
+  * Lencana visual: **👑 SUPERADMIN** emas.
+* **👔 Bagian Kepegawaian (`admin` / `kepegawaian` — Panel Azia di `/admin`)**:
+  * Antarmuka operasional harian menggunakan template **Azia Government Theme**.
+  * Berfokus pada pelaksanaan harian: monitoring presensi aula, verifikasi berkas LPTI, kontrol layar proyektor QR, dan pengaturan template piagam dinas.
+  * Lencana visual: **👔 KEPEGAWAIAN** biru.
+* **👨‍💼 Pegawai ASN BPMP Sultra (`/pegawai` atau `/`)**:
   * Pangkalan data resmi **104 Pegawai ASN** (Pimpinan, Kasubbag Umum, Widyaprada, Analis, Staf Pelaksana).
   * Login mudah menggunakan NIP 18 digit.
   * Presensi instan di aula, unggah laporan PDF LPTI, serta klaim & unduh e-sertifikat ber-JP.
@@ -216,7 +219,8 @@ node server.js
 ### 4. Mengakses Aplikasi di Peramban
 * 🏠 **Portal Login Pegawai ASN**: [http://localhost:3000/](http://localhost:3000/)
 * 👔 **Login Administrator**: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
-* 📊 **Dashboard Manajemen Kepegawaian**: [http://localhost:3000/admin](http://localhost:3000/admin)
+* 👑 **Dashboard Master Super Administrator (SB Admin 2)**: [http://localhost:3000/superadmin](http://localhost:3000/superadmin)
+* 📊 **Dashboard Manajemen Kepegawaian (Azia)**: [http://localhost:3000/admin](http://localhost:3000/admin)
 * 📽️ **Layar Proyektor Dynamic QR Aula**: [http://localhost:3000/proyektor](http://localhost:3000/proyektor) *(atau `/qr`)*
 
 ---
@@ -306,10 +310,13 @@ senin_berseri/
 ├── vercel.json                      # Konfigurasi deployment serverless Vercel
 ├── public/                          # Berkas statis antarmuka pengguna
 │   ├── admin-login.html             # Halaman masuk khusus Administrator (Superadmin / Kepegawaian)
-│   ├── admin.html                   # Dashboard terpadu manajemen kepegawaian & sertifikat
+│   ├── superadmin.html              # Dashboard Master Superadmin bertema SB Admin 2 (Kelola CRUD)
+│   ├── admin.html                   # Dashboard terpadu manajemen kepegawaian bertema Azia
 │   ├── index.html                   # Halaman portal utama & login mandiri pegawai ASN
 │   ├── pegawai.html                 # Antarmuka presensi, unggah LPTI, & klaim e-sertifikat
 │   ├── proyektor.html               # Tampilan proyektor aula layar penuh (Dynamic QR rotasi 30s)
+│   ├── css/sb-admin-2.min.css       # Template CSS SB Admin 2 StartBootstrap
+│   ├── js/sb-admin-2.min.js         # Library JS SB Admin 2 StartBootstrap
 │   ├── manifest.json                # Konfigurasi instalasi Progressive Web App (PWA)
 │   └── service-worker.js            # Service worker untuk fungsionalitas caching & PWA
 └── uploads/                         # Direktori berkas unggahan lokal
