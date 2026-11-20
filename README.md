@@ -218,6 +218,7 @@ node server.js
 
 ### 4. Mengakses Aplikasi di Peramban
 * 🏠 **Portal Login Pegawai ASN**: [http://localhost:3000/](http://localhost:3000/)
+* 📸 **Halaman Khusus Perekaman Master Wajah ASN**: [http://localhost:3000/verif-wajah](http://localhost:3000/verif-wajah)
 * 👔 **Login Administrator**: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 * 👑 **Dashboard Master Super Administrator (SB Admin 2)**: [http://localhost:3000/superadmin](http://localhost:3000/superadmin)
 * 📊 **Dashboard Manajemen Kepegawaian (Azia)**: [http://localhost:3000/admin](http://localhost:3000/admin)
@@ -313,6 +314,7 @@ senin_berseri/
 │   ├── superadmin.html              # Dashboard Master Superadmin bertema SB Admin 2 (Kelola CRUD)
 │   ├── admin.html                   # Dashboard terpadu manajemen kepegawaian bertema Azia
 │   ├── index.html                   # Halaman portal utama & login mandiri pegawai ASN
+│   ├── verif-wajah.html             # Halaman khusus perekaman biometrik master wajah ASN
 │   ├── pegawai.html                 # Antarmuka presensi, unggah LPTI, & klaim e-sertifikat
 │   ├── proyektor.html               # Tampilan proyektor aula layar penuh (Dynamic QR rotasi 30s)
 │   ├── css/sb-admin-2.min.css       # Template CSS SB Admin 2 StartBootstrap

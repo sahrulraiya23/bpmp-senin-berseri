@@ -405,6 +405,16 @@ app.post('/api/presensi/verify-token', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
   }
 
+  // Validasi Wajib Rekam Wajah: Pegawai harus memiliki foto master biometrik terdaftar sebelum presensi
+  const hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl);
+  if (!hasFace) {
+    return res.status(403).json({
+      success: false,
+      requireFaceRegistration: true,
+      message: 'Presensi ditolak: Anda wajib melakukan perekaman master wajah terlebih dahulu di halaman verifikasi wajah sebelum dapat melakukan presensi.'
+    });
+  }
+
   // Simpan foto bukti presensi (jika ada snapshot selfie)
   let attendancePhotoUrl = null;
   if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
@@ -1298,6 +1308,14 @@ app.get('/login', (req, res) => {
 
 app.get('/pegawai', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
+
+app.get('/verif-wajah', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'verif-wajah.html'));
+});
+
+app.get('/verifikasi-wajah', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'verif-wajah.html'));
 });
 
 app.get('/admin/login', (req, res) => {

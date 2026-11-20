@@ -610,9 +610,9 @@
                     <div class="text-muted" style="font-size: 11px;">Daftarkan foto wajah sekali (3 detik) untuk verifikasi presensi.</div>
                   </div>
                 </div>
-                <button type="button" onclick="openFaceModal('register')" class="btn btn-warning btn-sm font-weight-bold rounded-pill px-3 py-1 text-nowrap ml-2">
-                  <i class="fas fa-plus-circle mr-1"></i> Daftar
-                </button>
+                <a href="/verif-wajah" class="btn btn-warning btn-sm font-weight-bold rounded-pill px-3 py-1 text-nowrap ml-2">
+                  <i class="fas fa-plus-circle mr-1"></i> Rekam Wajah
+                </a>
               </div>
             </div>
 
@@ -1126,6 +1126,17 @@
           if (data.event) currentEvent = data.event;
           localStorage.setItem('bpmp_auth_nip', currentAuthUser.nip);
 
+          // Route Guard: Pegawai yang belum pernah rekam master wajah wajib diarahkan ke /verif-wajah
+          const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
+          if (!hasFace) {
+            showToast('Anda belum melakukan verifikasi wajah. Mengalihkan ke halaman perekaman master wajah...', 'info');
+            const tokenToPass = pendingScannedToken || '';
+            setTimeout(() => {
+              window.location.href = `/verif-wajah${tokenToPass ? `?token=${encodeURIComponent(tokenToPass)}` : ''}`;
+            }, 600);
+            return;
+          }
+
           showToast(`Login berhasil! Selamat datang, ${currentAuthUser.name}`, 'success');
           activateDashboardView();
 
@@ -1246,16 +1257,16 @@
         if (faceCell) {
           faceCell.innerHTML = `
             <span class="badge badge-success px-2 py-1 font-weight-bold"><i class="fas fa-smile mr-1"></i> Terdaftar</span>
-            <button onclick="openFaceModal('register')" class="btn btn-link btn-xs text-primary p-0 ml-1.5" title="Perbarui Foto Wajah"><i class="fas fa-sync-alt"></i></button>
+            <a href="/verif-wajah" class="btn btn-link btn-xs text-primary p-0 ml-1.5" title="Lihat Master Wajah"><i class="fas fa-id-badge"></i></a>
           `;
         }
         if (facePrompt) facePrompt.classList.add('d-none');
       } else {
         if (faceCell) {
           faceCell.innerHTML = `
-            <button onclick="openFaceModal('register')" class="btn btn-warning btn-xs font-weight-bold px-2 py-0.5 rounded-pill">
-              <i class="fas fa-camera mr-1"></i> Daftarkan
-            </button>
+            <a href="/verif-wajah" class="btn btn-warning btn-xs font-weight-bold px-2 py-0.5 rounded-pill">
+              <i class="fas fa-camera mr-1"></i> Rekam Wajah
+            </a>
           `;
         }
         if (facePrompt) facePrompt.classList.remove('d-none');
@@ -1407,17 +1418,17 @@
     async function executeAutoPresence(token, targetEventId, attendancePhoto = null) {
       if (!currentAuthUser) return;
 
-      // Jika belum verifikasi wajah dan attendancePhoto belum disediakan:
+      const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
+      if (!hasFace) {
+        showToast('Anda belum melakukan verifikasi wajah master. Mengalihkan ke halaman perekaman...', 'warning');
+        window.location.href = `/verif-wajah?token=${encodeURIComponent(token)}`;
+        return;
+      }
+
+      // Jika belum ada foto selfie bukti verifikasi saat presensi: buka modal kamera selfie presensi
       if (!attendancePhoto) {
-        if (!currentAuthUser.faceRegistered) {
-          showToast('📸 Ambil 1 foto wajah terlebih dahulu untuk aktivasi biometrik & verifikasi presensi.', 'info');
-          openFaceModal('register', token, targetEventId);
-          return;
-        } else {
-          // Buka kamera verifikasi wajah presensi
-          openFaceModal('verify', token, targetEventId);
-          return;
-        }
+        openFaceModal('verify', token, targetEventId);
+        return;
       }
 
       const cleanToken = token.trim().toUpperCase();
@@ -1460,7 +1471,11 @@
     let pendingPresenceToken = null;
     let pendingPresenceEventId = null;
 
-    async function openFaceModal(mode = 'register', token = null, eventId = null) {
+    async function openFaceModal(mode = 'verify', token = null, eventId = null) {
+      if (mode === 'register') {
+        window.location.href = '/verif-wajah' + (token ? `?token=${encodeURIComponent(token)}` : '');
+        return;
+      }
       currentFaceMode = mode;
       pendingPresenceToken = token;
       pendingPresenceEventId = eventId;
@@ -1881,6 +1896,15 @@
           if (data.success && data.employee) {
             currentAuthUser = data.employee;
             if (data.event) currentEvent = data.event;
+
+            // Route Guard: Jika belum rekam master wajah, wajib diarahkan ke /verif-wajah
+            const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
+            if (!hasFace) {
+              const redirectParam = tokenParam ? `?token=${encodeURIComponent(tokenParam)}` : '';
+              window.location.href = `/verif-wajah${redirectParam}`;
+              return;
+            }
+
             activateDashboardView();
 
             if (tokenParam) {
