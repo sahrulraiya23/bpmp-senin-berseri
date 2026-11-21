@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <!-- Required meta tags -->
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Dashboard Administrator Kepegawaian - BPMP Provinsi Sulawesi Tenggara</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Dashboard Admin Kepegawaian - BPMP Provinsi Sulawesi Tenggara</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#002d5b">
+  <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,1027 +16,673 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="/icons/favicon.png">
 
-  <!-- Vendor CSS (Azia Bootstrap 4) -->
-  <link href="/azia/lib/fontawesome-free/css/all.min.css" rel="stylesheet">
-  <link href="/azia/lib/ionicons/css/ionicons.min.css" rel="stylesheet">
-  <link href="/azia/lib/typicons.font/typicons.css" rel="stylesheet">
-
-  <!-- Azia Template CSS -->
-  <link rel="stylesheet" href="/azia/css/azia.min.css">
-
-  <!-- Google Fonts: Plus Jakarta Sans -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --gov-primary: #002d5b;
-      --gov-primary-dark: #001b38;
-      --gov-teal: #0f766e;
-      --gov-gold: #d97706;
-      --gov-light-bg: #f4f6f9;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #f1f5f9;
-      color: #1e293b;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Top Official Government Strip */
-    .gov-top-bar {
-      background: linear-gradient(90deg, #001f3f 0%, #002d5b 50%, #001f3f 100%);
-      color: #ffffff;
-      padding: 6px 20px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      border-bottom: 2px solid #d97706;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    /* Azia Header Customization for Government Identity */
-    .az-header {
-      background: #ffffff;
-      border-bottom: 1px solid #e2e8f0;
-      box-shadow: 0 2px 4px rgba(0, 45, 91, 0.04);
-      padding: 10px 0;
-    }
-
-    .gov-brand {
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      color: #002d5b;
-    }
-    .gov-brand:hover {
-      text-decoration: none;
-      color: #001f3f;
-    }
-    .gov-logo-badge {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, #002d5b 0%, #0a3d74 100%);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 12px;
-      box-shadow: 0 4px 6px rgba(0, 45, 91, 0.15);
-      border: 1px solid #cbd5e1;
-    }
-    .gov-brand-title {
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      line-height: 1.2;
-      color: #002d5b;
-    }
-    .gov-brand-subtitle {
-      font-size: 10px;
-      font-weight: 700;
-      color: #0f766e;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-    }
-
-    /* Azia Navigation Tabs */
-    .az-header-menu .nav-link {
-      font-size: 12px;
-      font-weight: 700;
-      color: #475569;
-      padding: 8px 14px;
-      border-radius: 8px;
-      transition: all 0.2s;
-      cursor: pointer;
-    }
-    .az-header-menu .nav-link:hover {
-      color: #002d5b;
-      background-color: #f1f5f9;
-    }
-    .az-header-menu .nav-link.active {
-      color: #002d5b;
-      background-color: #e0f2fe;
-      font-weight: 800;
-    }
-
-    /* Page Header Ribbon */
-    .gov-page-header {
-      background: #ffffff;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 18px 0;
-      margin-bottom: 24px;
-    }
-    .gov-page-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #0f172a;
-      letter-spacing: -0.3px;
-      margin-bottom: 2px;
-    }
-    .gov-page-subtitle {
-      font-size: 12px;
-      font-weight: 600;
-      color: #64748b;
-    }
-
-    /* Executive KPI Cards */
-    .gov-kpi-card {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-      padding: 20px;
-      transition: all 0.2s;
-      position: relative;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-    .gov-kpi-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 15px rgba(0, 45, 91, 0.06);
-      border-color: #cbd5e1;
-    }
-    .gov-kpi-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      margin-right: 14px;
-      flex-shrink: 0;
-    }
-    .gov-kpi-num {
-      font-size: 26px;
-      font-weight: 800;
-      color: #0f172a;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .gov-kpi-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* Active Event Banner Card */
-    .gov-event-banner {
-      background: linear-gradient(135deg, #002d5b 0%, #073b6f 100%);
-      color: #ffffff;
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 20px rgba(0, 45, 91, 0.15);
-      position: relative;
-      overflow: hidden;
-    }
-    .gov-event-banner::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #d97706, #f59e0b, #0f766e);
-    }
-
-    /* Government Data Table */
-    .gov-table-card {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-      overflow: hidden;
-      margin-bottom: 24px;
-    }
-    .gov-table-header {
-      background: #ffffff;
-      padding: 16px 20px;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-    .gov-table th {
-      background-color: #f8fafc;
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #475569;
-      border-bottom: 2px solid #e2e8f0 !important;
-      padding: 12px 16px;
-      vertical-align: middle;
-    }
-    .gov-table td {
-      padding: 12px 16px;
-      vertical-align: middle;
-      border-bottom: 1px solid #f1f5f9;
-      font-size: 13px;
-    }
-
-    /* Buttons */
-    .btn-gov-primary {
-      background: linear-gradient(135deg, #002d5b 0%, #0a3d74 100%);
-      color: #ffffff;
-      font-weight: 700;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 12px;
-      letter-spacing: 0.3px;
-      box-shadow: 0 2px 4px rgba(0, 45, 91, 0.2);
-      transition: all 0.2s;
-    }
-    .btn-gov-primary:hover {
-      background: linear-gradient(135deg, #001f3f 0%, #002d5b 100%);
-      color: #ffffff;
-      transform: translateY(-1px);
-    }
-    .btn-gov-emerald {
-      background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-      color: #ffffff;
-      font-weight: 700;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 12px;
-      box-shadow: 0 2px 4px rgba(15, 118, 110, 0.2);
-      transition: all 0.2s;
-    }
-    .btn-gov-emerald:hover {
-      background: linear-gradient(135deg, #0d5f58 0%, #0f766e 100%);
-      color: #ffffff;
-      transform: translateY(-1px);
-    }
-
-    /* Badges */
-    .badge-gov-active {
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #bbf7d0;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 10px;
-      letter-spacing: 0.4px;
-    }
-    .badge-gov-pending {
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fde68a;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 10px;
-      letter-spacing: 0.4px;
-    }
-    .badge-gov-danger {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 10px;
-      letter-spacing: 0.4px;
-    }
-
-    /* Toast Container */
-    #toastContainer {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 99999;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      pointer-events: none;
-    }
-    .toast-box {
-      background: #1e293b;
-      color: #ffffff;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 700;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      display: flex;
-      align-items: center;
-      border: 1px solid rgba(255,255,255,0.15);
-      animation: slideUp 0.3s ease-out;
-      pointer-events: auto;
-      max-width: 360px;
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Custom Switcher Button Group */
-    .gov-switcher {
-      background: #f1f5f9;
-      padding: 3px;
-      border-radius: 10px;
-      display: inline-flex;
-    }
-    .gov-switcher .btn-switch {
-      border: none;
-      background: transparent;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #64748b;
-      transition: all 0.2s;
-    }
-    .gov-switcher .btn-switch.active {
-      background: #ffffff;
-      color: #002d5b;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-    }
-  </style>
+  <!-- Tabler Core CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <!-- Tabler Icons (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <!-- ApexCharts CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/apexcharts/apexcharts.css">
+  <!-- Design Tokens BPMP Sultra -->
+  <link rel="stylesheet" href="/css/tokens.css">
 </head>
-<body>
+<body class="layout-boxed">
+  <div class="page">
+    <!-- Top Identity Strip -->
+    <div id="bpmp-top-strip"></div>
 
-  <!-- 1. Top Government Official Strip -->
-  <div class="gov-top-bar">
-    <div>
-      <i class="fas fa-landmark text-warning mr-1"></i>
-      <strong>REPUBLIK INDONESIA</strong> &bull; KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI
-    </div>
-    <div class="d-none d-md-flex align-items-center">
-      <span class="mr-3"><i class="fas fa-map-marker-alt text-danger mr-1"></i> BPMP Provinsi Sulawesi Tenggara, Kendari</span>
-      <span class="badge badge-warning text-dark font-weight-bold px-2 py-0.5" id="liveClockBadge">08:00:00 WITA</span>
-    </div>
-  </div>
+    <!-- Navigation Header -->
+    <div id="bpmp-navbar"></div>
 
-  <!-- 2. Azia Header / Government Navigation -->
-  <div class="az-header">
-    <div class="container-fluid px-lg-5 d-flex justify-content-between align-items-center">
-      
-      <!-- Brand Logo & Identity -->
-      <a href="/admin" class="gov-brand">
-        <div class="gov-logo-badge">
-          <!-- Logo Tut Wuri Handayani Resmi SVG -->
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="#ffffff">
-            <path d="M12 2L2 7l10 5 10-5-10-5zm0 8.5L4.5 7 12 3.5 19.5 7 12 10.5zM3 9.5v5c0 3.5 4 6.5 9 6.5s9-3 9-6.5v-5l-9 4.5L3 9.5z"/>
-          </svg>
-        </div>
-        <div>
-          <div class="gov-brand-title">BPMP PROVINSI SULAWESI TENGGARA</div>
-          <div class="gov-brand-subtitle">SENIN BERSERI &bull; PRESENSI, LPTI & E-SERTIFIKAT ASN</div>
-        </div>
-      </a>
+    <!-- Page Body -->
+    <div class="page-wrapper">
+      <!-- Container -->
+      <div class="container-xl py-3">
+        
+        <!-- Live Clock & Quick Status Subheader -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-lt text-primary d-inline-flex align-items-center px-2 py-1">
+              <i class="ti ti-shield-check me-1"></i>
+              <span id="sideAdminRoleText">Bagian Kepegawaian</span>
+            </span>
+            <span id="sideAdminRoleBadge" class="badge bg-azure-lt text-azure">Kepegawaian</span>
+            <span class="text-secondary small d-none d-md-inline" id="sideAdminSubTitle">Pengelola Harian Kepegawaian BPMP</span>
+          </div>
 
-      <!-- Menu Tabs -->
-      <div class="az-header-menu d-none d-lg-block">
-        <ul class="nav">
-          <li class="nav-item">
-            <a onclick="switchMainTab('dashboard')" class="nav-link active" id="navLinkDashboard">
-              <i class="typcn typcn-th-large-outline mr-1"></i> Dashboard & Rekap
+          <div class="d-flex align-items-center gap-2">
+            <!-- Superadmin Shortcut Button -->
+            <a href="/superadmin" id="btnGoToSuperadmin" class="btn btn-outline-warning btn-sm d-none">
+              <i class="ti ti-crown me-1 text-warning"></i> Konsol Superadmin
             </a>
-          </li>
-          <li class="nav-item">
-            <a onclick="scrollToSection('sectionKatalogEvent')" class="nav-link" id="navLinkEvent">
-              <i class="typcn typcn-calendar-outline mr-1"></i> Kelola Event Pelatihan
-            </a>
-          </li>
-          <li class="nav-item">
-            <a onclick="scrollToSection('sectionVerifikasiLpti')" class="nav-link" id="navLinkLpti">
-              <i class="typcn typcn-document-text mr-1"></i> Verifikasi LPTI
-              <span id="badgePendingCount" class="badge badge-warning ml-1">0</span>
-            </a>
-          </li>
-        </ul>
-      </div>
 
-      <!-- Right Header Actions & User Info -->
-      <div class="d-flex align-items-center">
-        <!-- Shortcut Superadmin (SB Admin 2) -->
-        <a href="/superadmin" id="btnGoToSuperadmin" class="btn btn-warning btn-sm font-weight-bold text-dark rounded-pill mr-2 shadow-sm d-none" style="font-size: 11px;">
-          <i class="fas fa-crown mr-1"></i> SB Admin 2 (Master)
-        </a>
+            <!-- Reset Data Uji Coba -->
+            <button onclick="handleResetTestingData()" class="btn btn-outline-danger btn-sm" title="Reset data presensi dan LPTI pengujian">
+              <i class="ti ti-rotate-2 me-1"></i> Reset Data Uji Coba
+            </button>
 
-        <!-- Admin Profile Dropdown -->
-        <div class="dropdown">
-          <button class="btn btn-light btn-sm rounded-pill font-weight-bold dropdown-toggle d-flex align-items-center px-3 py-1.5 border" type="button" id="userMenuDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <div id="sideAdminAvatar" class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-2" style="width: 24px; height: 24px; font-size: 11px;">
-              <i class="fas fa-user-shield"></i>
-            </div>
-            <span id="sideAdminName" class="text-dark">admin</span>
-            <span id="sideAdminRoleBadge" class="badge badge-primary ml-2 px-2 py-0.5" style="font-size: 10px;">Kepegawaian</span>
-          </button>
-          <div class="dropdown-menu dropdown-menu-right shadow-sm border-0" aria-labelledby="userMenuDropdown" style="min-width: 240px;">
-            <div class="dropdown-header font-weight-bold text-uppercase text-muted" style="font-size: 10px;">
-              Tingkat Akses: <span id="sideAdminRoleText" class="text-primary font-weight-bold">Bagian Kepegawaian</span>
-            </div>
-            <div class="px-3 py-1 text-muted small border-bottom mb-2" id="sideAdminSubTitle" style="font-size: 11px;">
-              Pengelola Harian Kepegawaian BPMP
-            </div>
-            <a class="dropdown-item small" href="/" target="_blank"><i class="fas fa-id-card text-muted mr-2"></i> Buka Portal Pegawai</a>
-            <a class="dropdown-item small" href="/proyektor" target="_blank"><i class="fas fa-tv text-muted mr-2"></i> Buka Layar Aula (Proyektor)</a>
-            <div id="superadminActionGroup" class="d-none">
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item small text-primary font-weight-bold" href="/superadmin">
-                <i class="fas fa-crown text-warning mr-2"></i> Buka Panel Superadmin (SB Admin 2)
-              </a>
-              <a class="dropdown-item small text-danger font-weight-bold" href="javascript:void(0)" onclick="handleResetTestingData()">
-                <i class="fas fa-trash-alt mr-2 text-danger"></i> Reset Data Pengujian
-              </a>
-            </div>
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item small text-danger font-weight-bold" href="javascript:void(0)" onclick="handleAdminLogout()"><i class="fas fa-sign-out-alt mr-2"></i> Keluar (Logout)</a>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- 3. Page Title & Action Breadcrumb Ribbon -->
-  <div class="gov-page-header">
-    <div class="container-fluid px-lg-5 d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-      <div>
-        <h1 class="gov-page-title" id="headerBreadcrumb">Dashboard Manajemen Kepegawaian & Presensi</h1>
-        <div class="gov-page-subtitle">
-          Sistem Informasi Terpadu Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara
-        </div>
-      </div>
-
-      <div class="mt-3 mt-md-0 d-flex flex-wrap align-items-center gap-2">
-        <!-- Switcher Dashboard vs QR -->
-        <div class="gov-switcher mr-3">
-          <button class="btn-switch active" id="tabBtnDashboard" onclick="switchMainTab('dashboard')">
-            <i class="fas fa-chart-pie mr-1"></i> Dashboard
-          </button>
-          <button class="btn-switch" id="tabBtnQr" onclick="switchMainTab('qr')">
-            <i class="fas fa-qrcode mr-1"></i> Layar QR Aula
-          </button>
-        </div>
-
-        <button onclick="createNewEventForm()" class="btn btn-gov-emerald mr-2">
-          <i class="fas fa-plus-circle mr-1"></i> Buat Event Baru
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 4. Main Body Content Area -->
-  <div class="container-fluid px-lg-5 flex-grow-1 pb-5">
-    
-    <!-- ============================================================== -->
-    <!-- VIEW SECTION 1: DASHBOARD UTAMA KEPEGAWAIAN                   -->
-    <!-- ============================================================== -->
-    <div id="viewDashboardSection">
-      
-      <!-- 4 Executive KPI Stat Cards -->
-      <div class="row">
-        <div class="col-sm-6 col-xl-3">
-          <div class="gov-kpi-card d-flex align-items-center">
-            <div class="gov-kpi-icon bg-primary text-white">
-              <i class="fas fa-users"></i>
-            </div>
-            <div>
-              <div class="gov-kpi-num" id="statTotal">104</div>
-              <div class="gov-kpi-label">Pegawai ASN BPMP</div>
-              <small class="text-muted font-weight-bold">100% Terdaftar di Sistem</small>
+            <!-- Live Clock Badge -->
+            <div id="liveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1">
+              <i class="ti ti-clock me-1"></i> --:--:-- WITA
             </div>
           </div>
         </div>
 
-        <div class="col-sm-6 col-xl-3">
-          <div class="gov-kpi-card d-flex align-items-center">
-            <div class="gov-kpi-icon bg-success text-white">
-              <i class="fas fa-qrcode"></i>
-            </div>
-            <div>
-              <div class="gov-kpi-num text-success" id="statHadir">0</div>
-              <div class="gov-kpi-label">Hadir di Aula</div>
-              <small class="text-muted font-weight-bold">Presensi Sesi Terpilih</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-          <div class="gov-kpi-card d-flex align-items-center">
-            <div class="gov-kpi-icon bg-warning text-dark">
-              <i class="fas fa-file-invoice"></i>
-            </div>
-            <div>
-              <div class="gov-kpi-num text-warning" id="statPending">0</div>
-              <div class="gov-kpi-label">Menunggu Review LPTI</div>
-              <small class="text-muted font-weight-bold">Perlu Verifikasi Admin</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-          <div class="gov-kpi-card d-flex align-items-center">
-            <div class="gov-kpi-icon bg-info text-white">
-              <i class="fas fa-award"></i>
-            </div>
-            <div>
-              <div class="gov-kpi-num text-info" id="statApproved">0</div>
-              <div class="gov-kpi-label">Sertifikat Terbit</div>
-              <small class="text-muted font-weight-bold">E-Sertifikat Ber-JP Siap</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Event Banner Card -->
-      <div class="gov-event-banner">
-        <div class="row align-items-center">
-          <div class="col-lg-8">
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-              <span id="displayStep2EventId" class="badge badge-light font-weight-bold text-dark px-2 py-1">EVT-2026-001</span>
-              <span id="displayActiveStatusBadge" class="badge-gov-active">
-                <i class="fas fa-circle text-success mr-1"></i>SESI AKTIF DI AULA
-              </span>
-              <span id="displayActiveJp" class="badge badge-info px-2 py-1">32 Jam Pelajaran (JP)</span>
-            </div>
-            <h2 class="h4 font-weight-bold mb-2 text-white" id="displayActiveTitle">
-              Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
-            </h2>
-            <div class="d-flex flex-wrap align-items-center small text-light opacity-75 gap-3">
-              <span><i class="fas fa-calendar-alt text-warning mr-1"></i> <span id="displayActiveSchedule">Jadwal Ditentukan</span></span>
-              <span><i class="fas fa-map-marker-alt text-danger mr-1"></i> <span id="displayActiveLocation">Auditorium BPMP Sultra</span></span>
-              <span><i class="fas fa-tag text-info mr-1"></i> <span id="displayActiveCategory">Teknis & Manajerial</span></span>
-            </div>
-          </div>
-
-          <div class="col-lg-4 mt-3 mt-lg-0 text-lg-right">
-            <div class="mb-2">
-              <button id="btnActivateCurrentEvent" onclick="activateCurrentSelectedEvent()" class="btn btn-warning btn-sm font-weight-bold d-none mr-2">
-                <i class="fas fa-bolt mr-1"></i> Terbitkan Sesi Ini ke Layar Aula
-              </button>
-              <button id="btnCompleteCurrentEvent" onclick="completeCurrentSelectedEvent()" class="btn btn-danger btn-sm font-weight-bold d-none" title="Tutup presensi aula dan selesaikan event ini">
-                <i class="fas fa-flag-checkered mr-1"></i> Selesaikan Event Ini
-              </button>
-            </div>
-            <div class="d-flex flex-wrap justify-content-lg-end gap-2">
-              <button onclick="switchMainTab('qr')" class="btn btn-gov-emerald btn-sm">
-                <i class="fas fa-qrcode mr-1"></i> Layar QR Aula
-              </button>
-              <a id="btnStep2ProjectorLink" href="/proyektor" target="_blank" class="btn btn-light btn-sm font-weight-bold">
-                <i class="fas fa-external-link-alt mr-1"></i> Proyektor ↗
-              </a>
-              <button onclick="toggleEventStatus()" id="btnToggleEventStatus" class="btn btn-outline-light btn-sm font-weight-bold">
-                <span id="btnToggleEventLabel"><i class="fas fa-pause mr-1"></i> Jeda Presensi</span>
-              </button>
-              <button onclick="editCurrentEvent()" class="btn btn-outline-light btn-sm">
-                <i class="fas fa-edit mr-1"></i> Ubah Rincian
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============================================================== -->
-      <!-- LANGKAH 1: FORM PENERBITAN EVENT PELATIHAN BARU               -->
-      <!-- ============================================================== -->
-      <div id="step1FormSection" class="card shadow-sm border-0 mb-4 d-none">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
-          <div class="font-weight-bold">
-            <i class="fas fa-calendar-plus mr-2 text-warning"></i> Formulir Penerbitan Sesi Pelatihan Baru
-          </div>
-          <button type="button" class="close text-white" onclick="closeEventWorkflow()">&times;</button>
-        </div>
-        <div class="card-body p-4">
-          <form id="eventForm" onsubmit="handleSaveEvent(event)">
-            <div class="row">
-              <div class="col-md-8 form-group">
-                <label class="font-weight-bold small text-uppercase">Nama / Judul Resmi Kegiatan Pelatihan <span class="text-danger">*</span></label>
-                <input type="text" id="eventTitle" class="form-control" required placeholder="Contoh: Bimbingan Teknis Digitalisasi Tata Kelola Mutu Pendidikan ASN 2026">
+        <!-- Page Header -->
+        <div class="page-header d-print-none mb-3">
+          <div class="row g-2 align-items-center">
+            <div class="col">
+              <div class="page-pretitle" id="headerBreadcrumb">
+                BPMP SULTRA / ADMIN KEPEGAWAIAN
               </div>
-              <div class="col-md-4 form-group">
-                <label class="font-weight-bold small text-uppercase">Beban Belajar (JP) <span class="text-danger">*</span></label>
-                <input type="number" id="eventJp" class="form-control" required min="1" max="120" value="32">
-              </div>
+              <h2 class="page-title text-primary">
+                Dashboard Manajemen Kepegawaian & Presensi
+              </h2>
+              <p class="text-secondary mb-0 small" id="displayActiveTitle">
+                Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
+              </p>
             </div>
-            <div class="row">
-              <div class="col-md-4 form-group">
-                <label class="font-weight-bold small text-uppercase">Kategori Kompetensi ASN</label>
-                <input type="text" id="eventCategory" class="form-control" value="Teknis & Manajerial Kepegawaian">
-              </div>
-              <div class="col-md-4 form-group">
-                <label class="font-weight-bold small text-uppercase">Jadwal Pelaksanaan</label>
-                <input type="text" id="eventSchedule" class="form-control" placeholder="Contoh: Senin, 01 Desember 2026 (08.00 - 16.30 WITA)">
-              </div>
-              <div class="col-md-4 form-group">
-                <label class="font-weight-bold small text-uppercase">Lokasi / Tempat Penyelenggaraan</label>
-                <input type="text" id="eventLocation" class="form-control" placeholder="Contoh: Auditorium BPMP Sultra & Hybrid Zoom">
-              </div>
-            </div>
-            <div class="d-flex justify-content-end gap-2 pt-2 border-top">
-              <button type="button" onclick="closeEventWorkflow()" class="btn btn-light font-weight-bold mr-2">Batal</button>
-              <button type="submit" id="btnSaveEvent" class="btn btn-gov-primary">
-                <i class="fas fa-check-circle mr-1"></i> Simpan & Terbitkan Event Pelatihan (Buka QR Code)
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- ============================================================== -->
-      <!-- LANGKAH 2: PENGATURAN TEMPLATE SERTIFIKAT KHUSUS SESI          -->
-      <!-- ============================================================== -->
-      <div id="step2ActiveSection" class="card shadow-sm border-0 mb-4 d-none">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3 border-bottom">
-          <div>
-            <span class="badge badge-success mr-2 font-weight-bold">Langkah 2 Selesai</span>
-            <strong class="text-dark">Pengaturan Template E-Sertifikat & Tata Letak Piagam</strong>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeEventWorkflow()">Tutup Panel</button>
-        </div>
-        <div class="card-body p-4">
-          <div class="row">
-            
-            <!-- Kolom Kiri: Unggah Template -->
-            <div class="col-lg-7 mb-4 mb-lg-0">
-              <div id="templateStatusBox" class="p-3 rounded bg-light border mb-3 d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                  <div id="templateTypeIcon" class="mr-3 font-weight-bold text-primary" style="font-size: 24px;">🏛️</div>
-                  <div>
-                    <div class="small text-muted text-uppercase font-weight-bold">Template Aktif Sesi Ini:</div>
-                    <div id="templateStatusLabel" class="font-weight-bold text-dark">Desain Piagam Standar Resmi BPMP Sultra</div>
-                  </div>
-                </div>
-                <button type="button" id="btnDeleteTemplate" onclick="deleteCustomTemplate()" class="btn btn-sm btn-outline-danger d-none">
-                  <i class="fas fa-trash-alt mr-1"></i> Reset ke Standar
+            <!-- Header Actions -->
+            <div class="col-auto ms-auto d-print-none">
+              <div class="btn-list">
+                <!-- Tab Buttons -->
+                <button type="button" id="tabBtnDashboard" class="btn btn-primary" onclick="switchMainTab('dashboard')">
+                  <i class="ti ti-layout-dashboard me-1"></i> Presensi & LPTI
+                </button>
+                <button type="button" id="tabBtnQr" class="btn btn-outline-secondary" onclick="switchMainTab('qr')">
+                  <i class="ti ti-qrcode me-1"></i> Dynamic QR
+                </button>
+                <a href="/proyektor" target="_blank" class="btn btn-outline-primary" title="Buka tampilan layar penuh untuk proyektor aula">
+                  <i class="ti ti-presentation me-1"></i> Layar Aula
+                </a>
+                <button type="button" class="btn btn-teal text-white" onclick="createNewEventForm()">
+                  <i class="ti ti-plus me-1"></i> Tambah Event
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
 
-              <form id="templateUploadForm" onsubmit="handleUploadTemplate(event)">
-                <div class="border rounded p-4 text-center bg-white" style="border: 2px dashed #cbd5e1 !important;">
-                  <div id="templatePromptBox">
-                    <i class="fas fa-cloud-upload-alt text-primary mb-2" style="font-size: 32px;"></i>
-                    <h6 class="font-weight-bold mb-1">Unggah Desain Sertifikat (Foto PNG/JPG atau PDF)</h6>
-                    <p class="small text-muted mb-3">Sistem otomatis menyematkan Nomor Surat dan Nama Pegawai pada piagam.</p>
-                    <label class="btn btn-outline-primary btn-sm mb-0">
-                      Pilih Berkas dari Komputer
-                      <input type="file" id="templateFileInput" accept=".pdf,image/png,image/jpeg" class="d-none" onchange="handleTemplateFileSelected(this)">
-                    </label>
-                  </div>
+        <!-- Hidden Side Admin Elements for Script Compatibility -->
+        <div class="d-none">
+          <span id="sideAdminName"></span>
+          <div id="sideAdminAvatar"></div>
+          <div id="superadminActionGroup"></div>
+          <a id="navLinkDashboard" onclick="switchMainTab('dashboard')"></a>
+          <a id="navLinkQr" onclick="switchMainTab('qr')"></a>
+          <a id="navLinkEvent" onclick="scrollToSection('step1FormSection')"></a>
+        </div>
 
-                  <div id="templateSelectedBox" class="d-none text-left bg-light p-3 rounded">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                      <strong id="templateSelectedName" class="text-truncate">berkas.pdf</strong>
-                      <span id="templateSelectedExt" class="badge badge-info">PDF</span>
-                    </div>
-                    <small id="templateSelectedSize" class="text-muted d-block mb-3">0 KB</small>
-                    <div class="d-flex gap-2">
-                      <button type="submit" id="btnUploadTemplateSubmit" class="btn btn-success btn-sm">
-                        <i class="fas fa-upload mr-1"></i> Terapkan Template Ini
-                      </button>
-                      <button type="button" onclick="document.getElementById('templateSelectedBox').classList.add('d-none'); document.getElementById('templatePromptBox').classList.remove('d-none');" class="btn btn-light btn-sm ml-2">Batal</button>
-                    </div>
+        <!-- VIEW 1: DASHBOARD UTAMA -->
+        <div id="viewDashboardSection">
+          
+          <!-- Active Event Banner Card -->
+          <div class="card card-stacked mb-3 border-primary-subtle shadow-sm">
+            <div class="card-body p-3">
+              <div class="row align-items-center g-3">
+                <div class="col-auto">
+                  <span class="avatar avatar-lg rounded bg-primary-lt text-primary">
+                    <i class="ti ti-school font-24"></i>
+                  </span>
+                </div>
+                <div class="col">
+                  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    <span id="displayActiveStatusBadge" class="badge bg-green text-green-fg">
+                      <i class="ti ti-check me-1"></i> Sedang Berlangsung
+                    </span>
+                    <span id="displayActiveCategory" class="badge bg-blue-lt">Pelatihan ASN</span>
+                    <span id="displayActiveJp" class="badge bg-purple-lt">4 JP</span>
                   </div>
+                  <h3 class="card-title mb-1 text-primary fw-bold" id="displayActiveTitleBanner">
+                    Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
+                  </h3>
+                  <div class="text-secondary small d-flex flex-wrap gap-3">
+                    <span id="displayActiveSchedule"><i class="ti ti-calendar me-1"></i> Setiap Senin, Pukul 07.30 WITA</span>
+                    <span id="displayActiveLocation"><i class="ti ti-map-pin me-1"></i> Aula Utama BPMP Provinsi Sulawesi Tenggara</span>
+                  </div>
+                </div>
+                <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+                  <button id="btnCompleteCurrentEvent" class="btn btn-outline-warning btn-sm" onclick="completeCurrentSelectedEvent()">
+                    <i class="ti ti-circle-check me-1"></i> Selesaikan Kegiatan
+                  </button>
+                  <button class="btn btn-outline-primary btn-sm" onclick="editCurrentEvent()">
+                    <i class="ti ti-edit me-1"></i> Ubah Detail
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 1 FORM SECTION (TAMBAH / EDIT EVENT) -->
+          <div id="step1FormSection" class="card shadow-sm border-0 mb-3 d-none">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+              <h4 class="card-title text-white mb-0">
+                <i class="ti ti-calendar-event me-2"></i> Pengaturan & Parameter Kegiatan Pelatihan
+              </h4>
+              <button type="button" class="btn-close btn-close-white" onclick="closeEventWorkflow()" aria-label="Close"></button>
+            </div>
+            <div class="card-body p-3">
+              <form id="formEventSetting" onsubmit="handleSaveEvent(event)">
+                <div class="row g-3">
+                  <div class="col-md-8">
+                    <label class="form-label required">Nama / Judul Kegiatan Pelatihan</label>
+                    <input type="text" id="eventTitle" class="form-control" placeholder="Contoh: Pelatihan Transformasi Digital ASN BPMP Sultra" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label required">Kategori Kegiatan</label>
+                    <select id="eventCategory" class="form-select" required>
+                      <option value="Pelatihan ASN">Pelatihan ASN</option>
+                      <option value="Workshop Internal">Workshop Internal</option>
+                      <option value="Sosialisasi Kebijakan">Sosialisasi Kebijakan</option>
+                      <option value="Bimtek Mutu Pendidikan">Bimtek Mutu Pendidikan</option>
+                      <option value="Upacara & Apel Pagi">Upacara & Apel Pagi</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label required">Jadwal & Waktu Pelaksanaan</label>
+                    <input type="text" id="eventSchedule" class="form-control" placeholder="Contoh: Setiap Senin, Pukul 07.30 WITA" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label required">Lokasi Aula / Ruangan</label>
+                    <input type="text" id="eventLocation" class="form-control" placeholder="Contoh: Aula Utama BPMP Provinsi Sulawesi Tenggara" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label required">Bobot Jam Pelajaran (JP)</label>
+                    <input type="text" id="eventJp" class="form-control" placeholder="Contoh: 4 JP" required>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+                  <button type="button" class="btn btn-outline-secondary" onclick="closeEventWorkflow()">Batal</button>
+                  <button type="submit" id="btnSaveEvent" class="btn btn-primary">
+                    <i class="ti ti-device-floppy me-1"></i> Simpan & Lanjut Tata Letak Piagam
+                  </button>
                 </div>
               </form>
             </div>
+          </div>
 
-            <!-- Kolom Kanan: Pengaturan Posisi Nomor & Nama -->
-            <div class="col-lg-5">
-              <div class="card border bg-light h-100">
-                <div class="card-body p-3">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="font-weight-bold text-dark mb-0">
-                      <i class="fas fa-sliders-h text-primary mr-1"></i> Tata Letak Teks Piagam
-                    </h6>
-                    <span class="badge badge-info px-2 py-1 font-weight-bold" style="font-size: 10px;">A4 Landscape</span>
-                  </div>
-                  
-                  <!-- Format Nomor Surat -->
-                  <div class="form-group mb-2">
-                    <label class="small font-weight-bold text-muted mb-1">Format / Nomor Surat:</label>
-                    <input type="text" id="certPrefixInput" class="form-control form-control-sm font-weight-bold" value="800.1.3/SERT-LPTI/2026" oninput="updateCertLivePreview()">
-                  </div>
-
-                  <!-- Posisi Vertikal Nomor Surat (Y) -->
-                  <div class="form-group mb-2 p-2 bg-white rounded border">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <label class="small font-weight-bold text-dark mb-0">
-                        <i class="fas fa-arrows-alt-v text-muted mr-1"></i> Posisi Nomor Surat (Y):
-                      </label>
-                      <span id="badgeNomorY" class="badge badge-primary font-weight-bold">72%</span>
+          <!-- STEP 2 ACTIVE SECTION (CUSTOMIZER E-SERTIFIKAT) -->
+          <div id="step2ActiveSection" class="card shadow-sm border-0 mb-3 d-none">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 border-bottom">
+              <h4 class="card-title text-primary mb-0">
+                <i class="ti ti-certificate me-2"></i> Kustomisasi Template E-Sertifikat & Tata Letak Teks
+              </h4>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-blue-lt" id="displayStep2EventId">ID: -</span>
+                <button type="button" class="btn-close" onclick="closeEventWorkflow()" aria-label="Close"></button>
+              </div>
+            </div>
+            <div class="card-body p-3">
+              <div class="row g-3">
+                <!-- Kolom 1: Unggah Background / Template Sertifikat -->
+                <div class="col-lg-5">
+                  <div class="card border h-100 bg-light-subtle">
+                    <div class="card-header py-2 bg-transparent">
+                      <h5 class="card-title mb-0 small fw-bold">
+                        <i class="ti ti-upload me-1"></i> Berkas Template Sertifikat (A4 Landscape)
+                      </h5>
                     </div>
-                    <div class="d-flex align-items-center">
-                      <input type="range" id="certNomorYRange" min="30" max="95" step="1" value="72" class="form-control-range flex-grow-1 mr-2" oninput="syncCertRange('nomor')">
-                      <div class="input-group input-group-sm" style="width: 80px;">
-                        <input type="number" id="certNomorYInput" class="form-control form-control-sm text-center font-weight-bold" min="30" max="95" value="72" oninput="syncCertNumber('nomor')">
-                        <div class="input-group-append"><span class="input-group-text px-1">%</span></div>
-                      </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-1">
-                      <small class="text-muted" style="font-size: 10px;">Ukuran Font Nomor:</small>
-                      <input type="number" id="certNomorSizeInput" class="form-control form-control-sm text-center py-0" style="width: 60px; height: 24px; font-size: 11px;" min="8" max="22" value="11" oninput="updateCertLivePreview()">
-                    </div>
-                  </div>
-
-                  <!-- Posisi Vertikal Nama Pegawai (Y) -->
-                  <div class="form-group mb-2 p-2 bg-white rounded border">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <label class="small font-weight-bold text-dark mb-0">
-                        <i class="fas fa-arrows-alt-v text-success mr-1"></i> Posisi Nama Pegawai (Y):
-                      </label>
-                      <span id="badgeNamaY" class="badge badge-success font-weight-bold">50%</span>
-                    </div>
-                    <div class="d-flex align-items-center">
-                      <input type="range" id="certNamaYRange" min="15" max="85" step="1" value="50" class="form-control-range flex-grow-1 mr-2" oninput="syncCertRange('nama')">
-                      <div class="input-group input-group-sm" style="width: 80px;">
-                        <input type="number" id="certNamaYInput" class="form-control form-control-sm text-center font-weight-bold" min="15" max="85" value="50" oninput="syncCertNumber('nama')">
-                        <div class="input-group-append"><span class="input-group-text px-1">%</span></div>
-                      </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-1">
-                      <small class="text-muted" style="font-size: 10px;">Ukuran Font Nama:</small>
-                      <input type="number" id="certNamaSizeInput" class="form-control form-control-sm text-center py-0" style="width: 60px; height: 24px; font-size: 11px;" min="14" max="44" value="26" oninput="updateCertLivePreview()">
-                    </div>
-                    <div class="custom-control custom-checkbox mt-1">
-                      <input type="checkbox" class="custom-control-input" id="certShowUnderlineCheck" checked onchange="updateCertLivePreview()">
-                      <label class="custom-control-label small text-muted" for="certShowUnderlineCheck">Garis bawah nama pegawai</label>
-                    </div>
-                  </div>
-
-                  <!-- Mini Live Preview Box -->
-                  <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <small class="font-weight-bold text-muted text-uppercase" style="font-size: 10px;">Simulasi Posisi Tulisan:</small>
-                      <small class="text-muted font-italic" style="font-size: 10px;">0% Bawah, 100% Atas</small>
-                    </div>
-                    <div id="certMiniPreviewBox" class="position-relative rounded shadow-xs overflow-hidden" style="height: 120px; background: #ffffff; border: 2px solid #cbd5e1 !important;">
-                      <!-- Simulated Certificate Border -->
-                      <div class="position-absolute" style="top: 4px; bottom: 4px; left: 6px; right: 6px; border: 1px solid #0f766e; border-radius: 2px; pointer-events: none; opacity: 0.35;"></div>
-                      
-                      <!-- Nomor Preview Element -->
-                      <div id="previewSimNomor" class="position-absolute w-100 text-center text-truncate font-weight-bold" style="bottom: 72%; left: 0; font-size: 10px; color: #334155; line-height: 1; transition: bottom 0.1s ease-out; pointer-events: none;">
-                        Nomor: 800.1.3/SERT-LPTI/2026/001
+                    <div class="card-body p-3">
+                      <!-- Status Template Box -->
+                      <div id="templateStatusBox" class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2">
+                        <i id="templateTypeIcon" class="ti ti-file-text font-20"></i>
+                        <div class="flex-fill">
+                          <div class="fw-bold small" id="templateStatusLabel">Memuat status template...</div>
+                          <div class="text-secondary small" style="font-size: 0.75rem;">Standar template bawaan BPMP Provinsi Sulawesi Tenggara</div>
+                        </div>
+                        <button type="button" id="btnDeleteTemplate" class="btn btn-sm btn-outline-danger d-none" onclick="deleteCustomTemplate()" title="Hapus template kustom dan kembali ke default">
+                          <i class="ti ti-trash"></i>
+                        </button>
                       </div>
 
-                      <!-- Nama Preview Element -->
-                      <div id="previewSimNama" class="position-absolute w-100 text-center text-truncate font-weight-bold" style="bottom: 50%; left: 0; font-size: 12px; color: #002d5b; line-height: 1; transition: bottom 0.1s ease-out; pointer-events: none;">
-                        <span id="previewSimNamaText" style="border-bottom: 1.5px solid #64748b; padding-bottom: 1px;">Junaiddin Pagala, ST, M.T.</span>
+                      <!-- Drop Zone / Upload Input -->
+                      <div class="border border-dashed rounded p-3 text-center mb-3 bg-white" id="templatePromptBox">
+                        <i class="ti ti-cloud-upload text-primary font-32 mb-2"></i>
+                        <h6 class="mb-1">Pilih Desain Template Piagam</h6>
+                        <p class="text-secondary small mb-2">Format didukung: PDF, PNG, atau JPG (A4 Landscape recommended)</p>
+                        <input type="file" id="templateFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg" onchange="handleTemplateFileSelected(this)">
+                      </div>
+
+                      <div id="templateSelectedBox" class="d-none border rounded p-2 mb-3 bg-white d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                          <span class="badge bg-primary text-white" id="templateSelectedExt">PDF</span>
+                          <div>
+                            <div class="fw-bold small text-truncate" style="max-width: 180px;" id="templateSelectedName">file.pdf</div>
+                            <div class="text-secondary small" id="templateSelectedSize">0 KB</div>
+                          </div>
+                        </div>
+                        <button type="button" id="btnUploadTemplateSubmit" class="btn btn-sm btn-primary" onclick="handleUploadTemplate()">
+                          <i class="ti ti-upload me-1"></i> Unggah Sekarang
+                        </button>
+                      </div>
+
+                      <div class="small text-secondary">
+                        <i class="ti ti-info-circle me-1"></i> Template sertifikat akan menjadi latar belakang piagam yang diterbitkan secara otomatis untuk 104 peserta.
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-                    <button type="button" id="btnPreviewSamplePdf" onclick="previewSamplePdfNow()" class="btn btn-sm btn-outline-info font-weight-bold">
-                      <i class="fas fa-file-pdf mr-1"></i> Uji Sampel PDF
-                    </button>
-                    <button type="button" id="btnSaveCertSettings" onclick="saveCertSettings()" class="btn btn-sm btn-gov-primary font-weight-bold">
-                      <i class="fas fa-save mr-1"></i> Simpan Posisi
-                    </button>
+                <!-- Kolom 2: Tata Letak Teks & Live Preview -->
+                <div class="col-lg-7">
+                  <div class="card border h-100 bg-white">
+                    <div class="card-header py-2 bg-transparent d-flex justify-content-between align-items-center">
+                      <h5 class="card-title mb-0 small fw-bold">
+                        <i class="ti ti-adjustments me-1"></i> Posisi Koordinat & Tipografi Piagam
+                      </h5>
+                      <span class="badge bg-secondary-lt">Canvas Preview</span>
+                    </div>
+                    <div class="card-body p-3">
+                      <div class="row g-2 mb-3">
+                        <div class="col-md-12">
+                          <label class="form-label small fw-bold mb-1">Prefix / Format Nomor Piagam</label>
+                          <input type="text" id="certPrefixInput" class="form-control form-control-sm" value="001/BPMP-SULTRA/SENIN-BERSERI/2026">
+                        </div>
+                        <div class="col-md-6">
+                          <div class="d-flex justify-content-between">
+                            <label class="form-label small fw-bold mb-1">Posisi Y Nomor Sertifikat</label>
+                            <span class="badge bg-light text-primary font-monospace small" id="badgeNomorY">475 pt</span>
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                            <input type="range" class="form-range" id="certNomorYRange" min="200" max="550" value="475" oninput="syncCertRange('nomor', this.value)">
+                            <input type="number" class="form-control form-control-sm font-monospace" id="certNomorYInput" value="475" style="width: 70px;" oninput="syncCertNumber('nomor', this.value)">
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label small fw-bold mb-1">Ukuran Font Nomor</label>
+                          <input type="number" id="certNomorSizeInput" class="form-control form-control-sm" value="13" min="8" max="24" oninput="updateCertLivePreview()">
+                        </div>
+                        <div class="col-md-6">
+                          <div class="d-flex justify-content-between">
+                            <label class="form-label small fw-bold mb-1">Posisi Y Nama Peserta</label>
+                            <span class="badge bg-light text-primary font-monospace small" id="badgeNamaY">360 pt</span>
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                            <input type="range" class="form-range" id="certNamaYRange" min="150" max="450" value="360" oninput="syncCertRange('nama', this.value)">
+                            <input type="number" class="form-control form-control-sm font-monospace" id="certNamaYInput" value="360" style="width: 70px;" oninput="syncCertNumber('nama', this.value)">
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label small fw-bold mb-1">Ukuran Font Nama</label>
+                          <div class="d-flex align-items-center gap-2">
+                            <input type="number" id="certNamaSizeInput" class="form-control form-control-sm" value="23" min="12" max="36" oninput="updateCertLivePreview()">
+                            <div class="form-check ms-1 mb-0">
+                              <input class="form-check-input" type="checkbox" id="certShowUnderlineCheck" checked onchange="updateCertLivePreview()">
+                              <label class="form-check-label small" for="certShowUnderlineCheck">Garis Bawah</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Mini Interactive Preview Canvas Box -->
+                      <div class="border rounded p-2 mb-3 bg-light text-center position-relative overflow-hidden" id="certMiniPreviewBox" style="height: 150px; border: 1px solid var(--tblr-border-color);">
+                        <div class="small text-muted position-absolute top-0 start-0 p-1" style="font-size: 0.65rem;">Simulasi Cetak</div>
+                        <div id="previewSimNomor" class="position-absolute w-100 text-center font-monospace" style="top: 25%; font-size: 11px; color: #1a3a5c; font-weight: 600;">
+                          Nomor: 001/BPMP-SULTRA/SENIN-BERSERI/2026
+                        </div>
+                        <div id="previewSimNama" class="position-absolute w-100 text-center" style="top: 52%; font-size: 15px; font-weight: bold; color: #002d5b;">
+                          <span id="previewSimNamaText" style="text-decoration: underline;">Nama Lengkap Peserta ASN, S.Pd., M.Pd.</span>
+                        </div>
+                      </div>
+
+                      <div class="d-flex justify-content-between align-items-center">
+                        <button type="button" id="btnPreviewSamplePdf" class="btn btn-outline-secondary btn-sm" onclick="previewSamplePdfNow()">
+                          <i class="ti ti-eye me-1"></i> Unduh Contoh PDF
+                        </button>
+                        <button type="button" id="btnSaveCertSettings" class="btn btn-primary btn-sm" onclick="saveCertSettings()">
+                          <i class="ti ti-device-floppy me-1"></i> Simpan Tata Letak Piagam
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI STAT CARDS ROW -->
+          <div class="row row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-primary text-white avatar">
+                        <i class="ti ti-users"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="font-weight-medium">Total Peserta ASN</div>
+                      <div class="text-secondary small">Terdaftar di Sistem</div>
+                    </div>
+                    <div class="col-auto">
+                      <span class="h2 mb-0 fw-bold text-primary" id="statTotal">104</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-          </div>
-        </div>
-      </div>
-
-      <!-- ============================================================== -->
-      <!-- SECTION VERIFIKASI LPTI & REKAP KEPEGAWAIAN (104 PEGAWAI)     -->
-      <!-- ============================================================== -->
-      <div id="sectionVerifikasiLpti" class="gov-table-card">
-        
-        <div class="gov-table-header">
-          <div>
-            <h5 class="font-weight-bold text-dark mb-0">
-              <i class="fas fa-clipboard-check text-primary mr-2"></i> Rekap Presensi & Verifikasi LPTI ASN BPMP Sultra
-            </h5>
-            <small class="text-muted">Kelola validasi kehadiran, tinjau berkas LPTI, dan pantau penerbitan sertifikat resmi ber-JP.</small>
-          </div>
-
-          <!-- Quick Filters & Search -->
-          <div class="d-flex flex-wrap align-items-center gap-2">
-            <div class="input-group input-group-sm" style="width: 240px;">
-              <input type="text" id="searchEmployee" oninput="renderTable()" class="form-control" placeholder="Cari NIP atau Nama...">
-              <div class="input-group-append">
-                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-green text-white avatar">
+                        <i class="ti ti-user-check"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="font-weight-medium">Presensi Hadir</div>
+                      <div class="text-secondary small">Di Aula BPMP</div>
+                    </div>
+                    <div class="col-auto">
+                      <span class="h2 mb-0 fw-bold text-green" id="statHadir">0</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <select id="filterEventSelect" onchange="handleEventFilterChange(this.value)" class="form-control form-control-sm" style="width: 220px;">
-              <option value="all">Semua Sesi Pelatihan</option>
-            </select>
-          </div>
-        </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-warning text-white avatar">
+                        <i class="ti ti-file-text"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="font-weight-medium">LPTI Menunggu</div>
+                      <div class="text-secondary small">Perlu Kurasi Admin</div>
+                    </div>
+                    <div class="col-auto">
+                      <span class="h2 mb-0 fw-bold text-warning" id="statPending">0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <!-- Filter Tab Buttons -->
-        <div class="px-3 py-2 bg-light border-bottom d-flex flex-wrap gap-2">
-          <button id="filterAll" onclick="setFilter('all')" class="btn btn-sm btn-primary font-weight-bold py-1 px-3">Semua Pegawai (104)</button>
-          <button id="filterPending" onclick="setFilter('pending')" class="btn btn-sm btn-outline-secondary font-weight-bold py-1 px-3">Menunggu Review</button>
-          <button id="filterApproved" onclick="setFilter('approved')" class="btn btn-sm btn-outline-secondary font-weight-bold py-1 px-3">Disetujui / Terbit</button>
-          <button id="filterRevision" onclick="setFilter('revision')" class="btn btn-sm btn-outline-secondary font-weight-bold py-1 px-3">Perlu Revisi</button>
-        </div>
-
-        <!-- Responsive Bootstrap Table -->
-        <div class="table-responsive">
-          <table class="table table-hover table-striped gov-table mb-0">
-            <thead>
-              <tr>
-                <th style="width: 32%;">Pegawai ASN BPMP Sultra</th>
-                <th style="width: 12%;" class="text-center">Presensi Aula</th>
-                <th style="width: 16%;">Status LPTI</th>
-                <th style="width: 12%;" class="text-center">Dokumen PDF</th>
-                <th style="width: 14%;">E-Sertifikat</th>
-                <th style="width: 14%;" class="text-center">Aksi Verifikasi</th>
-              </tr>
-            </thead>
-            <tbody id="employeeTableBody">
-              <tr>
-                <td colspan="6" class="text-center py-5 text-muted">
-                  <div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div>
-                  Memuat data seluruh pegawai BPMP Provinsi Sulawesi Tenggara...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ============================================================== -->
-      <!-- SECTION KATALOG & ARSIP RIWAYAT EVENT                          -->
-      <!-- ============================================================== -->
-      <div id="sectionKatalogEvent" class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
-          <div>
-            <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-history text-primary mr-2"></i> Riwayat & Arsip Pelatihan ASN BPMP Sultra</h6>
-            <small class="text-muted">Daftar seluruh agenda peningkatan kompetensi yang diselenggarakan.</small>
-          </div>
-          <span id="badgeTotalEventsCount" class="badge badge-primary px-3 py-1.5 font-weight-bold">1 Kegiatan Pelatihan</span>
-        </div>
-        <div class="card-body p-4">
-          <div id="eventsListContainer" class="row">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
-      </div>
-
-    </div> <!-- Akhir viewDashboardSection -->
-
-
-    <!-- ============================================================== -->
-    <!-- VIEW SECTION 2: TAMPILAN KHUSUS LAYAR QR AULA (TERPISAH)       -->
-    <!-- ============================================================== -->
-    <div id="viewQrSection" class="d-none">
-      
-      <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
-          <button onclick="switchMainTab('dashboard')" class="btn btn-dark btn-sm font-weight-bold">
-            <i class="fas fa-arrow-left mr-1.5"></i> Kembali ke Dashboard Admin
-          </button>
-          
-          <div class="text-center">
-            <span class="badge badge-success text-uppercase px-2.5 py-1 mb-1">Layar Presensi Aula Aktif</span>
-            <h5 class="font-weight-bold text-dark mb-0">Dynamic QR Code (Anti-Titip 30 Detik)</h5>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-auto">
+                      <span class="bg-teal text-white avatar">
+                        <i class="ti ti-certificate"></i>
+                      </span>
+                    </div>
+                    <div class="col">
+                      <div class="font-weight-medium">Sertifikat Terbit</div>
+                      <div class="text-secondary small">LPTI Telah Disetujui</div>
+                    </div>
+                    <div class="col-auto">
+                      <span class="h2 mb-0 fw-bold text-teal" id="statApproved">0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <a id="btnViewQrProjectorLink" href="/proyektor" target="_blank" class="btn btn-gov-emerald btn-sm">
-            <i class="fas fa-desktop mr-1"></i> Buka di Tab/Layar Penuh ↗
-          </a>
-        </div>
-      </div>
+          <!-- REKAP PRESENSI & VERIFIKASI LPTI TABLE CARD -->
+          <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header py-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <h3 class="card-title text-primary fw-bold mb-0">
+                  <i class="ti ti-list-check me-2"></i> Rekap Presensi & Verifikasi LPTI ASN BPMP Sultra
+                </h3>
+                <div class="text-secondary small">
+                  Daftar 104 Pegawai BPMP Sultra beserta status presensi, verifikasi wajah, dan persetujuan LPTI
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <select id="filterEventSelect" class="form-select form-select-sm" style="min-width: 220px;" onchange="handleEventFilterChange(this.value)">
+                  <option value="all">Semua Kegiatan Pelatihan</option>
+                </select>
+                <button class="btn btn-outline-secondary btn-sm" onclick="loadEmployees()" title="Segarkan Data">
+                  <i class="ti ti-refresh"></i>
+                </button>
+              </div>
+            </div>
 
-      <!-- Big QR Showcase Container -->
-      <div class="card shadow-sm border-0 mx-auto text-center p-4 p-md-5" style="max-width: 680px;">
-        
-        <div class="mb-3">
-          <span class="badge badge-pill badge-success px-3 py-2 text-uppercase font-weight-bold">
-            <i class="fas fa-satellite-dish mr-1"></i> QR CODE RESMI AKTIF &bull; ROTASI TIAP 30 DETIK
-          </span>
-        </div>
+            <!-- Filter Tabs & Search Bar -->
+            <div class="card-body border-bottom py-2 bg-light-subtle">
+              <div class="row g-2 align-items-center justify-content-between">
+                <!-- Filter Status Presensi -->
+                <div class="col-12 col-md-auto">
+                  <div class="btn-group btn-group-sm flex-wrap" role="group">
+                    <button type="button" class="btn btn-outline-primary active" onclick="setFilter('all', this)">Semua (104)</button>
+                    <button type="button" class="btn btn-outline-success" onclick="setFilter('hadir', this)">Hadir</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setFilter('belum', this)">Belum Hadir</button>
+                    <button type="button" class="btn btn-outline-warning" onclick="setFilter('pending', this)">
+                      LPTI Menunggu <span class="badge bg-warning text-dark ms-1" id="badgePendingCount">0</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-teal" onclick="setFilter('disetujui', this)">Disetujui</button>
+                    <button type="button" class="btn btn-outline-danger" onclick="setFilter('revisi', this)">Revisi</button>
+                  </div>
+                </div>
 
-        <h3 id="qrViewTitle" class="font-weight-bold text-dark mb-2">
-          Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN
-        </h3>
-        <p class="small text-muted mb-4">
-          Arahkan kamera smartphone ke QR Code di bawah untuk mencatat kehadiran mandiri peserta di aula.
-        </p>
+                <!-- Search Input -->
+                <div class="col-12 col-md-4">
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-search"></i>
+                    </span>
+                    <input type="text" id="searchEmployee" class="form-control form-control-sm" placeholder="Cari nama atau NIP pegawai..." oninput="renderTable()">
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <!-- QR Image Box -->
-        <div class="bg-light p-4 rounded d-inline-block mx-auto border shadow-sm mb-4">
-          <img id="adminQrImage" src="" alt="Dynamic QR Code" style="width: 260px; height: 260px; object-fit: contain;">
-        </div>
-
-        <!-- Progress Bar Countdown 30s -->
-        <div class="w-100 mb-4 px-md-4">
-          <div class="d-flex justify-content-between small font-weight-bold text-muted mb-1">
-            <span>Rotasi token anti-titip dalam:</span>
-            <span id="countdownText" class="text-primary font-weight-bold">30 detik</span>
+            <!-- Table Responsive Container (Sticky Header) -->
+            <div class="table-responsive table-sticky-container" style="max-height: 520px;">
+              <table class="table table-vcenter table-hover card-table table-striped">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th style="width: 40px;" class="text-center">No</th>
+                    <th>Nama Pegawai & NIP</th>
+                    <th>Jabatan / Unit Kerja</th>
+                    <th>Presensi Aula</th>
+                    <th>Biometrik Wajah</th>
+                    <th>Berkas LPTI</th>
+                    <th>E-Sertifikat</th>
+                    <th class="text-center" style="width: 140px;">Aksi Admin</th>
+                  </tr>
+                </thead>
+                <tbody id="employeeTableBody">
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-secondary">
+                      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                      Memuat daftar 104 ASN BPMP Sultra...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="progress" style="height: 10px; border-radius: 10px;">
-            <div id="countdownBar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%;"></div>
+
+          <!-- SECTION KATALOG & RIWAYAT PELATIHAN -->
+          <div id="sectionKatalogEvent" class="card shadow-sm border-0 mb-4">
+            <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+              <div>
+                <h3 class="card-title text-primary fw-bold mb-0">
+                  <i class="ti ti-archive me-2"></i> Riwayat & Katalog Pelatihan ASN BPMP Sultra
+                </h3>
+                <div class="text-secondary small">
+                  Arsip seluruh kegiatan Senin Berseri dan pelatihan peningkatan kompetensi kepegawaian
+                </div>
+              </div>
+              <span class="badge bg-primary-lt" id="badgeTotalEventsCount">Total: 0 Event</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-vcenter card-table table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Judul Kegiatan Pelatihan</th>
+                      <th>Jadwal Pelaksanaan</th>
+                      <th>Lokasi Aula</th>
+                      <th>Bobot JP</th>
+                      <th>Status Kegiatan</th>
+                      <th class="text-center" style="width: 160px;">Tindakan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="eventsListContainer">
+                    <tr>
+                      <td colspan="6" class="text-center py-3 text-secondary">
+                        Belum ada riwayat event pelatihan.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <!-- Active Token Display for Manual Input -->
-        <div class="bg-light p-3 rounded border text-center mb-4">
-          <div class="small text-muted font-weight-bold text-uppercase mb-1">Kode Token Presensi Manual (Jika Kamera Kendala):</div>
-          <div id="currentTokenLabel" class="h3 font-weight-bold text-primary font-mono letter-spacing-2 mb-0">LPTI-......</div>
-        </div>
+        </div> <!-- End viewDashboardSection -->
 
-        <!-- Scan URL -->
-        <div class="d-flex justify-content-center gap-2">
-          <button onclick="copyCurrentToken()" class="btn btn-outline-primary btn-sm font-weight-bold">
-            <i class="fas fa-copy mr-1"></i> Salin Kode Token
-          </button>
-          <button onclick="copyScanUrl()" class="btn btn-outline-secondary btn-sm font-weight-bold ml-2">
-            <i class="fas fa-link mr-1"></i> Salin Tautan Presensi
-          </button>
-        </div>
-        <div id="scanUrlDisplay" class="d-none"></div>
 
-      </div>
+        <!-- VIEW 2: DYNAMIC QR CODE TAB -->
+        <div id="viewQrSection" class="d-none">
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              <div class="card shadow-sm border-0 text-center p-4 p-md-5">
+                <div class="mb-3">
+                  <span class="badge bg-primary-lt px-3 py-1 font-monospace mb-2">DYNAMIC QR TOTP ENGINE</span>
+                  <h2 class="card-title text-primary fw-bold mb-1" id="qrViewTitle">
+                    Presensi Digital Aula BPMP Sulawesi Tenggara
+                  </h2>
+                  <p class="text-secondary small">
+                    Kode QR dan token keamanan berganti otomatis setiap 30 detik untuk menjamin kehadiran fisik ASN di aula.
+                  </p>
+                </div>
 
-    </div>
+                <!-- QR Code Display Box -->
+                <div class="d-flex justify-content-center my-3">
+                  <div class="p-3 bg-white border rounded shadow-sm position-relative" style="width: 280px; height: 280px;">
+                    <img id="adminQrImage" src="" alt="Dynamic QR" class="img-fluid" style="width: 100%; height: 100%; object-fit: contain;">
+                  </div>
+                </div>
 
-  </div> <!-- End container -->
+                <!-- 6 Digit Token Display -->
+                <div class="mb-3">
+                  <div class="text-secondary small text-uppercase font-weight-bold mb-1">Token Numerik 6-Digit</div>
+                  <div class="display-6 fw-bold text-primary font-monospace" id="currentTokenLabel" style="letter-spacing: 6px;">
+                    ------
+                  </div>
+                </div>
 
-  <!-- 5. Government Footer -->
-  <footer class="bg-white border-top py-3 text-center small text-muted mt-auto">
-    <div class="container">
-      <strong>Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara</strong><br>
-      Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi &bull; Sistem Presensi Mandiri, Verifikasi LPTI & E-Sertifikat ASN
-    </div>
-  </footer>
+                <!-- 30-Second Countdown Bar -->
+                <div class="mb-4 mx-auto" style="max-width: 380px;">
+                  <div class="d-flex justify-content-between text-secondary small mb-1">
+                    <span>Masa Berlaku Token</span>
+                    <span id="countdownText" class="font-monospace fw-bold text-primary">30 detik</span>
+                  </div>
+                  <div class="progress progress-sm">
+                    <div id="countdownBar" class="progress-bar bg-primary" style="width: 100%;"></div>
+                  </div>
+                </div>
 
-  <!-- Modal Revisi LPTI -->
-  <div class="modal fade" id="revisionModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <!-- Actions -->
+                <div class="d-flex flex-wrap justify-content-center gap-2">
+                  <a href="/proyektor" target="_blank" class="btn btn-primary" id="btnViewQrProjectorLink">
+                    <i class="ti ti-presentation me-1"></i> Buka Layar Penuh Aula
+                  </a>
+                  <button type="button" class="btn btn-outline-secondary" onclick="copyCurrentToken()">
+                    <i class="ti ti-copy me-1"></i> Salin Token
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" onclick="copyScanUrl()">
+                    <i class="ti ti-link me-1"></i> Salin Tautan Presensi
+                  </button>
+                  <button type="button" id="btnStep2ProjectorLink" class="btn btn-outline-success" onclick="toggleEventStatus()">
+                    <i class="ti ti-player-pause me-1"></i> <span id="btnToggleEventLabel">Jeda Presensi</span>
+                  </button>
+                </div>
+
+                <div class="mt-4 p-2 bg-light rounded text-secondary small font-monospace" id="scanUrlDisplay">
+                  https://bpmp-senin-berseri.vercel.app/login
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- End viewQrSection -->
+
+      </div> <!-- End container-xl -->
+
+      <!-- Footer -->
+      <div id="bpmp-footer"></div>
+    </div> <!-- End page-wrapper -->
+  </div> <!-- End page -->
+
+  <!-- MODAL: CATATAN REVISI LPTI -->
+  <div class="modal modal-blur fade" id="revisionModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title font-weight-bold"><i class="fas fa-edit mr-2"></i> Catatan Revisi Berkas LPTI</h5>
-          <button type="button" class="close text-white" onclick="closeRevisionModal()">&times;</button>
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title fw-bold">
+            <i class="ti ti-pencil me-1"></i> Catatan Revisi Berkas LPTI
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-4">
+        <div class="modal-body">
+          <div class="alert alert-info py-2 px-3 small mb-3">
+            <div class="fw-bold" id="modalEmployeeName">Nama Pegawai</div>
+            <div class="text-secondary" id="modalEmployeeNip">NIP: -</div>
+          </div>
           <div class="mb-3">
-            <strong id="modalEmployeeName" class="d-block text-dark">Nama Pegawai</strong>
-            <small id="modalEmployeeNip" class="text-muted">NIP: 1980...</small>
-          </div>
-          <div class="form-group">
-            <label class="small font-weight-bold text-muted text-uppercase">Instruksi Perbaikan / Catatan Verifikator:</label>
-            <textarea id="revisionNotesInput" rows="4" class="form-control" placeholder="Tuliskan bagian berkas LPTI yang perlu disesuaikan atau diperbaiki oleh pegawai..."></textarea>
+            <label class="form-label required">Alasan & Petunjuk Perbaikan untuk Pegawai</label>
+            <textarea id="revisionNotesInput" class="form-control" rows="4" placeholder="Tuliskan catatan perbaikan berkas LPTI (contoh: Laporan belum ditandatangani oleh atasan langsung / halaman 2 kurang jelas)..." required></textarea>
           </div>
         </div>
-        <div class="modal-footer bg-light">
-          <button type="button" class="btn btn-light" onclick="closeRevisionModal()">Batal</button>
-          <button type="button" id="btnSubmitRevision" onclick="submitRevision()" class="btn btn-danger font-weight-bold">
-            <i class="fas fa-paper-plane mr-1"></i> Kirim Catatan Revisi ke Pegawai
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" id="btnSubmitRevision" class="btn btn-warning text-dark fw-bold" onclick="submitRevision()">
+            <i class="ti ti-send me-1"></i> Kirim Catatan Revisi
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal Pratinjau Foto Biometrik / Presensi -->
-  <div class="modal fade" id="viewPhotoModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
-      <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-        <div class="modal-header bg-dark text-white py-2.5 px-3 d-flex justify-content-between align-items-center">
-          <h6 class="modal-title font-weight-bold mb-0 text-white small" id="viewPhotoModalTitle">
-            <i class="fas fa-image mr-1.5 text-warning"></i> Foto Biometrik Pegawai
-          </h6>
-          <button type="button" class="close text-white" data-dismiss="modal">
-            <span aria-hidden="true">&times;</span>
-          </button>
+  <!-- MODAL: FOTO BIOMETRIK / SELFIE PRESENSI PEGAWAI -->
+  <div class="modal modal-blur fade" id="viewPhotoModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <h5 class="modal-title small fw-bold" id="viewPhotoModalTitle">
+            <i class="ti ti-camera me-1"></i> Foto Biometrik Pegawai
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-3 text-center bg-light">
-          <img id="viewPhotoModalImg" src="" class="img-fluid rounded shadow-sm border" style="max-height: 380px; width: 100%; object-fit: contain; background: #000;" />
+        <div class="modal-body text-center p-3">
+          <img id="viewPhotoModalImg" src="" class="img-fluid rounded shadow-sm border mb-2" alt="Foto ASN" style="max-height: 380px;">
+          <div class="text-secondary small">Dokumentasi kehadiran kamera saat presensi</div>
+        </div>
+        <div class="modal-footer py-1">
+          <button type="button" class="btn btn-secondary btn-sm w-100" data-bs-dismiss="modal">Tutup</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Toast Container -->
-  <div id="toastContainer"></div>
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 1090;"></div>
 
-  <!-- Scripts: jQuery, Bootstrap 4, Azia JS -->
-  <script src="/azia/lib/jquery/jquery.min.js"></script>
-  <script src="/azia/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="/azia/js/azia.js"></script>
+  <!-- Tabler Core JS (Local Dist) -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <!-- ApexCharts JS (Local Dist) -->
+  <script src="/vendor/apexcharts/apexcharts.min.js"></script>
+  <!-- Components & Layout Helpers -->
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/pwa-install.js"></script>
 
-  <!-- ============================================================== -->
-  <!-- APPLICATION BUSINESS LOGIC & SYNC                              -->
-  <!-- ============================================================== -->
+  <!-- Admin Application Logic -->
   <script>
+
     // State Aplikasi
     let eventData = null;
     let allEventsList = [];
@@ -1178,7 +824,7 @@
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
       
-      let icon = '<i class="fas fa-check-circle text-success mr-2"></i>';
+      let icon = '<i class="ti ti-circle-check text-success mr-2"></i>';
       if (type === 'error') {
         icon = '<i class="fas fa-exclamation-circle text-danger mr-2"></i>';
       } else if (type === 'info') {
@@ -1248,7 +894,7 @@
       
       const btn = document.getElementById('btnSaveEvent');
       if (btn) {
-        btn.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Simpan & Terbitkan Event Pelatihan Baru`;
+        btn.innerHTML = `<i class="ti ti-circle-check mr-1"></i> Simpan & Terbitkan Event Pelatihan Baru`;
       }
 
       const step1 = document.getElementById('step1FormSection');
@@ -1475,7 +1121,7 @@
         showToast('Gagal menyimpan event: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Simpan & Terbitkan Event Pelatihan (Buka QR Code)`;
+        btn.innerHTML = `<i class="ti ti-circle-check mr-1"></i> Simpan & Terbitkan Event Pelatihan (Buka QR Code)`;
       }
     }
 
@@ -1537,12 +1183,12 @@
 
         if (!data.active) {
           isEventCurrentlyActive = false;
-          if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="fas fa-play mr-1"></i> Buka Presensi';
+          if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="ti ti-player-play mr-1"></i> Buka Presensi';
           return;
         }
 
         isEventCurrentlyActive = true;
-        if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="fas fa-pause mr-1"></i> Jeda Presensi';
+        if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="ti ti-player-pause mr-1"></i> Jeda Presensi';
 
         currentToken = data.token;
         currentScanUrl = data.scanUrl;
@@ -1994,17 +1640,17 @@
                   <h6 class="font-weight-bold text-dark mb-2">${ev.title}</h6>
                   
                   <div class="small text-muted mb-3">
-                    <div class="mb-1"><i class="fas fa-award text-info mr-1"></i> ${ev.jp || 32} Jam Pelajaran (JP)</div>
+                    <div class="mb-1"><i class="ti ti-certificate text-info mr-1"></i> ${ev.jp || 32} Jam Pelajaran (JP)</div>
                     <div class="mb-1"><i class="fas fa-calendar-alt text-warning mr-1"></i> ${ev.schedule || 'Jadwal Ditentukan'}</div>
                     <div class="mb-1"><i class="fas fa-map-marker-alt text-danger mr-1"></i> ${ev.location || 'Auditorium BPMP Sultra'}</div>
-                    ${isCompleted && ev.completedAt ? `<div class="text-success font-weight-bold small mt-1"><i class="fas fa-check-double mr-1"></i> Selesai: ${new Date(ev.completedAt).toLocaleDateString('id-ID')}</div>` : ''}
+                    ${isCompleted && ev.completedAt ? `<div class="text-success font-weight-bold small mt-1"><i class="ti ti-check-double mr-1"></i> Selesai: ${new Date(ev.completedAt).toLocaleDateString('id-ID')}</div>` : ''}
                   </div>
                 </div>
 
                 <div class="pt-3 border-top d-flex justify-content-between align-items-center">
                   <div class="btn-group">
                     <button onclick="openEventDetail('${ev.id}')" class="btn btn-sm btn-outline-primary font-weight-bold">
-                      <i class="fas fa-eye mr-1"></i> Rincian & QR
+                      <i class="ti ti-eye mr-1"></i> Rincian & QR
                     </button>
                     ${isActive ? `
                       <button onclick="completeEvent('${ev.id}')" class="btn btn-sm btn-outline-danger font-weight-bold" title="Selesaikan Event Pelatihan">
@@ -2016,13 +1662,13 @@
                       </button>
                     `}
                     <button onclick="editEventById('${ev.id}')" class="btn btn-sm btn-outline-secondary" title="Edit Data Sesi">
-                      <i class="fas fa-edit"></i>
+                      <i class="ti ti-edit"></i>
                     </button>
                   </div>
 
                   ${allEventsList.length > 1 ? `
                     <button onclick="deleteEventById('${ev.id}')" class="btn btn-sm btn-link text-danger p-0 ml-2" title="Hapus Event">
-                      <i class="fas fa-trash-alt"></i>
+                      <i class="ti ti-trash"></i>
                     </button>
                   ` : ''}
                 </div>
@@ -2135,7 +1781,7 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="6" class="text-center py-5 text-muted">
-              <i class="fas fa-search text-muted mb-2 d-block" style="font-size: 24px;"></i>
+              <i class="ti ti-search text-muted mb-2 d-block" style="font-size: 24px;"></i>
               Tidak ada data pegawai yang sesuai dengan kriteria filter pencarian.
             </td>
           </tr>
@@ -2152,18 +1798,18 @@
         if (status === 'none') {
           statusBadge = '<span class="badge badge-light border text-muted px-2 py-1">Belum Unggah</span>';
         } else if (status === 'pending') {
-          statusBadge = '<span class="badge-gov-pending"><i class="fas fa-spinner fa-spin mr-1"></i>Menunggu Review</span>';
+          statusBadge = '<span class="badge-gov-pending"><i class="spinner-border spinner-border-sm mr-1"></i>Menunggu Review</span>';
         } else if (status === 'revision') {
           statusBadge = '<span class="badge-gov-danger"><i class="fas fa-exclamation-triangle mr-1"></i>Perlu Revisi</span>';
         } else if (status === 'approved') {
-          statusBadge = '<span class="badge-gov-active"><i class="fas fa-check-circle mr-1"></i>Disetujui ✓</span>';
+          statusBadge = '<span class="badge-gov-active"><i class="ti ti-circle-check mr-1"></i>Disetujui ✓</span>';
         }
 
         let pdfAction = '';
         if (hasPdf) {
           pdfAction = `
             <a href="${lpti.filePath}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2.5 font-weight-bold">
-              <i class="fas fa-file-pdf mr-1 text-danger"></i> Review PDF
+              <i class="ti ti-file-text mr-1 text-danger"></i> Review PDF
             </a>
           `;
         } else {
@@ -2214,14 +1860,14 @@
           faceBadge = `
             <div class="mt-1 d-flex flex-wrap align-items-center">
               <span class="badge badge-success px-1.5 py-0.5 small mr-1 font-weight-bold"><i class="fas fa-smile mr-1"></i>Wajah Terdaftar</span>
-              ${emp.facePhotoUrl ? `<a href="javascript:void(0)" onclick="viewPhotoModal('${emp.facePhotoUrl}', 'Foto Master Biometrik: ${emp.name.replace(/'/g, "\\'")}')" class="badge badge-info px-1.5 py-0.5 text-white mr-1" title="Lihat Foto Master"><i class="fas fa-eye mr-1"></i>Foto</a>` : ''}
-              <a href="javascript:void(0)" onclick="resetFacePrompt('${emp.id}', '${emp.name.replace(/'/g, "\\'")}')" class="badge badge-warning text-dark px-1.5 py-0.5" title="Reset Biometrik"><i class="fas fa-undo mr-1"></i>Reset</a>
+              ${emp.facePhotoUrl ? `<a href="javascript:void(0)" onclick="viewPhotoModal('${emp.facePhotoUrl}', 'Foto Master Biometrik: ${emp.name.replace(/'/g, "\\'")}')" class="badge badge-info px-1.5 py-0.5 text-white mr-1" title="Lihat Foto Master"><i class="ti ti-eye mr-1"></i>Foto</a>` : ''}
+              <a href="javascript:void(0)" onclick="resetFacePrompt('${emp.id}', '${emp.name.replace(/'/g, "\\'")}')" class="badge badge-warning text-dark px-1.5 py-0.5" title="Reset Biometrik"><i class="ti ti-rotate-2 mr-1"></i>Reset</a>
             </div>
           `;
         } else {
           faceBadge = `
             <div class="mt-1">
-              <span class="badge badge-light border text-muted px-1.5 py-0.5 small"><i class="fas fa-camera mr-1"></i>Belum Wajah</span>
+              <span class="badge badge-light border text-muted px-1.5 py-0.5 small"><i class="ti ti-camera mr-1"></i>Belum Wajah</span>
             </div>
           `;
         }
@@ -2229,8 +1875,8 @@
         let presensiBadge = '';
         if (emp.attended) {
           presensiBadge = `
-            <span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="fas fa-check mr-1"></i>HADIR</span>
-            ${emp.attendancePhotoUrl ? `<div class="mt-1"><a href="javascript:void(0)" onclick="viewPhotoModal('${emp.attendancePhotoUrl}', 'Foto Presensi: ${emp.name.replace(/'/g, "\\'")}')" class="btn btn-xs btn-outline-info font-weight-bold py-0.5 px-1.5" title="Lihat Foto Selfie Kehadiran"><i class="fas fa-camera mr-1"></i>Foto Hadir</a></div>` : ''}
+            <span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="ti ti-check mr-1"></i>HADIR</span>
+            ${emp.attendancePhotoUrl ? `<div class="mt-1"><a href="javascript:void(0)" onclick="viewPhotoModal('${emp.attendancePhotoUrl}', 'Foto Presensi: ${emp.name.replace(/'/g, "\\'")}')" class="btn btn-xs btn-outline-info font-weight-bold py-0.5 px-1.5" title="Lihat Foto Selfie Kehadiran"><i class="ti ti-camera mr-1"></i>Foto Hadir</a></div>` : ''}
           `;
         } else {
           presensiBadge = '<span class="badge badge-light border text-muted px-2 py-1">BELUM</span>';
@@ -2268,7 +1914,7 @@
     function viewPhotoModal(url, title) {
       document.getElementById('viewPhotoModalTitle').textContent = title || 'Pratinjau Foto';
       document.getElementById('viewPhotoModalImg').src = url;
-      $('#viewPhotoModal').modal('show');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('viewPhotoModal')).show();
     }
 
     async function resetFacePrompt(employeeId, employeeName) {
@@ -2316,12 +1962,12 @@
       document.getElementById('modalEmployeeName').textContent = name;
       document.getElementById('modalEmployeeNip').textContent = `NIP: ${nip}`;
       document.getElementById('revisionNotesInput').value = '';
-      $('#revisionModal').modal('show');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('revisionModal')).show();
     }
 
     function closeRevisionModal() {
       targetEmployeeForRevision = null;
-      $('#revisionModal').modal('hide');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('revisionModal')).hide();
     }
 
     async function submitRevision() {
@@ -2360,8 +2006,29 @@
     // INITIALIZATION ON DOM READY
     // ==============================================================
     document.addEventListener('DOMContentLoaded', async () => {
+      // Inisialisasi layout Tabler awal
+      if (window.BPMPLayout) {
+        BPMPLayout.init({
+          role: 'admin',
+          activeMenu: 'admin-dashboard'
+        });
+      }
+
       const auth = await checkAdminAuth();
       if (!auth) return;
+
+      // Update layout dengan data admin terverifikasi
+      if (window.BPMPLayout && window.currentAdminUser) {
+        BPMPLayout.init({
+          role: 'admin',
+          activeMenu: 'admin-dashboard',
+          user: {
+            name: window.currentAdminUser.name || window.currentAdminUser.username,
+            role: window.currentAdminUser.role === 'superadmin' ? 'Super Administrator' : 'Bagian Kepegawaian',
+            isSuper: window.currentAdminUser.role === 'superadmin' || window.currentAdminUser.username === 'superadmin'
+          }
+        });
+      }
 
       await loadEventData();
       await loadEmployees();
@@ -2372,7 +2039,7 @@
       // Polling Counter Kepegawaian tiap 5 detik
       setInterval(loadEmployees, 5000);
     });
+  
   </script>
-  <script src="/pwa-install.js"></script>
 </body>
 </html>

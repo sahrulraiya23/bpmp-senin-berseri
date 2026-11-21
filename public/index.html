@@ -2,12 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Portal Mandiri Pegawai ASN - BPMP Provinsi Sulawesi Tenggara</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Portal Mandiri Pegawai - BPMP Provinsi Sulawesi Tenggara</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#002d5b">
+  <meta name="theme-color" content="#1a3a5c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,1037 +16,510 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="/icons/favicon.png">
 
-  <!-- Vendor CSS (Azia Bootstrap 4) -->
-  <link href="/lib/fontawesome-free/css/all.min.css" rel="stylesheet">
-  <link href="/lib/ionicons/css/ionicons.min.css" rel="stylesheet">
-  <link href="/lib/typicons.font/typicons.css" rel="stylesheet">
-
-  <!-- Azia Template CSS -->
-  <link rel="stylesheet" href="/css/azia.min.css">
-
-  <!-- Google Fonts: Plus Jakarta Sans & Cinzel -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800;900&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --gov-primary: #002d5b;
-      --gov-primary-dark: #001f3f;
-      --gov-teal: #0f766e;
-      --gov-teal-dark: #0d655e;
-      --gov-gold: #d97706;
-      --gov-slate-bg: #f8fafc;
-      --gov-border: #e2e8f0;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #f1f5f9;
-      color: #1e293b;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .font-cert-serif {
-      font-family: 'Cinzel', Georgia, serif;
-    }
-
-    @keyframes scanLineAnim {
-      0% { top: 5%; opacity: 0.2; }
-      50% { top: 92%; opacity: 1; }
-      100% { top: 5%; opacity: 0.2; }
-    }
-    .face-scanner-line {
-      position: absolute;
-      left: 10%;
-      right: 10%;
-      height: 3px;
-      background: #10b981;
-      box-shadow: 0 0 10px #10b981, 0 0 20px #34d399;
-      border-radius: 2px;
-      animation: scanLineAnim 2.2s infinite ease-in-out;
-    }
-    .btn-xs {
-      padding: 0.15rem 0.5rem;
-      font-size: 0.75rem;
-      line-height: 1.4;
-      border-radius: 0.25rem;
-    }
-
-    /* 1. Official Government Top Strip */
-    .gov-top-bar {
-      background: linear-gradient(90deg, #001b38 0%, #002d5b 50%, #001b38 100%);
-      color: #ffffff;
-      padding: 7px 20px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      border-bottom: 2px solid #d97706;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    /* 2. Azia Navigation Header */
-    .az-header {
-      background: #ffffff;
-      border-bottom: 1px solid #e2e8f0;
-      box-shadow: 0 2px 6px rgba(0, 45, 91, 0.04);
-      padding: 12px 0;
-    }
-
-    .gov-brand {
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      color: #002d5b;
-    }
-    .gov-brand:hover {
-      text-decoration: none;
-      color: #001b38;
-    }
-    .gov-logo-badge {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #002d5b 0%, #0a3d74 100%);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 14px;
-      box-shadow: 0 4px 8px rgba(0, 45, 91, 0.15);
-      border: 1px solid #cbd5e1;
-      color: #ffffff;
-    }
-    .gov-brand-title {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      line-height: 1.2;
-      color: #002d5b;
-    }
-    .gov-brand-subtitle {
-      font-size: 10.5px;
-      font-weight: 700;
-      color: #0f766e;
-      letter-spacing: 0.4px;
-      text-transform: uppercase;
-    }
-
-    /* User Profile Capsule in Navbar */
-    .gov-user-capsule {
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 30px;
-      padding: 4px 12px 4px 6px;
-      display: flex;
-      align-items: center;
-    }
-    .gov-user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #002d5b;
-      color: #ffffff;
-      font-weight: 800;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 8px;
-    }
-
-    /* Clean Card Container */
-    .gov-card {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-      padding: 24px;
-      margin-bottom: 24px;
-      transition: all 0.2s ease;
-    }
-
-    .gov-card-header-line {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 14px;
-      margin-bottom: 18px;
-    }
-
-    .gov-event-ribbon {
-      background: linear-gradient(135deg, #002d5b 0%, #0c3c6e 100%);
-      border-radius: 12px;
-      color: #ffffff;
-      padding: 24px 28px;
-      margin-bottom: 24px;
-      border-left: 5px solid #d97706;
-      box-shadow: 0 4px 12px rgba(0, 45, 91, 0.1);
-    }
-
-    /* Clean Drag & Drop Upload Zone */
-    .gov-dropzone {
-      border: 2px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 28px 20px;
-      text-align: center;
-      background-color: #f8fafc;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .gov-dropzone:hover {
-      border-color: #0f766e;
-      background-color: #f0fdfa;
-    }
-
-    /* Institutional Button Styles */
-    .btn-gov-primary {
-      background-color: #002d5b;
-      border-color: #002d5b;
-      color: #ffffff;
-      font-weight: 700;
-      border-radius: 8px;
-      padding: 9px 18px;
-      transition: all 0.2s;
-    }
-    .btn-gov-primary:hover {
-      background-color: #001b38;
-      border-color: #001b38;
-      color: #ffffff;
-    }
-
-    .btn-gov-emerald {
-      background-color: #0f766e;
-      border-color: #0f766e;
-      color: #ffffff;
-      font-weight: 700;
-      border-radius: 8px;
-      padding: 9px 18px;
-      transition: all 0.2s;
-    }
-    .btn-gov-emerald:hover {
-      background-color: #0d655e;
-      border-color: #0d655e;
-      color: #ffffff;
-    }
-
-    .btn-gov-outline {
-      border: 1px solid #cbd5e1;
-      color: #002d5b;
-      font-weight: 700;
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 8px 16px;
-      transition: all 0.2s;
-    }
-    .btn-gov-outline:hover {
-      background: #f1f5f9;
-      color: #001b38;
-      border-color: #94a3b8;
-    }
-
-    /* Menu Admin Dropdown Styling */
-    .dropdown-menu-gov {
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0, 45, 91, 0.12);
-      border: 1px solid #e2e8f0;
-      padding: 8px 0;
-      min-width: 220px;
-    }
-    .dropdown-menu-gov .dropdown-item {
-      padding: 10px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #334155;
-      display: flex;
-      align-items: center;
-      transition: all 0.15s;
-    }
-    .dropdown-menu-gov .dropdown-item:hover {
-      background-color: #f1f5f9;
-      color: #002d5b;
-    }
-
-    /* Official Footer */
-    .gov-footer {
-      background-color: #ffffff;
-      border-top: 1px solid #e2e8f0;
-      padding: 24px 0;
-      margin-top: auto;
-      font-size: 12px;
-      color: #64748b;
-    }
-
-    /* Toast Notifications */
-    #toastContainer {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 99999;
-      max-width: 380px;
-    }
-    .gov-toast {
-      background: #ffffff;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 10px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
-      border-left: 4px solid #002d5b;
-      display: flex;
-      align-items: center;
-      animation: slideIn 0.3s ease-out;
-    }
-    .gov-toast.toast-success { border-left-color: #0f766e; }
-    .gov-toast.toast-error { border-left-color: #e11d48; }
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-  </style>
+  <!-- Tabler Core CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <!-- Tabler Icons (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <!-- Design Tokens BPMP Sultra -->
+  <link rel="stylesheet" href="/css/tokens.css">
 </head>
-<body>
+<body class="layout-boxed">
+  <div class="page">
+    <!-- Top Identity Strip -->
+    <div id="bpmp-top-strip"></div>
 
-  <!-- 1. Government Official Top Bar -->
-  <div class="gov-top-bar">
-    <div class="container d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center">
-        <i class="fas fa-landmark mr-2 text-warning"></i>
-        <span>KEMENDIKBUDRISTEK &bull; BPMP PROVINSI SULAWESI TENGGARA</span>
-      </div>
-      <div class="d-flex align-items-center">
-        <a href="/proyektor" target="_blank" class="text-white small font-weight-bold text-decoration-none mr-3 d-none d-sm-inline">
-          <i class="fas fa-desktop mr-1 text-warning"></i> Layar Aula
-        </a>
-        <a href="/admin/login" class="text-white small font-weight-bold text-decoration-none">
-          <i class="fas fa-user-shield mr-1"></i> Akses Admin
-        </a>
-      </div>
-    </div>
-  </div>
+    <!-- Navigation Header -->
+    <div id="bpmp-navbar"></div>
 
-  <!-- 2. Azia Navigation Header -->
-  <header class="az-header">
-    <div class="container d-flex align-items-center justify-content-between">
-      
-      <a href="/" class="gov-brand">
-        <div class="gov-logo-badge">
-          <i class="fas fa-id-card fa-lg"></i>
-        </div>
-        <div>
-          <div class="gov-brand-title">SENIN BERSERI</div>
-          <div class="gov-brand-subtitle">Portal Mandiri Pegawai ASN BPMP Sultra</div>
-        </div>
-      </a>
+    <!-- Page Body -->
+    <div class="page-wrapper">
+      <div class="container-xl py-3">
 
-      <!-- Right Navigation: Profile Capsule & Menu Admin -->
-      <div class="d-flex align-items-center">
-        
-        <!-- User Profile Capsule (Ketika Pegawai Telah Login) -->
-        <div id="navUserBadge" class="gov-user-capsule d-none mr-2">
-          <div class="gov-user-avatar" id="navAvatarInitial">P</div>
-          <div class="d-none d-sm-block text-left mr-2">
-            <div id="navEmployeeName" class="font-weight-bold text-dark small text-truncate" style="max-width: 150px;">Pegawai ASN</div>
-            <div id="navEmployeeNip" class="text-muted" style="font-size: 10.5px; font-family: monospace;">19760612...</div>
-          </div>
-          <button onclick="handleLogout()" class="btn btn-sm btn-link text-danger p-0 ml-1" title="Keluar / Ganti Akun">
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
-        </div>
-
-        <!-- MENU ADMIN DROPDOWN -->
-        <div class="dropdown">
-          <button class="btn btn-gov-outline btn-sm font-weight-bold dropdown-toggle d-flex align-items-center" type="button" id="menuAdminDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <i class="fas fa-user-shield text-primary mr-1.5"></i>
-            <span>Menu Admin</span>
-          </button>
-          <div class="dropdown-menu dropdown-menu-right dropdown-menu-gov" aria-labelledby="menuAdminDropdown">
-            <h6 class="dropdown-header text-uppercase font-weight-bold" style="font-size: 10px; color: #94a3b8; letter-spacing: 0.5px;">Administrasi Lembaga</h6>
-            <a class="dropdown-item" href="/admin/login">
-              <i class="fas fa-sign-in-alt text-primary mr-2.5"></i>
-              <span>Login Administrator</span>
-            </a>
-            <a class="dropdown-item" href="/admin">
-              <i class="fas fa-tachometer-alt text-info mr-2.5"></i>
-              <span>Dashboard Admin</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="/proyektor" target="_blank">
-              <i class="fas fa-desktop text-success mr-2.5"></i>
-              <span>Layar Proyektor Aula (Live QR)</span>
-            </a>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-  </header>
-
-  <!-- Toast Notification Container -->
-  <div id="toastContainer"></div>
-
-  <!-- 3. Main Content Container -->
-  <main class="container my-4 flex-grow-1">
-
-    <!-- ======================================================== -->
-    <!-- VIEW 1: FORM LOGIN MANDIRI PEGAWAI                      -->
-    <!-- (Ditampilkan langsung jika belum login)                 -->
-    <!-- ======================================================== -->
-    <section id="loginSection" class="my-3 my-md-4">
-      <div class="row justify-content-center">
-        <div class="col-lg-5 col-md-7 col-sm-10">
-
-          <!-- Alert Presensi QR Terdeteksi (Scan Kamera HP sebelum login) -->
-          <div id="loginQrAlert" class="alert alert-success border-success shadow-sm mb-4 d-none" style="border-radius: 10px;">
-            <div class="d-flex align-items-start">
-              <div class="mr-3 text-success" style="font-size: 26px;">
-                <i class="fas fa-qrcode"></i>
-              </div>
-              <div>
-                <span class="badge badge-success font-weight-bold text-uppercase mb-1" style="font-size: 10px;">
-                  Presensi Aula Terdeteksi
-                </span>
-                <div class="font-weight-bold text-dark small">
-                  Token: <code id="alertDetectedToken" class="text-success font-weight-bold bg-white px-2 py-0.5 rounded border border-success">LPTI-......</code>
-                </div>
-                <div class="small text-muted mt-1">
-                  Masuk dengan <strong>NIP</strong> dan <strong>Password</strong> Anda. Presensi akan langsung <strong>tercatat otomatis</strong>!
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card Formulir Login Pegawai -->
-          <div class="gov-card shadow-sm">
-            
-            <div class="text-center mb-4">
-              <div class="mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 12px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #0f766e; font-size: 24px;">
-                <i class="fas fa-user-check"></i>
-              </div>
-              <span class="text-muted text-uppercase font-weight-bold" style="font-size: 11px; letter-spacing: 0.8px;">
-                AUTENTIKASI PEGAWAI ASN
-              </span>
-              <h4 class="font-weight-bold text-dark mt-1 mb-1">Masuk Akun Pegawai</h4>
-              <p class="text-muted small mb-0">Gunakan NIP resmi yang terdaftar pada BPMP Provinsi Sulawesi Tenggara.</p>
-            </div>
-
-            <!-- Tombol Pindai QR Aula via Kamera -->
-            <button type="button" onclick="openCameraScanner()" class="btn btn-outline-success btn-block font-weight-bold mb-3 py-2" style="border-radius: 8px;">
-              <i class="fas fa-camera mr-1.5"></i> Pindai QR Code Aula via Kamera
-            </button>
-
-            <!-- Tombol Pasang PWA di HP jika tersedia -->
-            <button type="button" id="btnInstallPwaPegawai" onclick="triggerPwaInstall()" class="btn btn-outline-primary btn-block font-weight-bold mb-3 py-2 d-none" style="border-radius: 8px;">
-              <i class="fas fa-mobile-alt mr-1.5"></i> Pasang Aplikasi di HP
-            </button>
-
-            <div class="d-flex align-items-center mb-3">
-              <hr class="flex-grow-1 mr-2 my-0">
-              <span class="text-muted small text-uppercase font-weight-bold" style="font-size: 10px;">Atau Masuk dengan NIP</span>
-              <hr class="flex-grow-1 ml-2 my-0">
-            </div>
-
-            <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+        <!-- SECTION 1: LOGIN PEGAWAI (NIP) -->
+        <section id="loginSection" class="my-2 my-md-4">
+          <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-5">
               
-              <!-- Input NIP -->
-              <div class="form-group mb-3">
-                <label class="font-weight-bold text-dark small text-uppercase mb-1">
-                  Nomor Induk Pegawai (NIP) <span class="text-danger">*</span>
-                </label>
-                <div class="input-group">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text bg-light text-muted border-right-0" style="border-radius: 8px 0 0 8px;">
-                      <i class="fas fa-id-badge"></i>
-                    </span>
+              <!-- QR Detected Alert -->
+              <div id="loginQrAlert" class="alert alert-success d-none mb-3" role="alert">
+                <div class="d-flex align-items-center">
+                  <i class="ti ti-qrcode font-24 me-2"></i>
+                  <div>
+                    <h4 class="alert-title mb-0">Kode QR Aula Terdeteksi!</h4>
+                    <div class="text-secondary small">Silakan masukkan NIP untuk konfirmasi kehadiran otomatis Anda.</div>
                   </div>
-                  <input type="text" id="inputNip" required placeholder="Contoh: 197606122002121004" class="form-control font-weight-bold border-left-0" style="font-family: monospace; border-radius: 0 8px 8px 0; height: 42px;" autocomplete="username">
                 </div>
-                <small class="text-muted" style="font-size: 11px;">18 digit NIP resmi tanpa spasi.</small>
               </div>
 
-              <!-- Input Password -->
-              <div class="form-group mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label class="font-weight-bold text-dark small text-uppercase mb-0">
-                    Kata Sandi <span class="text-danger">*</span>
-                  </label>
-                  <span class="badge badge-light border text-muted" style="font-size: 10px;">Default: Bpmp2026!</span>
-                </div>
-                <div class="input-group">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text bg-light text-muted border-right-0" style="border-radius: 8px 0 0 8px;">
-                      <i class="fas fa-key"></i>
+              <!-- Login Card -->
+              <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                  <!-- Header Logo & Title -->
+                  <div class="text-center mb-4">
+                    <span class="avatar avatar-xl rounded bg-primary-lt text-primary mb-2">
+                      <i class="ti ti-id-badge font-32"></i>
                     </span>
+                    <h2 class="card-title text-primary fw-bold mb-1">Portal Mandiri ASN</h2>
+                    <p class="text-secondary small mb-0">
+                      Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara
+                    </p>
                   </div>
-                  <input type="password" id="inputPassword" required placeholder="Masukkan kata sandi..." class="form-control font-weight-bold border-left-0 border-right-0" style="height: 42px;" autocomplete="current-password">
-                  <div class="input-group-append">
-                    <button type="button" onclick="togglePasswordVisibility()" class="btn btn-outline-light text-muted border border-left-0 bg-white" style="border-radius: 0 8px 8px 0;" title="Tampilkan / Sembunyikan Password">
-                      <i class="fas fa-eye" id="eyeIcon"></i>
+
+                  <!-- Form Login -->
+                  <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+                    <div class="mb-3">
+                      <label class="form-label required">Nomor Induk Pegawai (NIP)</label>
+                      <div class="input-icon">
+                        <span class="input-icon-addon">
+                          <i class="ti ti-id"></i>
+                        </span>
+                        <input type="text" id="inputNip" class="form-control" placeholder="Masukkan 18 digit NIP Anda" maxlength="18" inputmode="numeric" required autofocus>
+                      </div>
+                      <small class="form-hint">NIP Anda terdaftar dalam basis data 104 ASN BPMP Sultra.</small>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label required">Kata Sandi</label>
+                      <div class="input-group input-group-flat">
+                        <input type="password" id="inputPassword" class="form-control" placeholder="Kata sandi default: bpmp123" required>
+                        <span class="input-group-text cursor-pointer" onclick="togglePasswordVisibility()">
+                          <i id="eyeIcon" class="ti ti-eye"></i>
+                        </span>
+                      </div>
+                      <small class="form-hint">Kata sandi default saat pertama kali login: <strong>bpmp123</strong></small>
+                    </div>
+
+                    <div class="form-footer">
+                      <button type="submit" id="btnLoginSubmit" class="btn btn-primary w-100">
+                        <i class="ti ti-login me-1"></i> <span id="btnLoginLabel">Masuk ke Portal ASN</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  <!-- Link ke Registrasi Wajah -->
+                  <div class="text-center mt-3 pt-3 border-top">
+                    <p class="text-secondary small mb-1">Belum mendaftarkan foto biometrik wajah Anda?</p>
+                    <a href="/verif-wajah" class="btn btn-sm btn-outline-teal">
+                      <i class="ti ti-scan me-1"></i> Perekaman Master Wajah ASN
+                    </a>
+                  </div>
+
+                  <!-- PWA Install Button Mobile -->
+                  <div class="text-center mt-3 d-none" id="btnInstallPwaPegawai">
+                    <button class="btn btn-sm btn-outline-primary w-100">
+                      <i class="ti ti-download me-1"></i> Pasang Aplikasi Senin Berseri di Layar Utama (PWA)
                     </button>
                   </div>
                 </div>
               </div>
 
-              <!-- Submit Button -->
-              <button type="submit" id="btnLoginSubmit" class="btn btn-gov-emerald btn-block py-2.5 font-weight-bold">
-                <i class="fas fa-sign-in-alt mr-1.5"></i>
-                <span id="btnLoginLabel">Masuk ke Portal Pegawai</span>
-              </button>
-
-            </form>
-
-            <div class="text-center mt-3 pt-3 border-top">
-              <span class="text-muted small">Akses pengelola instansi: </span>
-              <a href="/admin/login" class="text-primary font-weight-bold small text-decoration-none">
-                Login Administrator &rarr;
-              </a>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ======================================================== -->
-    <!-- VIEW 2: DASHBOARD PEGAWAI TEROTENTIKASI                 -->
-    <!-- (Ditampilkan setelah pegawai berhasil login)             -->
-    <!-- ======================================================== -->
-    <section id="dashboardSection" class="d-none">
-
-      <!-- Active Event Banner Ribbon -->
-      <div class="gov-event-ribbon">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-          <div class="mb-3 mb-md-0">
-            <span class="badge badge-warning text-dark font-weight-bold text-uppercase px-2.5 py-1 mb-2">
-              <i class="fas fa-award mr-1"></i> <span id="eventCategoryBadge">Teknis & Manajerial Kepegawaian</span>
-            </span>
-            <h4 id="eventTitleBanner" class="font-weight-bold text-white mb-1">
-              Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
-            </h4>
-            <div id="eventScheduleBanner" class="small text-white-50">
-              <i class="fas fa-calendar-alt mr-1 text-warning"></i> 18 - 20 November 2026 &bull;
-              <i class="fas fa-map-marker-alt mr-1 ml-2 text-danger"></i> Auditorium BPMP Sultra
-            </div>
-          </div>
-
-          <div class="text-md-right">
-            <span class="badge badge-light px-3 py-2 font-weight-bold text-dark" style="font-size: 14px; border-radius: 8px;">
-              <i class="fas fa-clock text-primary mr-1"></i> <span id="eventJpBadge">32 JP</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2 Column Layout: Left (Profil & Presensi) | Right (Unggah LPTI & E-Sertifikat) -->
-      <div class="row">
-
-        <!-- LEFT COLUMN: PROFIL & PRESENSI MANDIRI (Col-5) -->
-        <div class="col-lg-5 col-md-12 mb-4">
-          
-          <!-- 1. Identitas Peserta ASN -->
-          <div class="gov-card">
-            
-            <div class="gov-card-header-line">
-              <div class="d-flex align-items-center">
-                <div class="gov-user-avatar mr-2.5" id="empAvatarInitial">P</div>
-                <div>
-                  <span class="text-muted text-uppercase font-weight-bold" style="font-size: 10px;">Identitas Peserta</span>
-                  <h6 id="empName" class="font-weight-bold text-dark mb-0 text-truncate" style="max-width: 220px;">Nama Pegawai</h6>
-                  <div id="empNip" class="text-muted small" style="font-family: monospace;">NIP: -</div>
+              <!-- Info Card Bantuan -->
+              <div class="card bg-transparent border-0 text-center mt-3">
+                <div class="card-body p-2 text-secondary small">
+                  <i class="ti ti-help-circle me-1"></i> Butuh bantuan login? Hubungi Subbagian Tata Usaha & Kepegawaian BPMP Sultra.
                 </div>
               </div>
-            </div>
 
-            <!-- Profile Info Table -->
-            <table class="table table-sm table-borderless small mb-3">
-              <tbody>
-                <tr class="border-bottom">
-                  <td class="text-muted pl-0 py-1.5">Jabatan</td>
-                  <td id="empJabatan" class="font-weight-bold text-dark text-right pr-0 py-1.5">-</td>
-                </tr>
-                <tr class="border-bottom">
-                  <td class="text-muted pl-0 py-1.5">Pangkat / Gol</td>
-                  <td id="empPanggol" class="font-weight-bold text-dark text-right pr-0 py-1.5">-</td>
-                </tr>
-                <tr class="border-bottom">
-                  <td class="text-muted pl-0 py-1.5">Unit Kerja</td>
-                  <td id="empInstansi" class="font-weight-bold text-dark text-right pr-0 py-1.5">BPMP Prov. Sultra</td>
-                </tr>
-                <tr class="border-bottom">
-                  <td class="text-muted pl-0 py-1.5">Total JP Terkumpul</td>
-                  <td id="empAccumulatedJp" class="font-weight-bold text-success text-right pr-0 py-1.5">0 JP</td>
-                </tr>
-                <tr class="border-bottom">
-                  <td class="text-muted pl-0 py-1.5 align-middle">Biometrik Wajah</td>
-                  <td class="text-right pr-0 py-1.5" id="empFaceStatusCell">
-                    <span class="badge badge-light border text-muted px-2 py-0.5">Belum Terdaftar</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="text-muted pl-0 py-1.5 align-middle">Status Kehadiran</td>
-                  <td class="text-right pr-0 py-1.5">
-                    <span id="empAttendanceBadge" class="badge badge-secondary px-2.5 py-1 font-weight-bold">
-                      <i class="fas fa-times-circle mr-1"></i> BELUM HADIR
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: DASHBOARD MANDIRI PEGAWAI -->
+        <section id="dashboardSection" class="d-none">
+
+          <!-- Profil Ringkas ASN & Logout -->
+          <div class="card card-stacked mb-3 border-primary-subtle shadow-sm">
+            <div class="card-body p-3">
+              <div class="row align-items-center g-3">
+                <div class="col-auto">
+                  <span class="avatar avatar-lg rounded-circle bg-primary text-white fw-bold font-20" id="empAvatarInitial">
+                    ASN
+                  </span>
+                </div>
+                <div class="col">
+                  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    <h3 class="card-title mb-0 fw-bold text-primary" id="empName">Memuat Pegawai...</h3>
+                    <span class="badge bg-green-lt" id="empAttendanceBadge">
+                      <i class="ti ti-clock me-1"></i> Menunggu Presensi
                     </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <!-- BANNER PROMPT DAFTAR WAJAH JIKA BELUM -->
-            <div id="faceEnrollmentPrompt" class="alert alert-warning border-0 rounded-10 p-3 mb-3 d-none shadow-xs">
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                  <div class="rounded-circle bg-white text-warning d-flex align-items-center justify-content-center mr-2.5" style="width: 32px; height: 32px; min-width: 32px;">
-                    <i class="fas fa-camera font-14"></i>
                   </div>
-                  <div>
-                    <div class="font-weight-bold text-dark" style="font-size: 13px;">Wajah Belum Terdaftar</div>
-                    <div class="text-muted" style="font-size: 11px;">Daftarkan foto wajah sekali (3 detik) untuk verifikasi presensi.</div>
+                  <div class="text-secondary small d-flex flex-wrap gap-2">
+                    <span class="font-monospace fw-bold" id="empNip">NIP: -</span>
+                    <span>&bull;</span>
+                    <span id="empJabatan">Jabatan Pegawai</span>
+                    <span>&bull;</span>
+                    <span id="empPanggol">Golongan</span>
+                  </div>
+                  <div class="text-secondary small mt-1" id="empInstansi">
+                    BPMP Provinsi Sulawesi Tenggara
                   </div>
                 </div>
-                <a href="/verif-wajah" class="btn btn-warning btn-sm font-weight-bold rounded-pill px-3 py-1 text-nowrap ml-2">
-                  <i class="fas fa-plus-circle mr-1"></i> Rekam Wajah
-                </a>
-              </div>
-            </div>
-
-            <!-- SECTION PRESENSI MANDIRI -->
-            <div id="attendanceActionBox" class="p-3 rounded bg-light border">
-              
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="font-weight-bold text-dark small text-uppercase">
-                  <i class="fas fa-qrcode text-teal mr-1"></i> Validasi Kehadiran Aula
-                </span>
-              </div>
-
-              <!-- TOMBOL SCAN KAMERA HP / LAPTOP -->
-              <button type="button" onclick="openCameraScanner()" class="btn btn-gov-emerald btn-block font-weight-bold mb-2 py-2">
-                <i class="fas fa-camera mr-1.5"></i> Pindai QR Code via Kamera
-              </button>
-
-              <div class="text-center text-muted small my-1" style="font-size: 11px;">
-                &mdash; Atau Masukkan Kode Token Proyektor &mdash;
-              </div>
-
-              <div class="input-group mb-2">
-                <input type="text" id="inputPresenceToken" placeholder="Contoh: LPTI-ABC123" class="form-control font-weight-bold text-uppercase border-right-0" style="font-family: monospace; border-radius: 8px 0 0 8px;">
-                <div class="input-group-append">
-                  <button onclick="submitPresenceToken()" id="btnSubmitPresence" class="btn btn-gov-primary font-weight-bold px-3" style="border-radius: 0 8px 8px 0;">
-                    Presensi
+                <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="handleLogout()">
+                    <i class="ti ti-logout me-1"></i> Keluar
                   </button>
                 </div>
               </div>
-
-              <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 10.5px;">
-                <span>Simulasi lokal?</span>
-                <button onclick="autoFillCurrentToken()" class="btn btn-link btn-sm p-0 text-teal font-weight-bold text-decoration-none">
-                  Isi Token Proyektor Otomatis ⚡
-                </button>
-              </div>
-
             </div>
-
-            <!-- SUCCESS BOX KETIKA SUDAH HADIR -->
-            <div id="attendanceSuccessBox" class="p-3 rounded bg-light border border-success text-center d-none" style="border-radius: 8px;">
-              <div class="text-success mb-1" style="font-size: 26px;">
-                <i class="fas fa-check-circle"></i>
-              </div>
-              <h6 class="font-weight-bold text-success mb-1">Presensi Kehadiran Terverifikasi</h6>
-              <div id="attendanceTimeLabel" class="text-muted small">Tercatat resmi dalam pangkalan data.</div>
-            </div>
-
           </div>
 
-        </div>
-
-        <!-- RIGHT COLUMN: UNGGAH LPTI & E-SERTIFIKAT (Col-7) -->
-        <div class="col-lg-7 col-md-12 mb-4">
-          
-          <!-- 2. Form Unggah Dokumen LPTI Card -->
-          <div class="gov-card">
-            
-            <div class="gov-card-header-line">
+          <!-- Alert Prompt Verifikasi Wajah (Jika belum terdaftar) -->
+          <div id="faceEnrollmentPrompt" class="alert alert-warning d-none mb-3" role="alert">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div class="d-flex align-items-center">
-                <span class="badge badge-primary px-2 py-1 font-weight-bold mr-2" style="background-color: #002d5b; border-radius: 6px;">2</span>
+                <i class="ti ti-alert-triangle font-24 me-2 text-warning"></i>
                 <div>
-                  <h6 class="font-weight-bold text-dark mb-0">Unggah Berkas LPTI (File Asli PDF)</h6>
-                  <span class="text-muted small">Laporan Pasca Pelatihan & Rencana Tindak Lanjut</span>
+                  <h4 class="alert-title mb-0">Biometrik Wajah Belum Terdaftar</h4>
+                  <div class="text-secondary small">Daftarkan foto master wajah Anda agar presensi aula dapat diverifikasi secara otomatis.</div>
                 </div>
               </div>
-
-              <!-- Indikator Status Approval Real-time -->
-              <div id="lptiStatusPill">
-                <!-- Render via JS -->
-              </div>
+              <a href="/verif-wajah" class="btn btn-sm btn-warning text-dark fw-bold">
+                <i class="ti ti-scan me-1"></i> Rekam Wajah Sekarang
+              </a>
             </div>
+          </div>
 
-            <!-- Alert Khusus Catatan Revisi Dari Admin -->
-            <div id="revisionAlertBox" class="alert alert-danger border-danger shadow-sm mb-3 d-none" style="border-radius: 8px;">
-              <div class="d-flex align-items-start">
-                <i class="fas fa-exclamation-triangle text-danger mr-2.5 mt-1"></i>
-                <div>
-                  <div class="font-weight-bold text-danger text-uppercase small">PERHATIAN: BERKAS MEMERLUKAN REVISI</div>
-                  <div id="revisionNoteContent" class="small text-dark mt-1 font-weight-bold">
-                    Catatan dari Admin Kepegawaian...
+          <!-- Event Information Banner -->
+          <div class="card shadow-sm border-0 mb-3 bg-primary-lt">
+            <div class="card-body p-3">
+              <div class="row align-items-center g-2">
+                <div class="col">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary text-white" id="eventCategoryBadge">Pelatihan ASN</span>
+                    <span class="badge bg-purple text-white" id="eventJpBadge">4 JP</span>
                   </div>
-                  <div class="small text-muted mt-1">Silakan unggah ulang dokumen PDF yang telah diperbaiki.</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Upload Form -->
-            <form id="lptiUploadForm" onsubmit="handleUploadLpti(event)">
-              
-              <div class="gov-dropzone mb-3" onclick="document.getElementById('lptiFileInput').click()">
-                <input type="file" id="lptiFileInput" accept="application/pdf" class="d-none" onchange="handleFileSelected(this)">
-                
-                <div id="fileUploadPrompt">
-                  <div class="text-teal mb-2" style="font-size: 32px; color: #0f766e;">
-                    <i class="fas fa-file-pdf"></i>
-                  </div>
-                  <h6 class="font-weight-bold text-dark mb-1">Pilih Berkas Dokumen PDF Asli</h6>
-                  <div class="text-muted small">Klik di sini untuk menelusuri file PDF laporan (Maks. 15MB)</div>
-                </div>
-
-                <div id="fileSelectedInfo" class="d-none text-left p-2.5 bg-white rounded border">
-                  <div class="d-flex align-items-center">
-                    <i class="fas fa-file-pdf text-danger fa-2x mr-3"></i>
-                    <div class="overflow-hidden">
-                      <div id="selectedFileName" class="font-weight-bold text-dark small text-truncate" style="max-width: 320px;">dokumen.pdf</div>
-                      <div id="selectedFileSize" class="text-muted small" style="font-family: monospace;">0 KB</div>
-                    </div>
+                  <h4 class="mb-1 text-primary fw-bold" id="eventTitleBanner">
+                    Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
+                  </h4>
+                  <div class="text-secondary small" id="eventScheduleBanner">
+                    <i class="ti ti-calendar me-1"></i> Setiap Senin, Pukul 07.30 WITA &bull; Aula Utama BPMP Provinsi Sulawesi Tenggara
                   </div>
                 </div>
-              </div>
-
-              <!-- Info Dokumen Terunggah Sebelumnya -->
-              <div id="currentUploadedDocCard" class="p-2.5 rounded bg-light border mb-3 d-none d-flex justify-content-between align-items-center" style="border-radius: 8px;">
-                <div class="d-flex align-items-center overflow-hidden mr-2">
-                  <i class="fas fa-paperclip text-muted mr-2"></i>
-                  <div class="text-truncate">
-                    <span class="text-muted small d-block" style="font-size: 10px;">Berkas Tersimpan di Server:</span>
-                    <a id="currentUploadedLink" href="#" target="_blank" class="font-weight-bold text-teal small text-truncate">
-                      Nama_File.pdf
-                    </a>
-                  </div>
-                </div>
-                <a id="btnPreviewPdf" href="#" target="_blank" class="btn btn-sm btn-outline-secondary font-weight-bold flex-shrink-0" style="border-radius: 6px;">
-                  <i class="fas fa-eye mr-1"></i> Buka PDF
-                </a>
-              </div>
-
-              <button type="submit" id="btnUploadSubmit" class="btn btn-gov-emerald btn-block font-weight-bold py-2">
-                <i class="fas fa-cloud-upload-alt mr-1.5"></i>
-                <span>Unggah Berkas LPTI</span>
-              </button>
-
-            </form>
-
-          </div>
-
-          <!-- 3. Otomasi Penerbitan E-Sertifikat Card -->
-          <div class="gov-card">
-            
-            <div class="gov-card-header-line">
-              <div class="d-flex align-items-center">
-                <span class="badge badge-primary px-2 py-1 font-weight-bold mr-2" style="background-color: #002d5b; border-radius: 6px;">3</span>
-                <div>
-                  <h6 class="font-weight-bold text-dark mb-0">Penerbitan E-Sertifikat Kepegawaian</h6>
-                  <span class="text-muted small">Sertifikat resmi ber-JP otomatis aktif setelah LPTI disetujui</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- KONDISI A: TERKUNCI -->
-            <div id="certLockedView" class="p-4 rounded bg-light border text-center" style="border-radius: 8px;">
-              <div class="text-muted mb-2" style="font-size: 32px;">
-                <i class="fas fa-lock"></i>
-              </div>
-              <h6 class="font-weight-bold text-dark mb-1">E-Sertifikat Masih Terkunci</h6>
-              <p id="certLockedReason" class="text-muted small mb-3">
-                Klaim sertifikat akan aktif secara otomatis setelah Admin Kepegawaian menyetujui berkas LPTI yang Anda unggah.
-              </p>
-              <button disabled class="btn btn-secondary btn-sm font-weight-bold px-3 py-2 cursor-not-allowed" style="border-radius: 6px;">
-                <i class="fas fa-lock mr-1.5"></i> E-Sertifikat Resmi Terkunci
-              </button>
-            </div>
-
-            <!-- KONDISI B: AKTIF / DISETUJUI -->
-            <div id="certUnlockedView" class="p-4 rounded border border-success bg-light text-center d-none" style="border-radius: 8px;">
-              <div class="text-success mb-2" style="font-size: 36px;">
-                <i class="fas fa-award"></i>
-              </div>
-              <span class="badge badge-success px-3 py-1 font-weight-bold text-uppercase mb-2" style="border-radius: 6px;">
-                SELAMAT! BERKAS LPTI TELAH DISETUJUI
-              </span>
-              <h5 class="font-weight-bold text-dark mb-1">E-Sertifikat Resmi Siap Diterbitkan</h5>
-              <div id="certNumberBadge" class="font-weight-bold text-teal mb-3 small" style="font-family: monospace;">
-                Nomor: 800.1.3/SERT-LPTI/2026/001
-              </div>
-
-              <div class="d-flex flex-wrap justify-content-center gap-2">
-                <button onclick="openCertificateModal()" class="btn btn-outline-dark font-weight-bold mr-2 mb-2" style="border-radius: 6px;">
-                  <i class="fas fa-eye text-teal mr-1.5"></i> Pratinjau Sertifikat
-                </button>
-                <a id="btnDirectDownloadPdf" href="#" target="_blank" class="btn btn-gov-emerald font-weight-bold mb-2" style="border-radius: 6px;">
-                  <i class="fas fa-file-download mr-1.5"></i> Unduh File Asli (PDF)
-                </a>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- ======================================================== -->
-  <!-- MODAL: SCANNER QR KAMERA HP / LAPTOP (HTML5-QRCODE)     -->
-  <!-- ======================================================== -->
-  <div class="modal fade" id="cameraScannerModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content shadow-lg border-0" style="border-radius: 14px; overflow: hidden;">
-        
-        <div class="modal-header bg-dark text-white py-3">
-          <h6 class="modal-title font-weight-bold mb-0">
-            <i class="fas fa-camera text-success mr-2"></i> Pindai QR Code Layar Proyektor Aula
-          </h6>
-          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" onclick="stopCameraScanner()">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-
-        <div class="modal-body p-3 text-center bg-dark">
-          
-          <div id="scannerLoadingStatus" class="text-white py-4">
-            <div class="spinner-border text-success mb-2" role="status"></div>
-            <div class="small">Mengakses kamera perangkat... Mohon izinkan akses kamera jika diminta.</div>
-          </div>
-
-          <div id="scannerErrorMessage" class="alert alert-danger d-none my-2 text-left small">
-            <i class="fas fa-exclamation-circle mr-1"></i>
-            <span id="scannerErrorText">Kamera tidak dapat diakses.</span>
-          </div>
-
-          <!-- Video scanner container -->
-          <div id="cameraQrReader"></div>
-
-          <div class="text-white-50 small mt-2">
-            Arahkan kamera ke <strong>QR Code 30 Detik</strong> yang tampil pada layar proyektor aula BPMP.
-          </div>
-        </div>
-
-        <div class="modal-footer py-2 bg-light justify-content-between">
-          <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold" onclick="switchCameraFacing()" style="border-radius: 6px;">
-            <i class="fas fa-sync-alt mr-1"></i> Balik Kamera
-          </button>
-          <button type="button" class="btn btn-sm btn-secondary font-weight-bold" data-dismiss="modal" onclick="stopCameraScanner()" style="border-radius: 6px;">
-            Tutup Kamera
-          </button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- MODAL: BIOMETRIK VERIFIKASI WAJAH ASN                   -->
-  <!-- ======================================================== -->
-  <div class="modal fade" id="faceBiometricModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
-      <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
-        <div class="modal-header bg-dark text-white py-3 px-4 border-0 d-flex align-items-center justify-content-between">
-          <div>
-            <h6 class="modal-title font-weight-bold mb-0 text-white" id="faceModalTitle">
-              <i class="fas fa-user-check text-warning mr-2"></i> Verifikasi Biometrik Wajah
-            </h6>
-            <small class="text-white-50" id="faceModalSubtitle">Aparatur Sipil Negara BPMP Prov. Sultra</small>
-          </div>
-          <button type="button" class="close text-white opacity-75" data-dismiss="modal" onclick="closeFaceCamera()">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body p-4 text-center bg-light">
-          <!-- Kamera Video & Scanner Frame -->
-          <div class="position-relative mx-auto rounded-15 overflow-hidden bg-black shadow-sm" style="width: 100%; max-width: 320px; height: 320px; border-radius: 16px;">
-            <video id="faceCameraVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
-            <canvas id="faceCaptureCanvas" class="d-none" width="400" height="400"></canvas>
-            
-            <!-- Oval Guide Overlay -->
-            <div class="position-absolute" style="top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">
-              <div id="faceOvalGuide" style="width: 190px; height: 250px; border: 3px dashed #10b981; border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); position: relative; transition: all 0.3s ease;">
-                <div class="face-scanner-line"></div>
-              </div>
-            </div>
-
-            <!-- Live Status Indicator -->
-            <div class="position-absolute" style="bottom: 12px; left: 0; right: 0; text-align: center;">
-              <span id="faceStatusBadge" class="badge badge-dark px-3 py-1.5 rounded-pill shadow-sm" style="background: rgba(0,0,0,0.75); font-size: 11px;">
-                <i class="fas fa-spinner fa-spin mr-1"></i> Membuka kamera depan...
-              </span>
-            </div>
-          </div>
-
-          <p class="small text-muted mt-3 mb-0" id="faceInstructionText">
-            Posisikan wajah Anda tepat di dalam lingkaran oval. Pastikan pencahayaan cukup dan wajah tidak tertutup masker.
-          </p>
-        </div>
-        <div class="modal-footer bg-white border-top py-2.5 px-4 d-flex justify-content-between">
-          <button type="button" class="btn btn-light btn-sm rounded-pill font-weight-bold" data-dismiss="modal" onclick="closeFaceCamera()">
-            Batal
-          </button>
-          <button type="button" id="btnCaptureFace" onclick="captureAndProcessFace()" class="btn btn-gov-emerald btn-sm rounded-pill px-4 font-weight-bold">
-            <i class="fas fa-camera mr-1.5"></i> <span id="btnCaptureText">Ambil & Simpan Foto</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- MODAL: PREVIEW E-SERTIFIKAT RESMI                       -->
-  <!-- ======================================================== -->
-  <div class="modal fade" id="certificateModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
-      <div class="modal-content shadow-lg border-0" style="border-radius: 14px;">
-        
-        <div class="modal-header py-3 bg-light d-flex justify-content-between align-items-center">
-          <div class="d-flex align-items-center">
-            <span class="badge badge-success mr-2 font-weight-bold px-2.5 py-1">RESMI</span>
-            <h6 class="modal-title font-weight-bold mb-0 text-dark">Pratinjau E-Sertifikat Kepegawaian</h6>
-          </div>
-
-          <div>
-            <a id="btnDownloadCertPdf" href="#" target="_blank" class="btn btn-gov-emerald btn-sm font-weight-bold mr-2" style="border-radius: 6px;">
-              <i class="fas fa-file-pdf mr-1"></i> Unduh File PDF Asli
-            </a>
-            <button onclick="window.print()" class="btn btn-dark btn-sm font-weight-bold mr-2" style="border-radius: 6px;">
-              <i class="fas fa-print mr-1"></i> Cetak (A4)
-            </button>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="modal-body p-4 bg-light overflow-auto">
-          
-          <!-- PRINT AREA SERTIFIKAT -->
-          <div id="certificatePrintArea" class="bg-white p-4 p-md-5 rounded border shadow-sm mx-auto text-center" style="max-width: 960px; min-height: 600px; border: 4px double #064e3b !important; position: relative;">
-            
-            <div id="defaultTemplateOrnaments">
-              <!-- Kop Lembaga Resmi -->
-              <div class="mb-3">
-                <div class="mx-auto mb-2 text-dark" style="font-size: 38px; color: #002d5b;">
-                  <i class="fas fa-award"></i>
-                </div>
-                <div class="text-uppercase font-weight-bold text-muted small" style="letter-spacing: 1px;">
-                  KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI
-                </div>
-                <h6 class="text-uppercase font-weight-bold text-teal mb-1" style="color: #0f766e; letter-spacing: 0.5px;">
-                  BALAI PENJAMINAN MUTU PENDIDIKAN PROVINSI SULAWESI TENGGARA
-                </h6>
-                <hr style="width: 120px; border-top: 2px solid #0f766e; margin: 8px auto 14px;">
-              </div>
-
-              <!-- Judul Sertifikat -->
-              <h2 class="font-cert-serif font-weight-bold mb-0" style="color: #002d5b; letter-spacing: 1px;">SERTIFIKAT KEPEGAWAIAN</h2>
-            </div>
-
-            <div id="certModalNumber" class="text-muted small font-weight-bold mb-4" style="font-family: monospace;">
-              Nomor: 800.1.3/SERT-LPTI/2026/001
-            </div>
-
-            <!-- Teks Penerima -->
-            <p class="text-muted font-italic small mb-1">Diberikan secara resmi kepada:</p>
-            <h3 id="certModalName" class="font-weight-bold text-dark border-bottom pb-1 mb-1 mx-auto" style="max-width: 600px;">
-              Nama Pegawai
-            </h3>
-            <div id="certModalNip" class="text-muted font-weight-bold small mb-1" style="font-family: monospace;">NIP: -</div>
-            <div id="certModalJabatanInstansi" class="text-muted small mb-4">Jabatan &bull; BPMP Provinsi Sulawesi Tenggara</div>
-
-            <!-- Keterangan Pelatihan -->
-            <div class="small mx-auto mb-4 text-dark" style="max-width: 700px; line-height: 1.6;">
-              Atas partisipasi aktif, kehadiran penuh, dan penyelesaian Laporan Pasca Pelatihan dan Rencana Tindak Lanjut (LPTI) pada kegiatan:
-              <div id="certModalEventTitle" class="font-weight-bold text-teal mt-1 px-3" style="font-size: 15px; color: #0f766e;">
-                "Pelatihan Transformasi Digital & Manajemen Kepegawaian Modern"
-              </div>
-              <div class="mt-2 text-muted">
-                Diselenggarakan pada: <strong id="certModalSchedule">18 - 20 November 2026</strong> &bull;
-                <span class="badge badge-success px-2 py-0.5 ml-1 font-weight-bold" id="certModalJp">32 JP</span>
-              </div>
-            </div>
-
-            <!-- Tanda Tangan & QR Verifikasi -->
-            <div class="row pt-3 border-top align-items-end mx-auto" style="max-width: 700px;">
-              
-              <div class="col-6 text-left d-flex align-items-center">
-                <img id="certModalQr" src="" alt="QR Keabsahan" class="rounded border mr-3" style="width: 72px; height: 72px;">
-                <div>
-                  <div class="font-weight-bold text-teal small text-uppercase" style="font-size: 9px;">VERIFIKASI KEABSAHAN</div>
-                  <div class="text-muted" style="font-size: 8px; line-height: 1.3;">Pindai QR untuk validasi keaslian dokumen pada pangkalan data resmi.</div>
-                  <div class="font-weight-bold text-success mt-1" style="font-size: 9px; font-family: monospace;">STATUS: SAH / RESMI</div>
-                </div>
-              </div>
-
-              <div class="col-6 text-right">
-                <div id="certModalIssueDate" class="text-muted" style="font-size: 10px;">Ditetapkan pada: 16 November 2026</div>
-                <div class="font-weight-bold text-dark small">Kepala BPMP Provinsi Sulawesi Tenggara,</div>
-                <div class="my-2">
-                  <span class="badge badge-light border text-teal px-2 py-1" style="font-size: 8px;">
-                    <i class="fas fa-check-double mr-1"></i> TTE TERSERTIFIKASI
+                <div class="col-auto">
+                  <span class="badge bg-white text-primary border px-3 py-2 font-monospace" id="empAccumulatedJp">
+                    Total: 4 JP
                   </span>
                 </div>
-                <div id="certModalVerifier" class="font-weight-bold text-dark text-underline small text-decoration-underline">Junaiddin Pagala, ST, M.T.</div>
-                <div class="text-muted" style="font-size: 9px; font-family: monospace;">NIP. 197606122002121004</div>
               </div>
-
             </div>
-
           </div>
 
-        </div>
+          <!-- GRID 3 KARTU: PRESENSI, LPTI, DAN E-SERTIFIKAT -->
+          <div class="row g-3">
+            
+            <!-- KARTU 1: PRESENSI AULA & BIOMETRIK -->
+            <div class="col-lg-4">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0 small fw-bold text-primary">
+                    <i class="ti ti-qrcode me-1"></i> 1. Presensi Aula BPMP
+                  </h4>
+                  <span class="badge bg-secondary-lt">Langkah 1</span>
+                </div>
+                <div class="card-body p-3">
+                  
+                  <!-- Box Belum Hadir (Aksi Presensi) -->
+                  <div id="attendanceActionBox">
+                    <div class="text-center py-2 mb-3">
+                      <i class="ti ti-device-projector text-primary font-40 mb-2"></i>
+                      <h5 class="mb-1">Pindai QR di Layar Aula</h5>
+                      <p class="text-secondary small mb-0">Arahkan kamera ke layar proyektor aula atau masukkan 6-digit token aktif.</p>
+                    </div>
 
-        <div class="modal-footer py-2 bg-light">
-          <a id="btnModalDownloadPdf" href="#" target="_blank" class="btn btn-gov-emerald btn-sm font-weight-bold" style="border-radius: 6px;">
-            <i class="fas fa-file-download mr-1"></i> Unduh File Asli (PDF)
-          </a>
-          <button type="button" class="btn btn-secondary btn-sm font-weight-bold" data-dismiss="modal" style="border-radius: 6px;">Tutup</button>
-        </div>
+                    <button type="button" class="btn btn-primary w-100 mb-3" onclick="openCameraScanner()">
+                      <i class="ti ti-camera me-1"></i> Pindai Kode QR Aula
+                    </button>
 
+                    <div class="hr-text my-2">atau masukkan token</div>
+
+                    <div class="input-group mb-3">
+                      <input type="text" id="inputPresenceToken" class="form-control text-center font-monospace fw-bold font-18" placeholder="Contoh: 123456" maxlength="6" inputmode="numeric">
+                      <button class="btn btn-outline-primary" type="button" id="btnSubmitPresence" onclick="submitPresenceToken()">
+                        Kirim
+                      </button>
+                    </div>
+
+                    <!-- Alert token terdeteksi dari QR url -->
+                    <div id="alertDetectedToken" class="alert alert-info py-2 px-3 small d-none">
+                      <i class="ti ti-info-circle me-1"></i> Token aula terdeteksi dari tautan. Tekan Kirim untuk konfirmasi.
+                    </div>
+                  </div>
+
+                  <!-- Box Sudah Hadir (Sukses) -->
+                  <div id="attendanceSuccessBox" class="d-none text-center py-3">
+                    <div class="avatar avatar-lg rounded-circle bg-green-lt text-green mb-2 mx-auto">
+                      <i class="ti ti-check font-32"></i>
+                    </div>
+                    <h4 class="text-green fw-bold mb-1">Presensi Terverifikasi!</h4>
+                    <p class="text-secondary small mb-2" id="attendanceTimeLabel">Hadir pada 07.35 WITA</p>
+                    <div id="empFaceStatusCell" class="mb-2"></div>
+                    <div class="alert alert-success py-2 px-3 small mb-0">
+                      Kehadiran Anda di aula telah dicatat dalam sistem kepegawaian.
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- KARTU 2: UNGGAH BERKAS LPTI -->
+            <div class="col-lg-4">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0 small fw-bold text-primary">
+                    <i class="ti ti-file-text me-1"></i> 2. Laporan LPTI
+                  </h4>
+                  <span class="badge bg-secondary-lt">Langkah 2</span>
+                </div>
+                <div class="card-body p-3">
+                  
+                  <!-- Status Pill Container -->
+                  <div id="lptiStatusPill" class="mb-3">
+                    <div class="alert alert-secondary py-2 px-3 small text-center mb-0">
+                      Selesaikan presensi aula terlebih dahulu untuk mengunggah berkas LPTI.
+                    </div>
+                  </div>
+
+                  <!-- Form Upload LPTI -->
+                  <form id="lptiUploadForm" onsubmit="handleUploadLpti(event)" class="d-none">
+                    <input type="file" id="lptiFileInput" accept="application/pdf" class="d-none" onchange="handleFileSelected(this)">
+                    
+                    <div class="border border-dashed rounded p-3 text-center mb-3 bg-light cursor-pointer" id="fileUploadPrompt" onclick="document.getElementById('lptiFileInput').click()">
+                      <i class="ti ti-upload text-primary font-32 mb-1"></i>
+                      <h6 class="mb-1">Pilih Berkas PDF LPTI</h6>
+                      <p class="text-secondary small mb-0">Format: .pdf (Maks. 5 MB)</p>
+                    </div>
+
+                    <div id="fileSelectedInfo" class="d-none border rounded p-2 mb-3 bg-white d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger text-white">PDF</span>
+                        <div>
+                          <div class="fw-bold small text-truncate" style="max-width: 140px;" id="selectedFileName">laporan.pdf</div>
+                          <div class="text-secondary small" id="selectedFileSize">0 KB</div>
+                        </div>
+                      </div>
+                      <button type="submit" id="btnUploadSubmit" class="btn btn-sm btn-primary">
+                        <i class="ti ti-send me-1"></i> Unggah
+                      </button>
+                    </div>
+                  </form>
+
+                  <!-- Dokumen yang sudah terunggah -->
+                  <div id="currentUploadedDocCard" class="d-none border rounded p-2 mb-2 bg-light-subtle d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="ti ti-file-check text-green font-20"></i>
+                      <div class="small fw-bold text-truncate" style="max-width: 150px;">Berkas LPTI Terunggah</div>
+                    </div>
+                    <a id="currentUploadedLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <i class="ti ti-eye me-1"></i> Lihat PDF
+                    </a>
+                  </div>
+
+                  <!-- Catatan Revisi Alert Box -->
+                  <div id="revisionAlertBox" class="alert alert-danger d-none py-2 px-3 small mt-2">
+                    <div class="fw-bold"><i class="ti ti-alert-circle me-1"></i> Catatan Revisi Admin:</div>
+                    <div id="revisionNoteContent" class="mt-1">Mohon lengkapi tanda tangan atasan langsung.</div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- KARTU 3: E-SERTIFIKAT RESMI -->
+            <div class="col-lg-4">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0 small fw-bold text-primary">
+                    <i class="ti ti-certificate me-1"></i> 3. E-Sertifikat Resmi
+                  </h4>
+                  <span class="badge bg-secondary-lt">Langkah 3</span>
+                </div>
+                <div class="card-body p-3">
+                  
+                  <!-- View Sertifikat Terkunci -->
+                  <div id="certLockedView" class="text-center py-4">
+                    <i class="ti ti-lock text-secondary font-40 mb-2"></i>
+                    <h5 class="mb-1 text-secondary">E-Sertifikat Terkunci</h5>
+                    <p class="text-secondary small mb-0" id="certLockedReason">
+                      Sertifikat akan diterbitkan secara otomatis setelah kehadiran Anda tercatat dan laporan LPTI disetujui oleh Bagian Kepegawaian BPMP Sultra.
+                    </p>
+                  </div>
+
+                  <!-- View Sertifikat Terbuka (Unlocked) -->
+                  <div id="certUnlockedView" class="d-none text-center py-3">
+                    <div class="avatar avatar-lg rounded-circle bg-teal-lt text-teal mb-2 mx-auto">
+                      <i class="ti ti-award font-32"></i>
+                    </div>
+                    <h4 class="text-teal fw-bold mb-1">E-Sertifikat Telah Terbit!</h4>
+                    <div class="badge bg-light text-primary font-monospace small mb-3" id="certNumberBadge">
+                      No: 001/BPMP-SULTRA/SENIN-BERSERI/2026
+                    </div>
+
+                    <div class="d-grid gap-2">
+                      <button type="button" id="btnPreviewPdf" class="btn btn-outline-primary" onclick="openCertificateModal()">
+                        <i class="ti ti-eye me-1"></i> Lihat Piagam Digital
+                      </button>
+                      <button type="button" id="btnDirectDownloadPdf" class="btn btn-teal text-white">
+                        <i class="ti ti-download me-1"></i> Unduh E-Sertifikat Resmi (PDF)
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+          </div> <!-- End row g-3 -->
+
+        </section> <!-- End dashboardSection -->
+
+      </div> <!-- End container-xl -->
+
+      <!-- Footer -->
+      <div id="bpmp-footer"></div>
+    </div> <!-- End page-wrapper -->
+  </div> <!-- End page -->
+
+  <!-- MODAL 1: KAMERA PEMINDAI QR AULA -->
+  <div class="modal modal-blur fade" id="cameraScannerModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <h5 class="modal-title small fw-bold">
+            <i class="ti ti-camera me-1"></i> Pindai Kode QR Aula
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopCameraScanner()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2 text-center">
+          <div id="cameraQrReader" style="width: 100%; border-radius: 8px; overflow: hidden;"></div>
+          <div id="scannerLoadingStatus" class="small text-secondary mt-2">
+            Mengaktifkan kamera pemindai...
+          </div>
+          <div id="scannerErrorMessage" class="alert alert-danger py-1 px-2 small mt-2 d-none">
+            <span id="scannerErrorText">Kamera tidak dapat diakses.</span>
+          </div>
+        </div>
+        <div class="modal-footer py-1 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchCameraFacing()">
+            <i class="ti ti-switch-horizontal me-1"></i> Ganti Kamera
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="stopCameraScanner()">
+            Batal
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 4. Official Footer -->
-  <footer class="gov-footer">
-    <div class="container text-center">
-      <div class="mb-1 font-weight-bold text-dark">
-        Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara &copy; 2026
-      </div>
-      <div>
-        Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi &bull; Sistem Presensi Mandiri, Verifikasi LPTI & Penerbitan E-Sertifikat Kepegawaian
+  <!-- MODAL 2: SELFIE BIOMETRIK VERIFIKASI WAJAH -->
+  <div class="modal modal-blur fade" id="faceBiometricModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <div>
+            <h5 class="modal-title small fw-bold mb-0" id="faceModalTitle">
+              <i class="ti ti-scan me-1"></i> Verifikasi Wajah Presensi
+            </h5>
+            <small class="text-white-50" id="faceModalSubtitle" style="font-size: 0.75rem;">Aparatur Sipil Negara BPMP Prov. Sultra</small>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeFaceCamera()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2 text-center">
+          <div class="position-relative overflow-hidden rounded mx-auto" style="width: 260px; height: 320px; background: #000;">
+            <video id="faceCameraVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+            <canvas id="faceCaptureCanvas" class="d-none" width="400" height="400"></canvas>
+            
+            <!-- Oval Guide -->
+            <div id="faceOvalGuide" class="position-absolute top-50 start-50 translate-middle" style="width: 180px; height: 240px; border: 3px dashed #2fb344; border-radius: 50%; pointer-events: none;"></div>
+            
+            <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2">
+              <span id="faceStatusBadge" class="badge bg-dark-lt text-white px-3 py-1">Posisikan Wajah</span>
+            </div>
+          </div>
+          <p class="small text-secondary mt-2 mb-0" id="faceInstructionText">
+            Pastikan wajah Anda berada di dalam lingkaran panduan dan pencahayaan aula cukup.
+          </p>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" id="btnCaptureFace" class="btn btn-primary w-100" onclick="captureAndProcessFace()">
+            <i class="ti ti-camera me-1"></i> <span id="btnCaptureText">Ambil Foto & Verifikasi</span>
+          </button>
+        </div>
       </div>
     </div>
-  </footer>
+  </div>
 
-  <!-- Vendor Scripts -->
-  <script src="/lib/jquery/jquery.min.js"></script>
-  <script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
-  
-  <!-- HTML5-QRCode Library (Local & CDN Fallback) -->
+  <!-- MODAL 3: PREVIEW PIAGAM DIGITAL -->
+  <div class="modal modal-blur fade" id="certificateModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-teal text-white py-2">
+          <h5 class="modal-title small fw-bold">
+            <i class="ti ti-award me-1"></i> Piagam Penghargaan Digital BPMP Sultra
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 bg-light">
+          <!-- Area Simulasi Sertifikat -->
+          <div id="certificatePrintArea" class="bg-white p-4 rounded border shadow-sm mx-auto text-center position-relative" style="max-width: 680px;">
+            <div id="defaultTemplateOrnaments"></div>
+            <div class="text-secondary small font-monospace fw-bold mb-3" id="certModalNumber">
+              Nomor: 001/BPMP-SULTRA/SENIN-BERSERI/2026
+            </div>
+            <div class="small text-uppercase text-secondary mb-1">Diberikan Kepada:</div>
+            <h3 id="certModalName" class="fw-bold text-primary mb-1 text-decoration-underline">
+              Nama Pegawai ASN
+            </h3>
+            <div class="text-secondary small font-monospace mb-1" id="certModalNip">NIP: -</div>
+            <div class="text-secondary small mb-3" id="certModalJabatanInstansi">Jabatan &bull; BPMP Sultra</div>
+            
+            <p class="small text-secondary mb-1">Atas partisipasi aktif sebagai peserta dalam kegiatan:</p>
+            <h4 class="text-teal fw-bold mb-2" id="certModalEventTitle">
+              Pelatihan Transformasi Digital ASN BPMP Sultra
+            </h4>
+            <div class="small text-secondary mb-3">
+              Jadwal: <strong id="certModalSchedule">Senin, 07.30 WITA</strong> &bull;
+              <span class="badge bg-green text-white" id="certModalJp">4 JP</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-end mt-4 pt-3 border-top">
+              <div class="text-start">
+                <img id="certModalQr" src="" alt="QR Keabsahan" class="rounded border p-1" style="width: 70px; height: 70px;">
+                <div class="text-secondary mt-1" style="font-size: 0.65rem;" id="certModalIssueDate">Ditetapkan: 2026</div>
+              </div>
+              <div class="text-end">
+                <div class="small text-secondary mb-1">Kepala BPMP Prov. Sultra</div>
+                <div class="fw-bold text-primary text-decoration-underline small" id="certModalVerifier">
+                  Dr. Ir. Contoh Kepala, M.Pd.
+                </div>
+                <div class="text-secondary small" style="font-size: 0.7rem;">NIP. 197001011995011001</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" id="btnModalDownloadPdf" class="btn btn-teal text-white btn-sm">
+            <i class="ti ti-download me-1"></i> Unduh Berkas PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 1090;"></div>
+
+  <!-- Library html5-qrcode (Local Dist) -->
   <script src="/lib/html5-qrcode/html5-qrcode.min.js"></script>
+  <!-- Tabler Core JS (Local Dist) -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <!-- Components & Layout Helpers -->
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/pwa-install.js"></script>
+
+  <!-- Fallback loader untuk html5-qrcode jika local file belum tersedia -->
   <script>
     if (typeof Html5Qrcode === 'undefined') {
       const fallbackScript = document.createElement('script');
@@ -1054,11 +528,25 @@
     }
   </script>
 
-  <!-- Azia JS -->
-  <script src="/js/azia.js"></script>
-
-  <!-- Application Logic -->
+  <!-- Pegawai Application Logic -->
   <script>
+    // Initialize shared BPMP Tabler layout
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.BPMPLayout) {
+        const currentUser = localStorage.getItem('employeeUser') ? JSON.parse(localStorage.getItem('employeeUser')) : null;
+        BPMPLayout.init({
+          role: 'pegawai',
+          activeMenu: 'dashboard',
+          user: currentUser ? {
+            name: currentUser.name || currentUser.nama,
+            role: 'Aparatur Sipil Negara (ASN)',
+            nip: currentUser.nip
+          } : null
+        });
+      }
+    });
+
+
     // Global State
     let currentAuthUser = null;
     let currentEvent = null;
@@ -1095,7 +583,7 @@
       const icon = document.getElementById('eyeIcon');
       const isPassword = pwInput.type === 'password';
       pwInput.type = isPassword ? 'text' : 'password';
-      icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+      icon.className = isPassword ? 'ti ti-eye-slash' : 'ti ti-eye';
     }
 
     // 1. Otentikasi Login (POST /api/auth/login)
@@ -1265,7 +753,7 @@
         if (faceCell) {
           faceCell.innerHTML = `
             <a href="/verif-wajah" class="btn btn-warning btn-xs font-weight-bold px-2 py-0.5 rounded-pill">
-              <i class="fas fa-camera mr-1"></i> Rekam Wajah
+              <i class="ti ti-camera mr-1"></i> Rekam Wajah
             </a>
           `;
         }
@@ -1296,7 +784,7 @@
 
       if (isAttendedThisEvent) {
         attBadge.className = 'badge badge-success px-2.5 py-1 font-weight-bold';
-        attBadge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> HADIR RESMI';
+        attBadge.innerHTML = '<i class="ti ti-circle-check mr-1"></i> HADIR RESMI';
         actionBox.classList.add('d-none');
         successBox.classList.remove('d-none');
         
@@ -1319,7 +807,7 @@
         document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${timeStr}`;
       } else {
         attBadge.className = 'badge badge-secondary px-2.5 py-1 font-weight-bold';
-        attBadge.innerHTML = '<i class="fas fa-times-circle mr-1"></i> BELUM HADIR';
+        attBadge.innerHTML = '<i class="ti ti-circle-x mr-1"></i> BELUM HADIR';
         actionBox.classList.remove('d-none');
         successBox.classList.add('d-none');
       }
@@ -1337,7 +825,7 @@
       const btnPreview = document.getElementById('btnPreviewPdf');
 
       if (!lpti || lpti.status === 'none') {
-        pill.innerHTML = '<span class="badge badge-light border text-muted px-2.5 py-1 font-weight-bold"><i class="fas fa-clock mr-1"></i> Belum Diunggah</span>';
+        pill.innerHTML = '<span class="badge badge-light border text-muted px-2.5 py-1 font-weight-bold"><i class="ti ti-clock mr-1"></i> Belum Diunggah</span>';
         revisionBox.classList.add('d-none');
         currentDocCard.classList.add('d-none');
       } else if (lpti.status === 'pending') {
@@ -1355,7 +843,7 @@
         linkDoc.href = lpti.fileUrl || '#';
         btnPreview.href = lpti.fileUrl || '#';
       } else if (lpti.status === 'revision') {
-        pill.innerHTML = '<span class="badge badge-danger px-2.5 py-1 font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Perlu Revisi</span>';
+        pill.innerHTML = '<span class="badge badge-danger px-2.5 py-1 font-weight-bold"><i class="ti ti-alert-triangle mr-1"></i> Perlu Revisi</span>';
         revisionBox.classList.remove('d-none');
         document.getElementById('revisionNoteContent').textContent = lpti.notes || 'Harap periksa kembali format laporan.';
         currentDocCard.classList.remove('d-none');
@@ -1494,7 +982,7 @@
         if (btnText) btnText.textContent = 'Verifikasi Kehadiran';
       }
 
-      $('#faceBiometricModal').modal('show');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).show();
       setTimeout(startFaceCamera, 300);
     }
 
@@ -1503,7 +991,7 @@
       const badge = document.getElementById('faceStatusBadge');
       const oval = document.getElementById('faceOvalGuide');
 
-      if (badge) badge.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Mengakses kamera depan...';
+      if (badge) badge.innerHTML = '<i class="spinner-border spinner-border-sm mr-1"></i> Mengakses kamera depan...';
 
       try {
         if (faceStream) {
@@ -1524,7 +1012,7 @@
           video.onloadedmetadata = () => {
             video.play();
             if (badge) {
-              badge.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i> Kamera siap. Posisikan wajah di lingkaran';
+              badge.innerHTML = '<i class="ti ti-circle-check text-success mr-1"></i> Kamera siap. Posisikan wajah di lingkaran';
             }
             if (oval) oval.style.borderColor = '#10b981';
           };
@@ -1532,7 +1020,7 @@
       } catch (err) {
         console.error('Kamera error:', err);
         if (badge) {
-          badge.innerHTML = '<i class="fas fa-exclamation-triangle text-warning mr-1"></i> Kamera diblokir / tidak tersedia';
+          badge.innerHTML = '<i class="ti ti-alert-triangle text-warning mr-1"></i> Kamera diblokir / tidak tersedia';
         }
         showToast('Izin kamera depan diperlukan untuk biometrik wajah: ' + err.message, 'error');
       }
@@ -1570,7 +1058,7 @@
       const photoBase64 = canvas.toDataURL('image/jpeg', 0.85);
 
       if (btn) btn.disabled = true;
-      if (badge) badge.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses foto biometrik...';
+      if (badge) badge.innerHTML = '<i class="spinner-border spinner-border-sm mr-1"></i> Memproses foto biometrik...';
 
       try {
         if (currentFaceMode === 'register') {
@@ -1587,7 +1075,7 @@
             currentAuthUser = data.employee;
             renderEmployeeProfile(currentAuthUser);
             closeFaceCamera();
-            $('#faceBiometricModal').modal('hide');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
 
             // Jika ada pending presensi token, langsung eksekusi sekarang
             if (pendingPresenceToken) {
@@ -1601,7 +1089,7 @@
         } else {
           // Mode Verifikasi Presensi
           closeFaceCamera();
-          $('#faceBiometricModal').modal('hide');
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
           if (pendingPresenceToken) {
             await executeAutoPresence(pendingPresenceToken, pendingPresenceEventId, photoBase64);
             pendingPresenceToken = null;
@@ -1666,7 +1154,7 @@
     }
 
     async function openCameraScanner() {
-      $('#cameraScannerModal').modal('show');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('cameraScannerModal')).show();
       setTimeout(startCameraScanner, 350);
     }
 
@@ -1695,7 +1183,7 @@
           const qrData = extractQrData(decodedText);
           if (qrData.token) {
             await stopCameraScanner();
-            $('#cameraScannerModal').modal('hide');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('cameraScannerModal')).hide();
             showToast(`📸 QR Code Terdeteksi: ${qrData.token}`, 'success');
 
             if (currentAuthUser) {
@@ -1818,7 +1306,7 @@
         showToast('Terjadi kesalahan unggah: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1.5"></i> <span>Unggah Berkas LPTI</span>';
+        btn.innerHTML = '<i class="ti ti-cloud-upload mr-1.5"></i> <span>Unggah Berkas LPTI</span>';
       }
     }
 
@@ -1870,7 +1358,7 @@
           document.getElementById('btnDownloadCertPdf').href = pdfUrl;
           document.getElementById('btnModalDownloadPdf').href = pdfUrl;
 
-          $('#certificateModal').modal('show');
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('certificateModal')).show();
         } else {
           showToast(data.message || 'Sertifikat belum dapat diterbitkan.', 'error');
         }
@@ -1937,7 +1425,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       checkUrlParamsAndSession();
     });
+  
   </script>
-  <script src="/pwa-install.js"></script>
 </body>
 </html>

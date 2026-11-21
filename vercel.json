@@ -1,15 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "server.js"
-    }
+  "rewrites": [
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/pegawai", "destination": "/index.html" },
+    { "source": "/admin/login", "destination": "/admin-login.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/superadmin", "destination": "/superadmin.html" },
+    { "source": "/proyektor", "destination": "/proyektor.html" },
+    { "source": "/qr", "destination": "/proyektor.html" },
+    { "source": "/verif-wajah", "destination": "/verif-wajah.html" },
+    { "source": "/verifikasi-wajah", "destination": "/verif-wajah.html" },
+    { "source": "/api/(.*)", "destination": "/api/index.js" },
+    { "source": "/(.*)", "destination": "/api/index.js" }
   ]
 }

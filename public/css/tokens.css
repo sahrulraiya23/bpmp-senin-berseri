@@ -1,0 +1,244 @@
+/*
+ * BPMP Senin Berseri — Design Tokens
+ * Di-load setelah tabler.min.css untuk menimpa variabel Tabler.
+ * Satu sumber kebenaran warna, font, radius, bayangan untuk semua peran.
+ */
+
+/* ======================================================
+   1. GOOGLE INTER FONT (Offline-safe via system fallback)
+   ====================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* ---- Warna Utama Institusional ---- */
+  --tblr-primary:        #1a3a5c;
+  --tblr-primary-rgb:    26, 58, 92;
+  --tblr-primary-fg:     #ffffff;
+  --tblr-primary-darken: #0f2740;
+  --tblr-primary-lighten:#2d5a8a;
+
+  /* ---- Warna Aksen ---- */
+  --tblr-secondary:      #6c7a89;
+  --tblr-secondary-rgb:  108, 122, 137;
+
+  /* ---- Warna Status ---- */
+  --tblr-success:        #2fb344;   /* Disetujui / Hadir */
+  --tblr-success-rgb:    47, 179, 68;
+  --tblr-warning:        #f59f00;   /* Pending / Menunggu */
+  --tblr-warning-rgb:    245, 159, 0;
+  --tblr-danger:         #d63939;   /* Revisi / Ditolak */
+  --tblr-danger-rgb:     214, 57, 57;
+  --tblr-info:           #4299e1;   /* Informasi */
+  --tblr-info-rgb:       66, 153, 225;
+
+  /* ---- Background & Surface ---- */
+  --tblr-body-bg:        #f1f5f9;
+  --tblr-card-bg:        #ffffff;
+  --tblr-border-color:   #e2e8f0;
+
+  /* ---- Font ---- */
+  --tblr-font-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --tblr-body-font-family: var(--tblr-font-sans-serif);
+  --tblr-body-font-size:   0.875rem;
+  --tblr-body-color:       #1e293b;
+
+  /* ---- Radius & Shadow ---- */
+  --tblr-border-radius:    0.5rem;
+  --tblr-border-radius-sm: 0.375rem;
+  --tblr-border-radius-lg: 0.75rem;
+  --tblr-shadow-card:      0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  --tblr-shadow-dropdown:  0 10px 25px rgba(0,0,0,0.1);
+
+  /* ---- BPMP Custom Tokens ---- */
+  --bpmp-gov-strip-bg:   linear-gradient(90deg, #0f2740 0%, #1a3a5c 50%, #0f2740 100%);
+  --bpmp-gov-strip-border: #d97706;
+  --bpmp-gold:           #d97706;
+  --bpmp-gold-bg:        #fef3c7;
+  --bpmp-teal:           #0f766e;
+  --bpmp-teal-bg:        #ccfbf1;
+  --bpmp-sidebar-bg:     #1a3a5c;
+  --bpmp-sidebar-active:  rgba(255,255,255,0.12);
+  --bpmp-sidebar-text:    rgba(255,255,255,0.75);
+  --bpmp-sidebar-text-active: #ffffff;
+}
+
+/* ======================================================
+   2. GLOBAL OVERRIDES
+   ====================================================== */
+body {
+  font-family: var(--tblr-body-font-family);
+  background-color: var(--tblr-body-bg);
+  color: var(--tblr-body-color);
+}
+
+/* Card shadows */
+.card {
+  box-shadow: var(--tblr-shadow-card);
+  border: 1px solid var(--tblr-border-color);
+}
+
+/* Primary button */
+.btn-primary {
+  --tblr-btn-bg: var(--tblr-primary);
+  --tblr-btn-border-color: var(--tblr-primary);
+  --tblr-btn-hover-bg: var(--tblr-primary-darken);
+  --tblr-btn-hover-border-color: var(--tblr-primary-darken);
+}
+
+/* Gov gold button */
+.btn-gov-gold {
+  background: linear-gradient(135deg, var(--bpmp-gold) 0%, #b45309 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.btn-gov-gold:hover {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  color: #ffffff;
+}
+
+/* ======================================================
+   3. STATUS BADGES
+   ====================================================== */
+.badge-status-hadir    { background-color: rgba(var(--tblr-success-rgb), 0.1); color: var(--tblr-success); font-weight: 600; }
+.badge-status-pending  { background-color: rgba(var(--tblr-warning-rgb), 0.1); color: var(--tblr-warning); font-weight: 600; }
+.badge-status-ditolak  { background-color: rgba(var(--tblr-danger-rgb), 0.1);  color: var(--tblr-danger);  font-weight: 600; }
+.badge-status-disetujui{ background-color: rgba(var(--tblr-success-rgb), 0.1); color: var(--tblr-success); font-weight: 600; }
+.badge-status-revisi   { background-color: rgba(var(--tblr-danger-rgb), 0.1);  color: var(--tblr-danger);  font-weight: 600; }
+.badge-status-none     { background-color: rgba(var(--tblr-secondary-rgb), 0.1); color: var(--tblr-secondary); font-weight: 600; }
+
+/* ======================================================
+   4. GOV TOP STRIP (Shared across all pages except proyektor)
+   ====================================================== */
+.gov-top-strip {
+  background: var(--bpmp-gov-strip-bg);
+  color: rgba(255,255,255,0.9);
+  padding: 6px 20px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--bpmp-gov-strip-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ======================================================
+   5. STICKY TABLE HEADER
+   ====================================================== */
+.table-sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--tblr-card-bg);
+  border-bottom: 2px solid var(--tblr-border-color);
+}
+.table-responsive-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* ======================================================
+   6. STAT CARD (reusable)
+   ====================================================== */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card .stat-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tblr-border-radius);
+  font-size: 1.25rem;
+}
+.stat-card .stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--tblr-secondary);
+}
+
+/* ======================================================
+   7. EMPTY STATE
+   ====================================================== */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--tblr-secondary);
+}
+.empty-state .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.4;
+}
+.empty-state .empty-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--tblr-body-color);
+  margin-bottom: 0.5rem;
+}
+.empty-state .empty-text {
+  font-size: 0.875rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* ======================================================
+   8. PAGE HEADER (title + breadcrumb + action)
+   ====================================================== */
+.page-header-custom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+}
+.page-header-custom .page-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+/* ======================================================
+   9. SIDEBAR OVERRIDES (Tabler vertical navbar)
+   ====================================================== */
+.navbar-vertical.navbar-dark {
+  background: var(--bpmp-sidebar-bg) !important;
+}
+.navbar-vertical.navbar-dark .nav-link {
+  color: var(--bpmp-sidebar-text);
+}
+.navbar-vertical.navbar-dark .nav-link.active,
+.navbar-vertical.navbar-dark .nav-link:hover {
+  color: var(--bpmp-sidebar-text-active);
+  background: var(--bpmp-sidebar-active);
+}
+
+/* ======================================================
+   10. MOBILE-FIRST ADJUSTMENTS
+   ====================================================== */
+@media (max-width: 768px) {
+  .stat-card .stat-value { font-size: 1.5rem; }
+  .page-header-custom { flex-direction: column; align-items: flex-start; }
+  .gov-top-strip { font-size: 0.6rem; padding: 4px 12px; }
+}
+
+/* ======================================================
+   11. PRINT STYLES (sertifikat)
+   ====================================================== */
+@media print {
+  .navbar, .gov-top-strip, .page-header-custom, footer { display: none !important; }
+  .card { box-shadow: none !important; border: none !important; }
+  body { background: #fff !important; }
+}

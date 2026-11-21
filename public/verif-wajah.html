@@ -2,430 +2,258 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Perekaman Biometrik Wajah ASN — BPMP Provinsi Sulawesi Tenggara</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Registrasi Biometrik Wajah ASN — BPMP Provinsi Sulawesi Tenggara</title>
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23002d5b'><path d='M12 2L2 7l10 5 10-5-10-5zm0 8.5L4.5 7 12 3.5 19.5 7 12 10.5zM3 9.5v5c0 3.5 4 6.5 9 6.5s9-3 9-6.5v-5l-9 4.5L3 9.5z'/></svg>">
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
 
-  <!-- Font Awesome & Fonts -->
-  <link href="/lib/fontawesome-free/css/all.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Tabler Core CSS & Tabler Icons (Local Vendor) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
 
-  <!-- Core CSS (Azia Government Style) -->
-  <link rel="stylesheet" href="/css/azia.min.css">
-  
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- BPMP Custom Design Tokens -->
+  <link rel="stylesheet" href="/css/tokens.css">
 
   <style>
-    :root {
-      --gov-navy: #002d5b;
-      --gov-blue: #0a3d74;
-      --gov-gold: #c59b27;
-      --gov-emerald: #0f766e;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #f8fafc;
-      color: #1e293b;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .gov-top-bar {
-      background: #001f3f;
-      color: #94a3b8;
-      font-size: 11px;
-      padding: 6px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .gov-header {
-      background: #ffffff;
-      border-bottom: 2px solid #e2e8f0;
-      padding: 12px 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .gov-brand-title {
-      font-size: 14px;
-      font-weight: 800;
-      color: var(--gov-navy);
-      letter-spacing: 0.5px;
-    }
-
-    .gov-brand-subtitle {
-      font-size: 10px;
-      color: #64748b;
-      font-weight: 600;
-    }
-
-    /* Stepper Header */
-    .step-track {
-      display: flex;
-      justify-content: center;
-      margin: 24px auto 16px;
-      max-width: 650px;
-      padding: 0 16px;
-    }
-
-    .step-item {
-      display: flex;
-      align-items: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: #94a3b8;
-    }
-
-    .step-item.active {
-      color: var(--gov-navy);
-    }
-
-    .step-item.done {
-      color: #10b981;
-    }
-
-    .step-bubble {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: #e2e8f0;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 8px;
-      font-size: 11px;
-    }
-
-    .step-item.active .step-bubble {
-      background: var(--gov-navy);
-      color: #fff;
-      box-shadow: 0 0 0 4px rgba(0, 45, 91, 0.15);
-    }
-
-    .step-item.done .step-bubble {
-      background: #10b981;
-      color: #fff;
-    }
-
-    .step-divider {
-      flex: 1;
-      height: 2px;
-      background: #e2e8f0;
-      margin: 0 12px;
-      min-width: 30px;
-    }
-
-    /* Camera Viewfinder Box */
-    .camera-card {
-      background: #ffffff;
-      border-radius: 20px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);
-      overflow: hidden;
-    }
-
+    /* Viewfinder Camera Styles */
     .viewfinder-wrapper {
       position: relative;
       width: 100%;
-      max-width: 380px;
-      height: 380px;
+      max-width: 360px;
+      aspect-ratio: 1 / 1;
       margin: 0 auto;
-      border-radius: 24px;
+      border-radius: var(--tblr-border-radius-lg);
       overflow: hidden;
-      background: #000;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      background: #0b1727;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
-
-    #faceVideo {
+    .viewfinder-wrapper video,
+    .viewfinder-wrapper img.preview-image {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1); /* Efek mirror selfie alami */
+      display: block;
     }
-
-    #faceCanvas {
-      display: none;
-    }
-
-    /* Oval Face Guide Overlay */
     .oval-guide {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 220px;
-      height: 290px;
+      width: 68%;
+      height: 82%;
+      border: 3px dashed var(--tblr-primary);
       border-radius: 50%;
-      border: 3px dashed #10b981;
+      box-shadow: 0 0 0 9999px rgba(11, 23, 39, 0.55);
       pointer-events: none;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
-      transition: all 0.3s ease;
+      transition: border-color 0.3s ease;
     }
-
     .scanner-line {
       position: absolute;
-      left: 10%;
-      right: 10%;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, #10b981, #34d399, transparent);
-      box-shadow: 0 0 12px #10b981;
-      animation: scanSweep 2.5s infinite alternate ease-in-out;
-      pointer-events: none;
-    }
-
-    @keyframes scanSweep {
-      0% { top: 18%; opacity: 0.2; }
-      50% { opacity: 1; }
-      100% { top: 82%; opacity: 0.2; }
-    }
-
-    .preview-image {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #2fb344, transparent);
+      box-shadow: 0 0 8px #2fb344;
+      animation: scanAnim 2.2s ease-in-out infinite alternate;
     }
-
-    /* Buttons */
-    .btn-capture {
-      background: linear-gradient(135deg, #002d5b 0%, #0a3d74 100%);
-      color: #fff;
-      font-weight: 700;
-      padding: 12px 28px;
-      border-radius: 30px;
-      box-shadow: 0 4px 14px rgba(0, 45, 91, 0.3);
-      transition: all 0.2s;
-      border: none;
+    @keyframes scanAnim {
+      0% { top: 10%; opacity: 0.3; }
+      100% { top: 90%; opacity: 1; }
     }
-
-    .btn-capture:hover {
-      background: linear-gradient(135deg, #001f3f 0%, #002d5b 100%);
-      color: #fff;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 45, 91, 0.4);
-    }
-
-    .btn-save-face {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #fff;
-      font-weight: 700;
-      padding: 12px 28px;
-      border-radius: 30px;
-      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-      border: none;
-    }
-
-    .btn-save-face:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      color: #fff;
-      transform: translateY(-2px);
+    #faceCanvas {
+      display: none;
     }
   </style>
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100 bg-light">
 
-  <!-- 1. Top Government Strip -->
-  <div class="gov-top-bar">
-    <div>
-      <i class="fas fa-landmark text-warning mr-1"></i>
-      <strong>REPUBLIK INDONESIA</strong> &bull; KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI
-    </div>
-    <div class="d-none d-md-flex align-items-center">
-      <span class="mr-3"><i class="fas fa-map-marker-alt text-danger mr-1"></i> BPMP Provinsi Sulawesi Tenggara, Kendari</span>
-      <span class="badge badge-warning text-dark font-weight-bold px-2 py-0.5">STANDAR ASN</span>
-    </div>
-  </div>
+  <!-- Shared Top Government Strip -->
+  <div id="app-topstrip"></div>
 
-  <!-- 2. Header -->
-  <header class="gov-header">
-    <div class="container d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center">
-        <!-- Logo Kemendikbud Tut Wuri Handayani -->
-        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-2.5 shadow-sm" style="width: 38px; height: 38px; background: #002d5b !important;">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="#ffffff">
-            <path d="M12 2L2 7l10 5 10-5-10-5zm0 8.5L4.5 7 12 3.5 19.5 7 12 10.5zM3 9.5v5c0 3.5 4 6.5 9 6.5s9-3 9-6.5v-5l-9 4.5L3 9.5z"/>
-          </svg>
-        </div>
-        <div>
-          <div class="gov-brand-title">BPMP PROVINSI SULAWESI TENGGARA</div>
-          <div class="gov-brand-subtitle">SENIN BERSERI &bull; MODUL BIOMETRIK RESMI ASN</div>
+  <!-- Shared Tabler Navbar -->
+  <div id="app-navbar"></div>
+
+  <div class="page-wrapper flex-fill">
+    
+    <!-- Page Header -->
+    <div class="page-header d-print-none mb-3">
+      <div class="container-xl">
+        <div class="row g-2 align-items-center">
+          <div class="col">
+            <div class="page-pretitle text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 0.8px;">
+              PORTAL MANDIRI PEGAWAI
+            </div>
+            <h2 class="page-title text-dark fw-bold d-flex align-items-center gap-2">
+              <i class="ti ti-scan text-primary"></i>
+              <span>Perekaman Biometrik Wajah ASN</span>
+            </h2>
+          </div>
+          <div class="col-auto ms-auto d-print-none">
+            <a href="/" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1">
+              <i class="ti ti-arrow-left"></i>
+              <span>Kembali ke Portal</span>
+            </a>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- User Active Chip -->
-      <div class="d-flex align-items-center">
-        <div class="d-none d-sm-block text-right mr-3">
-          <div class="font-weight-bold text-dark small" id="headerEmpName">Memuat...</div>
-          <div class="text-muted font-mono" style="font-size: 10px;" id="headerEmpNip">NIP: -</div>
-        </div>
-        <button class="btn btn-outline-danger btn-sm rounded-pill font-weight-bold px-3" onclick="handleLogout()" title="Keluar dari akun">
-          <i class="fas fa-sign-out-alt mr-1"></i> Keluar
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- 3. Progress Step Ribbon -->
-  <div class="step-track">
-    <div class="step-item done">
-      <div class="step-bubble"><i class="fas fa-check"></i></div>
-      <span>1. Otentikasi NIP</span>
-    </div>
-    <div class="step-divider"></div>
-    <div class="step-item active">
-      <div class="step-bubble">2</div>
-      <span>2. Perekaman Master Wajah</span>
-    </div>
-    <div class="step-divider"></div>
-    <div class="step-item">
-      <div class="step-bubble">3</div>
-      <span>3. Presensi Aula & Piagam</span>
-    </div>
-  </div>
-
-  <!-- 4. Main Body Container -->
-  <main class="container my-auto py-3">
-    <div class="row justify-content-center">
-      
-      <!-- Kolom Kamera Perekaman Wajah -->
-      <div class="col-lg-6 col-md-8 mb-4">
-        <div class="camera-card p-4 text-center">
+    <!-- Page Body -->
+    <div class="page-body">
+      <div class="container-xl">
+        <div class="row row-cards justify-content-center">
           
-          <!-- Heading -->
-          <div class="mb-3">
-            <span class="badge badge-primary px-3 py-1 rounded-pill font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 0.5px;">
-              <i class="fas fa-camera mr-1"></i> Tahap Wajib: Perekaman Master Wajah
-            </span>
-            <h5 class="font-weight-bold text-gray-900 mb-1" id="cameraTitle">Arahkan Wajah Anda ke Kamera</h5>
-            <p class="text-muted small mb-0">Posisikan wajah tepat di dalam lingkaran oval pemandu untuk verifikasi biometrik.</p>
-          </div>
+          <!-- Kolom Kamera Viewfinder -->
+          <div class="col-lg-6 col-md-8">
+            <div class="card shadow-sm border">
+              <div class="card-status-top bg-primary"></div>
+              <div class="card-body text-center p-3 p-md-4">
+                
+                <div class="mb-3">
+                  <span class="badge bg-primary-lt px-3 py-1 text-uppercase fw-bold mb-2">
+                    <i class="ti ti-camera me-1"></i> Kamera Depan Selfie
+                  </span>
+                  <h3 class="fw-bold mb-1 text-dark" id="cameraTitle">Posisikan Wajah Anda di Lingkaran</h3>
+                  <div class="text-muted small">Tatap langsung ke kamera perangkat agar verifikasi presensi aula berjalan lancar.</div>
+                </div>
 
-          <!-- Viewfinder Frame -->
-          <div class="viewfinder-wrapper mb-3" id="viewfinderWrapper">
-            <video id="faceVideo" autoplay playsinline muted></video>
-            <img id="previewImg" class="preview-image d-none" alt="Pratinjau Foto Master">
-            <div class="oval-guide" id="ovalGuide">
-              <div class="scanner-line" id="scannerLine"></div>
-            </div>
-          </div>
-          <canvas id="faceCanvas"></canvas>
+                <!-- Viewfinder Frame -->
+                <div class="viewfinder-wrapper mb-3" id="viewfinderWrapper">
+                  <video id="faceVideo" autoplay playsinline muted></video>
+                  <img id="previewImg" class="preview-image d-none" alt="Pratinjau Foto Master">
+                  <div class="oval-guide" id="ovalGuide">
+                    <div class="scanner-line" id="scannerLine"></div>
+                  </div>
+                </div>
+                <canvas id="faceCanvas"></canvas>
 
-          <!-- Status Kamera Badge -->
-          <div class="mb-3">
-            <span id="cameraStatusPill" class="badge badge-light border px-3 py-1.5 text-muted small">
-              <i class="fas fa-spinner fa-spin mr-1"></i> Menghubungkan ke kamera perangkat...
-            </span>
-          </div>
+                <!-- Status Kamera Pill -->
+                <div class="mb-3">
+                  <span id="cameraStatusPill" class="badge bg-secondary-lt px-3 py-1 small">
+                    <i class="ti ti-loader animate-spin me-1"></i> Mengakses kamera perangkat...
+                  </span>
+                </div>
 
-          <!-- Tombol Aksi Kamera (Live State) -->
-          <div id="liveActionGroup" class="d-flex justify-content-center gap-2">
-            <button type="button" class="btn btn-capture btn-sm" id="btnCapture" onclick="takeSnapshot()">
-              <i class="fas fa-camera mr-1.5"></i> Ambil Foto Wajah Master
-            </button>
-          </div>
+                <!-- Live Capture Action Buttons -->
+                <div id="liveActionGroup" class="d-flex justify-content-center gap-2">
+                  <button type="button" class="btn btn-primary px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold" id="btnCapture" onclick="takeSnapshot()">
+                    <i class="ti ti-camera fs-2"></i>
+                    <span>Ambil Foto Wajah Master</span>
+                  </button>
+                </div>
 
-          <!-- Tombol Aksi Konfirmasi (Captured State) -->
-          <div id="confirmActionGroup" class="d-none justify-content-center" style="gap: 12px;">
-            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill font-weight-bold px-4" onclick="retakeSnapshot()">
-              <i class="fas fa-redo mr-1"></i> Ambil Ulang
-            </button>
-            <button type="button" class="btn btn-save-face btn-sm font-weight-bold px-4" id="btnSaveFace" onclick="submitFaceRegistration()">
-              <i class="fas fa-check-circle mr-1.5"></i> Simpan & Daftarkan Wajah
-            </button>
-          </div>
+                <!-- Confirm Action Buttons (Setelah Foto Diambil) -->
+                <div id="confirmActionGroup" class="d-none justify-content-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary px-3 d-inline-flex align-items-center gap-1" onclick="retakeSnapshot()">
+                    <i class="ti ti-refresh"></i>
+                    <span>Ambil Ulang</span>
+                  </button>
+                  <button type="button" class="btn btn-success px-4 d-inline-flex align-items-center gap-1 fw-bold" id="btnSaveFace" onclick="submitFaceRegistration()">
+                    <i class="ti ti-check"></i>
+                    <span>Simpan &amp; Daftarkan Wajah</span>
+                  </button>
+                </div>
 
-          <!-- Tampilan Jika Sudah Terdaftar Sebelumnya -->
-          <div id="alreadyRegisteredBox" class="alert alert-success d-none rounded-15 text-left p-3 mt-3">
-            <div class="d-flex align-items-center">
-              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mr-3" style="width: 40px; height: 40px; min-width: 40px;">
-                <i class="fas fa-check-double font-18"></i>
+                <!-- State: Sudah Terdaftar -->
+                <div id="alreadyRegisteredBox" class="alert alert-success d-none mt-3 text-start p-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-md bg-success text-white">
+                      <i class="ti ti-rosette-discount-check fs-2"></i>
+                    </div>
+                    <div class="flex-fill">
+                      <h4 class="fw-bold mb-1 text-dark">Wajah Master Terdaftar Resmi!</h4>
+                      <div class="text-muted small">Data biometrik Anda telah tersimpan aktif untuk validasi presensi aula BPMP Sultra.</div>
+                    </div>
+                  </div>
+                  <div class="mt-3 text-end">
+                    <button class="btn btn-success btn-sm fw-bold" onclick="goToPortal()">
+                      Lanjut ke Portal Presensi <i class="ti ti-arrow-right ms-1"></i>
+                    </button>
+                  </div>
+                </div>
+
               </div>
-              <div class="flex-grow-1">
-                <div class="font-weight-bold text-dark">Wajah Anda Sudah Terdaftar Resmi!</div>
-                <div class="text-muted small">Anda telah memiliki basis data biometrik untuk presensi aula BPMP Sultra.</div>
+            </div>
+          </div>
+
+          <!-- Kolom Informasi & Panduan ASN -->
+          <div class="col-lg-5 col-md-8">
+            
+            <!-- Kartu Identitas ASN Aktif -->
+            <div class="card shadow-sm border mb-3">
+              <div class="card-body p-3">
+                <div class="d-flex align-items-center gap-3">
+                  <span class="avatar avatar-lg bg-primary text-white fw-bold" id="sideEmpAvatar">
+                    <i class="ti ti-user fs-1"></i>
+                  </span>
+                  <div>
+                    <div class="text-muted small text-uppercase fw-bold" style="font-size: 10px;">Aparatur Sipil Negara:</div>
+                    <h4 class="fw-bold text-dark mb-0" id="sideEmpName">-</h4>
+                    <div class="text-muted font-monospace small" id="sideEmpNip">NIP. -</div>
+                    <div class="badge bg-blue-lt mt-1" id="sideEmpJabatan">-</div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="mt-3 text-right">
-              <button class="btn btn-success btn-sm font-weight-bold rounded-pill px-3" onclick="goToPortal()">
-                Lanjut ke Portal Pegawai <i class="fas fa-arrow-right ml-1"></i>
-              </button>
+
+            <!-- Kartu Panduan Perekaman Standar -->
+            <div class="card shadow-sm border mb-3">
+              <div class="card-status-top bg-info"></div>
+              <div class="card-header py-2">
+                <h4 class="card-title text-dark fw-bold mb-0">
+                  <i class="ti ti-info-circle text-info me-1"></i> Panduan Standar Foto Biometrik
+                </h4>
+              </div>
+              <div class="card-body p-3">
+                <ul class="list-unstyled mb-0 small text-muted d-flex flex-column gap-2">
+                  <li class="d-flex align-items-start gap-2">
+                    <i class="ti ti-bulb text-warning fs-3 mt-1"></i>
+                    <span><strong>Pencahayaan Cukup:</strong> Pastikan wajah tersinari terang dan hindari posisi membelakangi cahaya (*backlight*).</span>
+                  </li>
+                  <li class="d-flex align-items-start gap-2">
+                    <i class="ti ti-eye text-primary fs-3 mt-1"></i>
+                    <span><strong>Wajah Tampak Jelas:</strong> Lepas kacamata hitam, masker, atau topi yang menutupi alis, mata, hidung, atau mulut.</span>
+                  </li>
+                  <li class="d-flex align-items-start gap-2">
+                    <i class="ti ti-focus-2 text-success fs-3 mt-1"></i>
+                    <span><strong>Posisi Tegak Lurus:</strong> Tatap langsung ke arah lensa kamera dan posisikan wajah tepat di oval pemandu.</span>
+                  </li>
+                  <li class="d-flex align-items-start gap-2">
+                    <i class="ti ti-shield-check text-teal fs-3 mt-1"></i>
+                    <span><strong>Validasi Presensi:</strong> Foto master ini akan digunakan sebagai pembanding saat Anda melakukan presensi aula.</span>
+                  </li>
+                </ul>
+              </div>
             </div>
+
+            <!-- Security & Privacy Card -->
+            <div class="alert alert-info py-2 px-3 small border-0 shadow-xs">
+              <div class="d-flex align-items-start gap-2">
+                <i class="ti ti-lock text-info fs-2 mt-1"></i>
+                <div class="text-muted">
+                  <strong>Privasi Terjamin:</strong> Data biometrik wajah Anda dienkripsi dan disimpan secara resmi pada server database BPMP Sultra khusus untuk absensi kedinasan dan keabsahan e-sertifikat resmi ber-JP.
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </div>
       </div>
-
-      <!-- Kolom Petunjuk & Standar Kepegawaian -->
-      <div class="col-lg-5 col-md-8">
-        
-        <!-- Kartu Identitas ASN -->
-        <div class="card border-0 shadow-sm rounded-15 mb-3 p-3 bg-white">
-          <div class="d-flex align-items-center">
-            <div class="rounded-circle bg-light border text-primary d-flex align-items-center justify-content-center mr-3" style="width: 48px; height: 48px; font-size: 20px;">
-              <i class="fas fa-user-tie"></i>
-            </div>
-            <div>
-              <div class="text-muted" style="font-size: 11px;">Identitas Aparatur Sipil Negara:</div>
-              <div class="font-weight-bold text-dark" id="sideEmpName">-</div>
-              <div class="font-mono text-muted small" id="sideEmpNip">NIP: -</div>
-              <div class="text-muted small" id="sideEmpJabatan">-</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Kartu Petunjuk Perekaman Wajah -->
-        <div class="card border-0 shadow-sm rounded-15 p-4 bg-white mb-3">
-          <h6 class="font-weight-bold text-gray-900 mb-3">
-            <i class="fas fa-info-circle text-primary mr-2"></i>Panduan Perekaman Standar ASN
-          </h6>
-          <ul class="list-unstyled small text-muted mb-0 space-y-2">
-            <li class="d-flex align-items-start mb-2">
-              <i class="fas fa-lightbulb text-warning mr-2 mt-1"></i>
-              <span><strong>Pencahayaan Cukup:</strong> Pastikan wajah tersinari terang dan hindari posisi membelakangi cahaya (*backlight*).</span>
-            </li>
-            <li class="d-flex align-items-start mb-2">
-              <i class="fas fa-eye text-info mr-2 mt-1"></i>
-              <span><strong>Wajah Tampak Jelas:</strong> Lepas kacamata hitam, masker, atau topi yang menutupi bagian alis, mata, hidung, atau mulut.</span>
-            </li>
-            <li class="d-flex align-items-start mb-2">
-              <i class="fas fa-crosshairs text-success mr-2 mt-1"></i>
-              <span><strong>Posisi Tegak Lurus:</strong> Tatap langsung ke arah lensa kamera dan posisikan wajah di dalam garis oval pemandu.</span>
-            </li>
-            <li class="d-flex align-items-start">
-              <i class="fas fa-shield-alt text-primary mr-2 mt-1"></i>
-              <span><strong>Digunakan Saat Presensi:</strong> Foto master ini akan diverifikasi kembali saat Anda memindai Dynamic QR presensi di aula.</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Privacy & Security Notice -->
-        <div class="p-3 rounded-12 bg-light border text-muted" style="font-size: 11px; line-height: 1.5;">
-          <i class="fas fa-lock text-success mr-1"></i>
-          <strong>Privasi Terjaga:</strong> Data biometrik wajah Anda dienkripsi dan disimpan secara resmi pada server BPMP Sultra khusus untuk absensi kedinasan dan keabsahan penerbitan e-sertifikat ber-JP.
-        </div>
-
-      </div>
-
     </div>
-  </main>
 
-  <!-- 5. Footer -->
-  <footer class="text-center py-3 text-muted small mt-auto border-top bg-white">
-    Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara &bull; Kemendikbudristek &copy; 2026
-  </footer>
+  </div>
+
+  <!-- Shared Standard Footer -->
+  <div id="app-footer"></div>
 
   <!-- Core Scripts -->
-  <script src="/lib/jquery/jquery.min.js"></script>
-  <script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
 
   <script>
     let currentAuthUser = null;
@@ -440,14 +268,10 @@
 
       const savedNip = localStorage.getItem('bpmp_auth_nip');
       if (!savedNip) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Sesi Masuk Diperlukan',
-          text: 'Silakan login terlebih dahulu menggunakan NIP dan Password Anda.',
-          confirmButtonColor: '#002d5b'
-        }).then(() => {
+        BPMPComponents.showToast('Silakan login terlebih dahulu menggunakan NIP resmi Anda.', 'warning');
+        setTimeout(() => {
           window.location.href = '/' + (pendingToken ? `?token=${encodeURIComponent(pendingToken)}` : '');
-        });
+        }, 800);
         return;
       }
 
@@ -456,21 +280,27 @@
         const data = await res.json();
         if (data.success && data.employee) {
           currentAuthUser = data.employee;
+          
+          BPMPLayout.init({
+            role: 'pegawai',
+            activeMenu: 'verif-wajah',
+            user: currentAuthUser
+          });
+
           renderEmployeeData(currentAuthUser);
 
-          // Cek apakah sudah pernah rekam wajah
           const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
           if (hasFace) {
             document.getElementById('alreadyRegisteredBox').classList.remove('d-none');
-            // Jika ada foto master, tampilkan di viewfinder
             if (currentAuthUser.facePhotoUrl) {
               const previewImg = document.getElementById('previewImg');
               previewImg.src = currentAuthUser.facePhotoUrl;
               previewImg.classList.remove('d-none');
               document.getElementById('faceVideo').classList.add('d-none');
               document.getElementById('scannerLine').classList.add('d-none');
-              document.getElementById('ovalGuide').style.borderColor = '#10b981';
-              document.getElementById('cameraStatusPill').innerHTML = `<i class="fas fa-check-circle text-success mr-1"></i> Biometrik wajah master Anda sudah terverifikasi resmi.`;
+              document.getElementById('ovalGuide').style.borderColor = 'var(--tblr-success)';
+              document.getElementById('cameraStatusPill').className = 'badge bg-success-lt px-3 py-1';
+              document.getElementById('cameraStatusPill').innerHTML = `<i class="ti ti-circle-check me-1"></i> Biometrik wajah master Anda sudah terverifikasi resmi.`;
               document.getElementById('liveActionGroup').classList.add('d-none');
             }
           } else {
@@ -486,11 +316,12 @@
     }
 
     function renderEmployeeData(emp) {
-      document.getElementById('headerEmpName').textContent = emp.name;
-      document.getElementById('headerEmpNip').textContent = `NIP: ${emp.nip}`;
       document.getElementById('sideEmpName').textContent = emp.name;
-      document.getElementById('sideEmpNip').textContent = `NIP: ${emp.nip}`;
+      document.getElementById('sideEmpNip').textContent = `NIP. ${emp.nip}`;
       document.getElementById('sideEmpJabatan').textContent = emp.position || emp.jabatan || 'Aparatur Sipil Negara';
+      if (emp.name) {
+        document.getElementById('sideEmpAvatar').textContent = emp.name.charAt(0).toUpperCase();
+      }
     }
 
     // 2. Akses Kamera Perangkat
@@ -505,7 +336,7 @@
 
         cameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: 'user', // Kamera depan selfie
+            facingMode: 'user',
             width: { ideal: 640 },
             height: { ideal: 640 }
           },
@@ -515,18 +346,13 @@
         video.srcObject = cameraStream;
         video.onloadedmetadata = () => {
           video.play();
-          pill.className = 'badge badge-success px-3 py-1.5 text-white small';
-          pill.innerHTML = `<i class="fas fa-video mr-1"></i> Kamera Depan Aktif &bull; Posisikan wajah di lingkaran`;
+          pill.className = 'badge bg-success-lt px-3 py-1';
+          pill.innerHTML = `<i class="ti ti-video me-1"></i> Kamera Depan Aktif • Posisikan wajah di lingkaran`;
         };
       } catch (err) {
-        pill.className = 'badge badge-danger px-3 py-1.5 text-white small';
-        pill.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Izin kamera ditolak atau tidak ditemukan`;
-        Swal.fire({
-          icon: 'error',
-          title: 'Izin Kamera Diperlukan',
-          text: 'Harap izinkan browser mengakses kamera depan smartphone/laptop Anda untuk melakukan verifikasi biometrik wajah.',
-          confirmButtonColor: '#002d5b'
-        });
+        pill.className = 'badge bg-danger-lt px-3 py-1';
+        pill.innerHTML = `<i class="ti ti-alert-triangle me-1"></i> Izin kamera ditolak atau tidak ditemukan`;
+        BPMPComponents.showToast('Harap izinkan browser mengakses kamera smartphone/laptop Anda untuk verifikasi biometrik.', 'danger');
       }
     }
 
@@ -537,7 +363,7 @@
       }
     }
 
-    // 3. Jepret Foto Snapshot
+    // 3. Snapshot Foto
     function takeSnapshot() {
       const video = document.getElementById('faceVideo');
       const canvas = document.getElementById('faceCanvas');
@@ -554,23 +380,20 @@
       const startX = (video.videoWidth - size) / 2;
       const startY = (video.videoHeight - size) / 2;
 
-      // Gambar frame video ke canvas
       ctx.drawImage(video, startX, startY, size, size, 0, 0, 480, 480);
       capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.88);
 
-      // Tampilkan pratinjau
       previewImg.src = capturedPhotoBase64;
       previewImg.classList.remove('d-none');
       video.classList.add('d-none');
       document.getElementById('scannerLine').classList.add('d-none');
 
-      // Ganti Tombol
       document.getElementById('liveActionGroup').classList.add('d-none');
       document.getElementById('confirmActionGroup').classList.remove('d-none');
       document.getElementById('confirmActionGroup').classList.add('d-flex');
 
-      pill.className = 'badge badge-warning text-dark px-3 py-1.5 small font-weight-bold';
-      pill.innerHTML = `<i class="fas fa-eye mr-1"></i> Foto wajah diambil. Pastikan gambar jelas & tidak buram.`;
+      pill.className = 'badge bg-warning-lt px-3 py-1';
+      pill.innerHTML = `<i class="ti ti-eye me-1"></i> Foto wajah diambil. Pastikan gambar jelas & tidak buram.`;
     }
 
     // 4. Ambil Ulang
@@ -585,8 +408,8 @@
       document.getElementById('liveActionGroup').classList.remove('d-none');
 
       const pill = document.getElementById('cameraStatusPill');
-      pill.className = 'badge badge-success px-3 py-1.5 text-white small';
-      pill.innerHTML = `<i class="fas fa-video mr-1"></i> Kamera Depan Aktif &bull; Posisikan wajah di lingkaran`;
+      pill.className = 'badge bg-success-lt px-3 py-1';
+      pill.innerHTML = `<i class="ti ti-video me-1"></i> Kamera Depan Aktif • Posisikan wajah di lingkaran`;
     }
 
     // 5. Simpan & Daftarkan Master Wajah
@@ -595,7 +418,7 @@
 
       const btn = document.getElementById('btnSaveFace');
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Menyimpan Biometrik...`;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan...`;
 
       try {
         const res = await fetch(`/api/employees/${currentAuthUser.nip}/register-face`, {
@@ -609,25 +432,19 @@
         const data = await res.json();
         if (data.success) {
           stopCamera();
-
-          Swal.fire({
-            icon: 'success',
-            title: 'Wajah Master Berhasil Terdaftar!',
-            text: 'Data biometrik wajah Anda kini resmi tersimpan. Selanjutnya Anda dapat melakukan presensi kehadiran di aula.',
-            confirmButtonColor: '#10b981',
-            confirmButtonText: 'Lanjut ke Presensi / Portal'
-          }).then(() => {
+          BPMPComponents.showToast('Wajah master Anda berhasil didaftarkan secara resmi!', 'success');
+          setTimeout(() => {
             goToPortal();
-          });
+          }, 1000);
         } else {
-          Swal.fire('Gagal Mendaftarkan', data.message || 'Gagal menyimpan biometrik wajah.', 'error');
+          BPMPComponents.showToast(data.message || 'Gagal menyimpan biometrik wajah.', 'danger');
           btn.disabled = false;
-          btn.innerHTML = `<i class="fas fa-check-circle mr-1.5"></i> Simpan & Daftarkan Wajah`;
+          btn.innerHTML = `<i class="ti ti-check me-1"></i> Simpan & Daftarkan Wajah`;
         }
       } catch (err) {
-        Swal.fire('Error', 'Kesalahan koneksi ke server: ' + err.message, 'error');
+        BPMPComponents.showToast('Kesalahan koneksi ke server: ' + err.message, 'danger');
         btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-check-circle mr-1.5"></i> Simpan & Daftarkan Wajah`;
+        btn.innerHTML = `<i class="ti ti-check me-1"></i> Simpan & Daftarkan Wajah`;
       }
     }
 

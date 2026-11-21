@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Portal Mandiri Pegawai - BPMP Provinsi Sulawesi Tenggara</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a3a5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Senin Berseri">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+
+  <!-- Tabler Core CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <!-- Tabler Icons (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <!-- Design Tokens BPMP Sultra -->
+  <link rel="stylesheet" href="/css/tokens.css">
+</head>
+<body class="layout-boxed">
+  <div class="page">
+    <!-- Top Identity Strip -->
+    <div id="bpmp-top-strip"></div>
+
+    <!-- Navigation Header -->
+    <div id="bpmp-navbar"></div>
+
+    <!-- Page Body -->
+    <div class="page-wrapper">
+      <div class="container-xl py-3">
+
+        <!-- SECTION 1: LOGIN PEGAWAI (NIP) -->
+        <section id="loginSection" class="my-2 my-md-4">
+          <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-5">
+              
+              <!-- QR Detected Alert -->
+              <div id="loginQrAlert" class="alert alert-success d-none mb-3" role="alert">
+                <div class="d-flex align-items-center">
+                  <i class="ti ti-qrcode font-24 me-2"></i>
+                  <div>
+                    <h4 class="alert-title mb-0">Kode QR Aula Terdeteksi!</h4>
+                    <div class="text-secondary small">Silakan masukkan NIP untuk konfirmasi kehadiran otomatis Anda.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Login Card -->
+              <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                  <!-- Header Logo & Title -->
+                  <div class="text-center mb-4">
+                    <span class="avatar avatar-xl rounded bg-primary-lt text-primary mb-2">
+                      <i class="ti ti-id-badge font-32"></i>
+                    </span>
+                    <h2 class="card-title text-primary fw-bold mb-1">Portal Mandiri ASN</h2>
+                    <p class="text-secondary small mb-0">
+                      Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara
+                    </p>
+                  </div>
+
+                  <!-- Form Login -->
+                  <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+                    <div class="mb-3">
+                      <label class="form-label required">Nomor Induk Pegawai (NIP)</label>
+                      <div class="input-icon">
+                        <span class="input-icon-addon">
+                          <i class="ti ti-id"></i>
+                        </span>
+                        <input type="text" id="inputNip" class="form-control" placeholder="Masukkan 18 digit NIP Anda" maxlength="18" inputmode="numeric" required autofocus>
+                      </div>
+                      <small class="form-hint">NIP Anda terdaftar dalam basis data 104 ASN BPMP Sultra.</small>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label required">Kata Sandi</label>
+                      <div class="input-group input-group-flat">
+                        <input type="password" id="inputPassword" class="form-control" placeholder="Kata sandi default: bpmp123" required>
+                        <span class="input-group-text cursor-pointer" onclick="togglePasswordVisibility()">
+                          <i id="eyeIcon" class="ti ti-eye"></i>
+                        </span>
+                      </div>
+                      <small class="form-hint">Kata sandi default saat pertama kali login: <strong>bpmp123</strong></small>
+                    </div>
+
+                    <div class="form-footer">
+                      <button type="submit" id="btnLoginSubmit" class="btn btn-primary w-100">
+                        <i class="ti ti-login me-1"></i> <span id="btnLoginLabel">Masuk ke Portal ASN</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  <!-- Link ke Registrasi Wajah -->
+                  <div class="text-center mt-3 pt-3 border-top">
+                    <p class="text-secondary small mb-1">Belum mendaftarkan foto biometrik wajah Anda?</p>
+                    <a href="/verif-wajah" class="btn btn-sm btn-outline-teal">
+                      <i class="ti ti-scan me-1"></i> Perekaman Master Wajah ASN
+                    </a>
+                  </div>
+
+                  <!-- PWA Install Button Mobile -->
+                  <div class="text-center mt-3 d-none" id="btnInstallPwaPegawai">
+                    <button class="btn btn-sm btn-outline-primary w-100">
+                      <i class="ti ti-download me-1"></i> Pasang Aplikasi Senin Berseri di Layar Utama (PWA)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Info Card Bantuan -->
+              <div class="card bg-transparent border-0 text-center mt-3">
+                <div class="card-body p-2 text-secondary small">
+                  <i class="ti ti-help-circle me-1"></i> Butuh bantuan login? Hubungi Subbagian Tata Usaha & Kepegawaian BPMP Sultra.
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: DASHBOARD MANDIRI PEGAWAI -->
+        <section id="dashboardSection" class="d-none">
+
+          <!-- Profil Ringkas ASN & Logout -->
+          <div class="card card-stacked mb-3 border-primary-subtle shadow-sm">
+            <div class="card-body p-3">
+              <div class="row align-items-center g-3">
+                <div class="col-auto">
+                  <span class="avatar avatar-lg rounded-circle bg-primary text-white fw-bold font-20" id="empAvatarInitial">
+                    ASN
+                  </span>
+                </div>
+                <div class="col">
+                  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    <h3 class="card-title mb-0 fw-bold text-primary" id="empName">Memuat Pegawai...</h3>
+                    <span class="badge bg-green-lt" id="empAttendanceBadge">
+                      <i class="ti ti-clock me-1"></i> Menunggu Presensi
+                    </span>
+                  </div>
+                  <div class="text-secondary small d-flex flex-wrap gap-2">
+                    <span class="font-monospace fw-bold" id="empNip">NIP: -</span>
+                    <span>&bull;</span>
+                    <span id="empJabatan">Jabatan Pegawai</span>
+                    <span>&bull;</span>
+                    <span id="empPanggol">Golongan</span>
+                  </div>
+                  <div class="text-secondary small mt-1" id="empInstansi">
+                    BPMP Provinsi Sulawesi Tenggara
+                  </div>
+                </div>
+                <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="handleLogout()">
+                    <i class="ti ti-logout me-1"></i> Keluar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alert Prompt Verifikasi Wajah (Jika belum terdaftar) -->
+          <div id="faceEnrollmentPrompt" class="alert alert-warning d-none mb-3" role="alert">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div class="d-flex align-items-center">
+                <i class="ti ti-alert-triangle font-24 me-2 text-warning"></i>
+                <div>
+                  <h4 class="alert-title mb-0">Biometrik Wajah Belum Terdaftar</h4>
+                  <div class="text-secondary small">Daftarkan foto master wajah Anda agar presensi aula dapat diverifikasi secara otomatis.</div>
+                </div>
+              </div>
+              <a href="/verif-wajah" class="btn btn-sm btn-warning text-dark fw-bold">
+                <i class="ti ti-scan me-1"></i> Rekam Wajah Sekarang
+              </a>
+            </div>
+          </div>
+
+          <!-- Event Information Banner -->
+          <div class="card shadow-sm border-0 mb-3 bg-primary-lt">
+            <div class="card-body p-3">
+              <div class="row align-items-center g-2">
+                <div class="col">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary text-white" id="eventCategoryBadge">Pelatihan ASN</span>
+                    <span class="badge bg-purple text-white" id="eventJpBadge">4 JP</span>
+                  </div>
+                  <h4 class="mb-1 text-primary fw-bold" id="eventTitleBanner">
+                    Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
+                  </h4>
+                  <div class="text-secondary small" id="eventScheduleBanner">
+                    <i class="ti ti-calendar me-1"></i> Setiap Senin, Pukul 07.30 WITA &bull; Aula Utama BPMP Provinsi Sulawesi Tenggara
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <span class="badge bg-white text-primary border px-3 py-2 font-monospace" id="empAccumulatedJp">
+                    Total: 4 JP
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GRID 3 KARTU: PRESENSI, LPTI, DAN E-SERTIFIKAT -->
+          <div class="row g-3">
+            
+            <!-- KARTU 1: PRESENSI AULA & BIOMETRIK -->
+            <div class="col-lg-4">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0 small fw-bold text-primary">
+                    <i class="ti ti-qrcode me-1"></i> 1. Presensi Aula BPMP
+                  </h4>
+                  <span class="badge bg-secondary-lt">Langkah 1</span>
+                </div>
+                <div class="card-body p-3">
+                  
+                  <!-- Box Belum Hadir (Aksi Presensi) -->
+                  <div id="attendanceActionBox">
+                    <div class="text-center py-2 mb-3">
+                      <i class="ti ti-device-projector text-primary font-40 mb-2"></i>
+                      <h5 class="mb-1">Pindai QR di Layar Aula</h5>
+                      <p class="text-secondary small mb-0">Arahkan kamera ke layar proyektor aula atau masukkan 6-digit token aktif.</p>
+                    </div>
+
+                    <button type="button" class="btn btn-primary w-100 mb-3" onclick="openCameraScanner()">
+                      <i class="ti ti-camera me-1"></i> Pindai Kode QR Aula
+                    </button>
+
+                    <div class="hr-text my-2">atau masukkan token</div>
+
+                    <div class="input-group mb-3">
+                      <input type="text" id="inputPresenceToken" class="form-control text-center font-monospace fw-bold font-18" placeholder="Contoh: 123456" maxlength="6" inputmode="numeric">
+                      <button class="btn btn-outline-primary" type="button" id="btnSubmitPresence" onclick="submitPresenceToken()">
+                        Kirim
+                      </button>
+                    </div>
+
+                    <!-- Alert token terdeteksi dari QR url -->
+                    <div id="alertDetectedToken" class="alert alert-info py-2 px-3 small d-none">
+                      <i class="ti ti-info-circle me-1"></i> Token aula terdeteksi dari tautan. Tekan Kirim untuk konfirmasi.
+                    </div>
+                  </div>
+
+                  <!-- Box Sudah Hadir (Sukses) -->
+                  <div id="attendanceSuccessBox" class="d-none text-center py-3">
+                    <div class="avatar avatar-lg rounded-circle bg-green-lt text-green mb-2 mx-auto">
+                      <i class="ti ti-check font-32"></i>
+                    </div>
+                    <h4 class="text-green fw-bold mb-1">Presensi Terverifikasi!</h4>
+                    <p class="text-secondary small mb-2" id="attendanceTimeLabel">Hadir pada 07.35 WITA</p>
+                    <div id="empFaceStatusCell" class="mb-2"></div>
+                    <div class="alert alert-success py-2 px-3 small mb-0">
+                      Kehadiran Anda di aula telah dicatat dalam sistem kepegawaian.
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- KARTU 2: UNGGAH BERKAS LPTI -->
+            <div class="col-lg-4">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0 small fw-bold text-primary">
+                    <i class="ti ti-file-text me-1"></i> 2. Laporan LPTI
+                  </h4>
+                  <span class="badge bg-secondary-lt">Langkah 2</span>
+                </div>
+                <div class="card-body p-3">
+                  
+                  <!-- Status Pill Container -->
+                  <div id="lptiStatusPill" class="mb-3">
+                    <div class="alert alert-secondary py-2 px-3 small text-center mb-0">
+                      Selesaikan presensi aula terlebih dahulu untuk mengunggah berkas LPTI.
+                    </div>
+                  </div>
+
+                  <!-- Form Upload LPTI -->
+                  <form id="lptiUploadForm" onsubmit="handleUploadLpti(event)" class="d-none">
+                    <input type="file" id="lptiFileInput" accept="application/pdf" class="d-none" onchange="handleFileSelected(this)">
+                    
+                    <div class="border border-dashed rounded p-3 text-center mb-3 bg-light cursor-pointer" id="fileUploadPrompt" onclick="document.getElementById('lptiFileInput').click()">
+                      <i class="ti ti-upload text-primary font-32 mb-1"></i>
+                      <h6 class="mb-1">Pilih Berkas PDF LPTI</h6>
+                      <p class="text-secondary small mb-0">Format: .pdf (Maks. 5 MB)</p>
+                    </div>
+
+                    <div id="fileSelectedInfo" class="d-none border rounded p-2 mb-3 bg-white d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger text-white">PDF</span>
+                        <div>
+                          <div class="fw-bold small text-truncate" style="max-width: 140px;" id="selectedFileName">laporan.pdf</div>
+                          <div class="text-secondary small" id="selectedFileSize">0 KB</div>
+                        </div>
+                      </div>
+                      <button type="submit" id="btnUploadSubmit" class="btn btn-sm btn-primary">
+                        <i class="ti ti-send me-1"></i> Unggah
+                      </button>
+                    </div>
+                  </form>
+
+                  <!-- Dokumen yang sudah terunggah -->
+                  <div id="currentUploadedDocCard" class="d-none border rounded p-2 mb-2 bg-light-subtle d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="ti ti-file-check text-green font-20"></i>
+                      <div class="small fw-bold text-truncate" style="max-width: 150px;">Berkas LPTI Terunggah</div>
+                    </div>
+                    <a id="currentUploadedLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <i class="ti ti-eye me-1"></i> Lihat PDF
+                    </a>
+                  </div>
+
+                  <!-- Catatan Revisi Alert Box -->
+                  <div id="revisionAlertBox" class="alert alert-danger d-none py-2 px-3 small mt-2">
+                    <div class="fw-bold"><i class="ti ti-alert-circle me-1"></i> Catatan Revisi Admin:</div>
+                    <div id="revisionNoteContent" class="mt-1">Mohon lengkapi tanda tangan atasan langsung.</div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- KARTU 3: E-SERTIFIKAT RESMI -->
+            <div class="col-lg-4">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0 small fw-bold text-primary">
+                    <i class="ti ti-certificate me-1"></i> 3. E-Sertifikat Resmi
+                  </h4>
+                  <span class="badge bg-secondary-lt">Langkah 3</span>
+                </div>
+                <div class="card-body p-3">
+                  
+                  <!-- View Sertifikat Terkunci -->
+                  <div id="certLockedView" class="text-center py-4">
+                    <i class="ti ti-lock text-secondary font-40 mb-2"></i>
+                    <h5 class="mb-1 text-secondary">E-Sertifikat Terkunci</h5>
+                    <p class="text-secondary small mb-0" id="certLockedReason">
+                      Sertifikat akan diterbitkan secara otomatis setelah kehadiran Anda tercatat dan laporan LPTI disetujui oleh Bagian Kepegawaian BPMP Sultra.
+                    </p>
+                  </div>
+
+                  <!-- View Sertifikat Terbuka (Unlocked) -->
+                  <div id="certUnlockedView" class="d-none text-center py-3">
+                    <div class="avatar avatar-lg rounded-circle bg-teal-lt text-teal mb-2 mx-auto">
+                      <i class="ti ti-award font-32"></i>
+                    </div>
+                    <h4 class="text-teal fw-bold mb-1">E-Sertifikat Telah Terbit!</h4>
+                    <div class="badge bg-light text-primary font-monospace small mb-3" id="certNumberBadge">
+                      No: 001/BPMP-SULTRA/SENIN-BERSERI/2026
+                    </div>
+
+                    <div class="d-grid gap-2">
+                      <button type="button" id="btnPreviewPdf" class="btn btn-outline-primary" onclick="openCertificateModal()">
+                        <i class="ti ti-eye me-1"></i> Lihat Piagam Digital
+                      </button>
+                      <button type="button" id="btnDirectDownloadPdf" class="btn btn-teal text-white">
+                        <i class="ti ti-download me-1"></i> Unduh E-Sertifikat Resmi (PDF)
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+          </div> <!-- End row g-3 -->
+
+        </section> <!-- End dashboardSection -->
+
+      </div> <!-- End container-xl -->
+
+      <!-- Footer -->
+      <div id="bpmp-footer"></div>
+    </div> <!-- End page-wrapper -->
+  </div> <!-- End page -->
+
+  <!-- MODAL 1: KAMERA PEMINDAI QR AULA -->
+  <div class="modal modal-blur fade" id="cameraScannerModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <h5 class="modal-title small fw-bold">
+            <i class="ti ti-camera me-1"></i> Pindai Kode QR Aula
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopCameraScanner()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2 text-center">
+          <div id="cameraQrReader" style="width: 100%; border-radius: 8px; overflow: hidden;"></div>
+          <div id="scannerLoadingStatus" class="small text-secondary mt-2">
+            Mengaktifkan kamera pemindai...
+          </div>
+          <div id="scannerErrorMessage" class="alert alert-danger py-1 px-2 small mt-2 d-none">
+            <span id="scannerErrorText">Kamera tidak dapat diakses.</span>
+          </div>
+        </div>
+        <div class="modal-footer py-1 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchCameraFacing()">
+            <i class="ti ti-switch-horizontal me-1"></i> Ganti Kamera
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="stopCameraScanner()">
+            Batal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: SELFIE BIOMETRIK VERIFIKASI WAJAH -->
+  <div class="modal modal-blur fade" id="faceBiometricModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <div>
+            <h5 class="modal-title small fw-bold mb-0" id="faceModalTitle">
+              <i class="ti ti-scan me-1"></i> Verifikasi Wajah Presensi
+            </h5>
+            <small class="text-white-50" id="faceModalSubtitle" style="font-size: 0.75rem;">Aparatur Sipil Negara BPMP Prov. Sultra</small>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeFaceCamera()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2 text-center">
+          <div class="position-relative overflow-hidden rounded mx-auto" style="width: 260px; height: 320px; background: #000;">
+            <video id="faceCameraVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+            <canvas id="faceCaptureCanvas" class="d-none" width="400" height="400"></canvas>
+            
+            <!-- Oval Guide -->
+            <div id="faceOvalGuide" class="position-absolute top-50 start-50 translate-middle" style="width: 180px; height: 240px; border: 3px dashed #2fb344; border-radius: 50%; pointer-events: none;"></div>
+            
+            <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2">
+              <span id="faceStatusBadge" class="badge bg-dark-lt text-white px-3 py-1">Posisikan Wajah</span>
+            </div>
+          </div>
+          <p class="small text-secondary mt-2 mb-0" id="faceInstructionText">
+            Pastikan wajah Anda berada di dalam lingkaran panduan dan pencahayaan aula cukup.
+          </p>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" id="btnCaptureFace" class="btn btn-primary w-100" onclick="captureAndProcessFace()">
+            <i class="ti ti-camera me-1"></i> <span id="btnCaptureText">Ambil Foto & Verifikasi</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: PREVIEW PIAGAM DIGITAL -->
+  <div class="modal modal-blur fade" id="certificateModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-teal text-white py-2">
+          <h5 class="modal-title small fw-bold">
+            <i class="ti ti-award me-1"></i> Piagam Penghargaan Digital BPMP Sultra
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 bg-light">
+          <!-- Area Simulasi Sertifikat -->
+          <div id="certificatePrintArea" class="bg-white p-4 rounded border shadow-sm mx-auto text-center position-relative" style="max-width: 680px;">
+            <div id="defaultTemplateOrnaments"></div>
+            <div class="text-secondary small font-monospace fw-bold mb-3" id="certModalNumber">
+              Nomor: 001/BPMP-SULTRA/SENIN-BERSERI/2026
+            </div>
+            <div class="small text-uppercase text-secondary mb-1">Diberikan Kepada:</div>
+            <h3 id="certModalName" class="fw-bold text-primary mb-1 text-decoration-underline">
+              Nama Pegawai ASN
+            </h3>
+            <div class="text-secondary small font-monospace mb-1" id="certModalNip">NIP: -</div>
+            <div class="text-secondary small mb-3" id="certModalJabatanInstansi">Jabatan &bull; BPMP Sultra</div>
+            
+            <p class="small text-secondary mb-1">Atas partisipasi aktif sebagai peserta dalam kegiatan:</p>
+            <h4 class="text-teal fw-bold mb-2" id="certModalEventTitle">
+              Pelatihan Transformasi Digital ASN BPMP Sultra
+            </h4>
+            <div class="small text-secondary mb-3">
+              Jadwal: <strong id="certModalSchedule">Senin, 07.30 WITA</strong> &bull;
+              <span class="badge bg-green text-white" id="certModalJp">4 JP</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-end mt-4 pt-3 border-top">
+              <div class="text-start">
+                <img id="certModalQr" src="" alt="QR Keabsahan" class="rounded border p-1" style="width: 70px; height: 70px;">
+                <div class="text-secondary mt-1" style="font-size: 0.65rem;" id="certModalIssueDate">Ditetapkan: 2026</div>
+              </div>
+              <div class="text-end">
+                <div class="small text-secondary mb-1">Kepala BPMP Prov. Sultra</div>
+                <div class="fw-bold text-primary text-decoration-underline small" id="certModalVerifier">
+                  Dr. Ir. Contoh Kepala, M.Pd.
+                </div>
+                <div class="text-secondary small" style="font-size: 0.7rem;">NIP. 197001011995011001</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" id="btnModalDownloadPdf" class="btn btn-teal text-white btn-sm">
+            <i class="ti ti-download me-1"></i> Unduh Berkas PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 1090;"></div>
+
+  <!-- Library html5-qrcode (Local Dist) -->
+  <script src="/lib/html5-qrcode/html5-qrcode.min.js"></script>
+  <!-- Tabler Core JS (Local Dist) -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <!-- Components & Layout Helpers -->
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/pwa-install.js"></script>
+
+  <!-- Fallback loader untuk html5-qrcode jika local file belum tersedia -->
+  <script>
+    if (typeof Html5Qrcode === 'undefined') {
+      const fallbackScript = document.createElement('script');
+      fallbackScript.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+      document.head.appendChild(fallbackScript);
+    }
+  </script>
+
+  <!-- Pegawai Application Logic -->
+  <script>
+    // Initialize shared BPMP Tabler layout
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.BPMPLayout) {
+        const currentUser = localStorage.getItem('employeeUser') ? JSON.parse(localStorage.getItem('employeeUser')) : null;
+        BPMPLayout.init({
+          role: 'pegawai',
+          activeMenu: 'dashboard',
+          user: currentUser ? {
+            name: currentUser.name || currentUser.nama,
+            role: 'Aparatur Sipil Negara (ASN)',
+            nip: currentUser.nip
+          } : null
+        });
+      }
+    });
+
+
+    // Global State
+    let currentAuthUser = null;
+    let currentEvent = null;
+    let pendingScannedToken = null;
+    let pendingScannedEventId = null;
+    let pollInterval = null;
+    let html5QrScanner = null;
+    let currentCameraFacing = 'environment';
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `gov-toast toast-${type}`;
+      
+      const icon = type === 'success' ? 'check-circle text-success' : 'exclamation-circle text-danger';
+      toast.innerHTML = `
+        <div class="mr-3" style="font-size: 20px;"><i class="fas fa-${icon}"></i></div>
+        <div class="text-dark small font-weight-bold flex-grow-1">${message}</div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'all 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Toggle Password Visibility
+    function togglePasswordVisibility() {
+      const pwInput = document.getElementById('inputPassword');
+      const icon = document.getElementById('eyeIcon');
+      const isPassword = pwInput.type === 'password';
+      pwInput.type = isPassword ? 'text' : 'password';
+      icon.className = isPassword ? 'ti ti-eye-slash' : 'ti ti-eye';
+    }
+
+    // 1. Otentikasi Login (POST /api/auth/login)
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const nip = document.getElementById('inputNip').value.trim();
+      const password = document.getElementById('inputPassword').value.trim();
+
+      if (!nip || !password) {
+        showToast('NIP dan Kata Sandi wajib diisi!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnLoginSubmit');
+      const btnLabel = document.getElementById('btnLoginLabel');
+      btn.disabled = true;
+      btnLabel.textContent = 'Memverifikasi Identitas...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nip, password })
+        });
+        const data = await res.json();
+        if (data.success && data.employee) {
+          currentAuthUser = data.employee;
+          if (data.event) currentEvent = data.event;
+          localStorage.setItem('bpmp_auth_nip', currentAuthUser.nip);
+
+          // Route Guard: Pegawai yang belum pernah rekam master wajah wajib diarahkan ke /verif-wajah
+          const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
+          if (!hasFace) {
+            showToast('Anda belum melakukan verifikasi wajah. Mengalihkan ke halaman perekaman master wajah...', 'info');
+            const tokenToPass = pendingScannedToken || '';
+            setTimeout(() => {
+              window.location.href = `/verif-wajah${tokenToPass ? `?token=${encodeURIComponent(tokenToPass)}` : ''}`;
+            }, 600);
+            return;
+          }
+
+          showToast(`Login berhasil! Selamat datang, ${currentAuthUser.name}`, 'success');
+          activateDashboardView();
+
+          // Jika ada token yang dipindai kamera HP sebelum login, langsung eksekusi presensi otomatis
+          if (pendingScannedToken) {
+            await executeAutoPresence(pendingScannedToken, pendingScannedEventId);
+            pendingScannedToken = null;
+            pendingScannedEventId = null;
+          }
+        } else {
+          showToast(data.message || 'Login gagal. Periksa kembali NIP & Password Anda.', 'error');
+        }
+      } catch (err) {
+        showToast('Terjadi kesalahan koneksi: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btnLabel.textContent = 'Masuk ke Portal Pegawai';
+      }
+    }
+
+    // 2. Logout
+    function handleLogout() {
+      localStorage.removeItem('bpmp_auth_nip');
+      currentAuthUser = null;
+      if (pollInterval) clearInterval(pollInterval);
+      
+      document.getElementById('navUserBadge').classList.add('d-none');
+      document.getElementById('dashboardSection').classList.add('d-none');
+      document.getElementById('loginSection').classList.remove('d-none');
+      showToast('Anda telah keluar dari akun pegawai.', 'success');
+    }
+
+    // 3. Aktivasi Tampilan Dashboard Pegawai Terotentikasi
+    function activateDashboardView() {
+      document.getElementById('loginSection').classList.add('d-none');
+      document.getElementById('dashboardSection').classList.remove('d-none');
+
+      // Update Nav User Badge
+      const initial = currentAuthUser.name ? currentAuthUser.name.charAt(0).toUpperCase() : 'P';
+      document.getElementById('navAvatarInitial').textContent = initial;
+      document.getElementById('navEmployeeName').textContent = currentAuthUser.name;
+      document.getElementById('navEmployeeNip').textContent = currentAuthUser.nip;
+      document.getElementById('navUserBadge').classList.remove('d-none');
+
+      syncCurrentProfile();
+
+      // Setup Polling 10 detik agar status verifikasi LPTI update otomatis realtime
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(syncCurrentProfile, 10000);
+    }
+
+    // 4. Sinkronisasi Data Pegawai & Status Acara Terkini
+    async function syncCurrentProfile() {
+      if (!currentAuthUser) return;
+      try {
+        const queryEv = currentEvent?.id ? `?eventId=${encodeURIComponent(currentEvent.id)}` : '';
+        const res = await fetch(`/api/employees/${currentAuthUser.nip}${queryEv}`);
+        const data = await res.json();
+        if (data.success && data.employee) {
+          currentAuthUser = data.employee;
+          if (data.event) {
+            currentEvent = data.event;
+            renderEventBanner(currentEvent);
+          }
+          renderEmployeeProfile(currentAuthUser);
+        }
+      } catch (err) {
+        console.warn('Sync profile notice:', err.message);
+        if (!currentEvent) {
+          const cached = localStorage.getItem('bpmp_events_cache');
+          if (cached) {
+            try {
+              const list = JSON.parse(cached);
+              if (list.length > 0) {
+                currentEvent = list[0];
+                renderEventBanner(currentEvent);
+              }
+            } catch (e) {}
+          }
+        }
+      }
+    }
+
+    // 5. Render Banner Acara Aktif
+    function renderEventBanner(evt) {
+      if (!evt) return;
+      document.getElementById('eventCategoryBadge').textContent = evt.category || 'Teknis & Manajerial Kepegawaian';
+      document.getElementById('eventTitleBanner').textContent = evt.title;
+      document.getElementById('eventScheduleBanner').innerHTML = `
+        <i class="fas fa-calendar-alt mr-1 text-warning"></i> ${evt.schedule || '18 - 20 November 2026'} &bull;
+        <i class="fas fa-map-marker-alt mr-1 ml-2 text-danger"></i> ${evt.location || 'Auditorium BPMP Sultra'}
+      `;
+      document.getElementById('eventJpBadge').textContent = `${evt.jp || 32} JP`;
+    }
+
+    // 6. Render Profil & Presensi Peserta
+    function renderEmployeeProfile(emp) {
+      if (!emp) return;
+      const initial = emp.name ? emp.name.charAt(0).toUpperCase() : 'P';
+      const avatarBox = document.getElementById('empAvatarInitial');
+      if (avatarBox) {
+        if (emp.facePhotoUrl) {
+          avatarBox.innerHTML = `<img src="${emp.facePhotoUrl}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;" alt="${emp.name}" />`;
+        } else {
+          avatarBox.textContent = initial;
+        }
+      }
+      document.getElementById('empName').textContent = emp.name;
+      document.getElementById('empNip').textContent = `NIP: ${emp.nip}`;
+      document.getElementById('empJabatan').textContent = emp.position || emp.jabatan || '-';
+      document.getElementById('empPanggol').textContent = emp.rank || emp.panggol || '-';
+      document.getElementById('empInstansi').textContent = emp.institution || emp.instansi || 'BPMP Prov. Sultra';
+
+      // Status Biometrik Wajah
+      const faceCell = document.getElementById('empFaceStatusCell');
+      const facePrompt = document.getElementById('faceEnrollmentPrompt');
+      if (emp.faceRegistered) {
+        if (faceCell) {
+          faceCell.innerHTML = `
+            <span class="badge badge-success px-2 py-1 font-weight-bold"><i class="fas fa-smile mr-1"></i> Terdaftar</span>
+            <a href="/verif-wajah" class="btn btn-link btn-xs text-primary p-0 ml-1.5" title="Lihat Master Wajah"><i class="fas fa-id-badge"></i></a>
+          `;
+        }
+        if (facePrompt) facePrompt.classList.add('d-none');
+      } else {
+        if (faceCell) {
+          faceCell.innerHTML = `
+            <a href="/verif-wajah" class="btn btn-warning btn-xs font-weight-bold px-2 py-0.5 rounded-pill">
+              <i class="ti ti-camera mr-1"></i> Rekam Wajah
+            </a>
+          `;
+        }
+        if (facePrompt) facePrompt.classList.remove('d-none');
+      }
+
+      // Cek Kehadiran pada Event Aktif (Dukung boolean emp.attended & objek emp.attendance)
+      const isAttendedThisEvent = Boolean(
+        emp.attended ||
+        (emp.attendance && (
+          (currentEvent && (
+            emp.attendance[currentEvent.id] === true ||
+            emp.attendance[currentEvent.id]?.status === 'present'
+          )) ||
+          emp.attendance.status === 'present'
+        ))
+      );
+
+      // Pastikan Total JP terisi dan terupdate realtime
+      const finalJp = Number(emp.accumulatedJp) > 0
+        ? Number(emp.accumulatedJp)
+        : (isAttendedThisEvent ? (Number(currentEvent?.jp) || 32) : 0);
+      document.getElementById('empAccumulatedJp').textContent = `${finalJp} JP`;
+
+      const attBadge = document.getElementById('empAttendanceBadge');
+      const actionBox = document.getElementById('attendanceActionBox');
+      const successBox = document.getElementById('attendanceSuccessBox');
+
+      if (isAttendedThisEvent) {
+        attBadge.className = 'badge badge-success px-2.5 py-1 font-weight-bold';
+        attBadge.innerHTML = '<i class="ti ti-circle-check mr-1"></i> HADIR RESMI';
+        actionBox.classList.add('d-none');
+        successBox.classList.remove('d-none');
+        
+        let timeStr = 'Pukul 08:30:00 WITA';
+        if (emp.attendedAt) {
+          try {
+            const d = new Date(emp.attendedAt);
+            timeStr = !isNaN(d.getTime())
+              ? 'Pukul ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+              : String(emp.attendedAt);
+          } catch (e) {
+            timeStr = String(emp.attendedAt);
+          }
+        } else if (emp.attendance && typeof emp.attendance === 'object') {
+          const attObj = currentEvent ? emp.attendance[currentEvent.id] : emp.attendance;
+          if (attObj && typeof attObj === 'object' && attObj.time) {
+            timeStr = attObj.time;
+          }
+        }
+        document.getElementById('attendanceTimeLabel').textContent = `Tercatat pada: ${timeStr}`;
+      } else {
+        attBadge.className = 'badge badge-secondary px-2.5 py-1 font-weight-bold';
+        attBadge.innerHTML = '<i class="ti ti-circle-x mr-1"></i> BELUM HADIR';
+        actionBox.classList.remove('d-none');
+        successBox.classList.add('d-none');
+      }
+
+      // Render LPTI & Sertifikat
+      renderLptiStatus(emp.lpti, isAttendedThisEvent);
+      renderCertificateSection(emp, isAttendedThisEvent);
+    }
+
+    function renderLptiStatus(lpti, isAttendedThisEvent = false) {
+      const pill = document.getElementById('lptiStatusPill');
+      const revisionBox = document.getElementById('revisionAlertBox');
+      const currentDocCard = document.getElementById('currentUploadedDocCard');
+      const linkDoc = document.getElementById('currentUploadedLink');
+      const btnPreview = document.getElementById('btnPreviewPdf');
+
+      if (!lpti || lpti.status === 'none') {
+        pill.innerHTML = '<span class="badge badge-light border text-muted px-2.5 py-1 font-weight-bold"><i class="ti ti-clock mr-1"></i> Belum Diunggah</span>';
+        revisionBox.classList.add('d-none');
+        currentDocCard.classList.add('d-none');
+      } else if (lpti.status === 'pending') {
+        pill.innerHTML = '<span class="badge badge-warning text-dark px-2.5 py-1 font-weight-bold"><i class="fas fa-hourglass-half mr-1"></i> Menunggu Verifikasi Admin</span>';
+        revisionBox.classList.add('d-none');
+        currentDocCard.classList.remove('d-none');
+        linkDoc.textContent = lpti.filename || 'LPTI-Tersimpan.pdf';
+        linkDoc.href = lpti.fileUrl || '#';
+        btnPreview.href = lpti.fileUrl || '#';
+      } else if (lpti.status === 'approved') {
+        pill.innerHTML = '<span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="fas fa-check-double mr-1"></i> Terverifikasi Resmi</span>';
+        revisionBox.classList.add('d-none');
+        currentDocCard.classList.remove('d-none');
+        linkDoc.textContent = lpti.filename || 'LPTI-Disetujui.pdf';
+        linkDoc.href = lpti.fileUrl || '#';
+        btnPreview.href = lpti.fileUrl || '#';
+      } else if (lpti.status === 'revision') {
+        pill.innerHTML = '<span class="badge badge-danger px-2.5 py-1 font-weight-bold"><i class="ti ti-alert-triangle mr-1"></i> Perlu Revisi</span>';
+        revisionBox.classList.remove('d-none');
+        document.getElementById('revisionNoteContent').textContent = lpti.notes || 'Harap periksa kembali format laporan.';
+        currentDocCard.classList.remove('d-none');
+        linkDoc.textContent = lpti.filename || 'LPTI-Revisi.pdf';
+        linkDoc.href = lpti.fileUrl || '#';
+        btnPreview.href = lpti.fileUrl || '#';
+      }
+    }
+
+    function renderCertificateSection(emp, isAttendedThisEvent = false) {
+      const lockedView = document.getElementById('certLockedView');
+      const unlockedView = document.getElementById('certUnlockedView');
+      const lockedReason = document.getElementById('certLockedReason');
+      const certBadge = document.getElementById('certNumberBadge');
+      const btnDirectDownload = document.getElementById('btnDirectDownloadPdf');
+
+      const isLptiApproved = Boolean(emp.lpti && emp.lpti.status === 'approved');
+      const canUnlock = isAttendedThisEvent && isLptiApproved;
+
+      if (canUnlock) {
+        lockedView.classList.add('d-none');
+        unlockedView.classList.remove('d-none');
+        const certNum = emp.certificateNumber || `800.1.3/SERT-LPTI/2026/${emp.id || '001'}`;
+        certBadge.textContent = `Nomor Sertifikat: ${certNum}`;
+
+        const pdfUrl = `/api/employees/${emp.nip}/certificate.pdf${currentEvent ? `?eventId=${encodeURIComponent(currentEvent.id)}` : ''}`;
+        btnDirectDownload.href = pdfUrl;
+      } else {
+        lockedView.classList.remove('d-none');
+        unlockedView.classList.add('d-none');
+
+        if (!isAttendedThisEvent) {
+          const evName = currentEvent ? `"${currentEvent.title}"` : 'kegiatan ini';
+          lockedReason.textContent = `Presensi kehadiran di aula untuk ${evName} belum dilakukan. Silakan validasi token QR atau scan kamera terlebih dahulu.`;
+        } else if (!emp.lpti || emp.lpti.status === 'none') {
+          lockedReason.textContent = 'Berkas LPTI belum diunggah. Unggah laporan format PDF Anda untuk diverifikasi Admin.';
+        } else if (emp.lpti.status === 'pending') {
+          lockedReason.textContent = 'Berkas LPTI Anda sedang dalam antrean verifikasi manual oleh Admin Kepegawaian.';
+        } else if (emp.lpti.status === 'revision') {
+          lockedReason.textContent = 'Berkas LPTI memerlukan perbaikan sesuai catatan Admin. Harap unggah revisi dokumen.';
+        }
+      }
+    }
+
+    // 7. Presensi Mandiri (Submit Token)
+    async function submitPresenceToken() {
+      if (!currentAuthUser) return;
+      const tokenInput = document.getElementById('inputPresenceToken');
+      const token = tokenInput.value.trim();
+
+      if (!token) {
+        showToast('Silakan masukkan kode token Dynamic QR terlebih dahulu!', 'error');
+        return;
+      }
+
+      await executeAutoPresence(token, currentEvent?.id);
+      tokenInput.value = '';
+    }
+
+    async function executeAutoPresence(token, targetEventId, attendancePhoto = null) {
+      if (!currentAuthUser) return;
+
+      const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
+      if (!hasFace) {
+        showToast('Anda belum melakukan verifikasi wajah master. Mengalihkan ke halaman perekaman...', 'warning');
+        window.location.href = `/verif-wajah?token=${encodeURIComponent(token)}`;
+        return;
+      }
+
+      // Jika belum ada foto selfie bukti verifikasi saat presensi: buka modal kamera selfie presensi
+      if (!attendancePhoto) {
+        openFaceModal('verify', token, targetEventId);
+        return;
+      }
+
+      const cleanToken = token.trim().toUpperCase();
+      const eventIdToSend = targetEventId || currentEvent?.id;
+
+      try {
+        const res = await fetch('/api/presensi/verify-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            employeeId: currentAuthUser.nip,
+            token: cleanToken,
+            eventId: eventIdToSend,
+            attendancePhoto: attendancePhoto
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(result.message, 'success');
+          if (result.event) currentEvent = result.event;
+          if (result.employee) {
+            currentAuthUser = result.employee;
+            renderEmployeeProfile(currentAuthUser);
+          }
+          await syncCurrentProfile();
+          window.history.replaceState({}, '', '/');
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal memverifikasi presensi: ' + err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // FEATURE: BIOMETRIK VERIFIKASI WAJAH ASN (FRONTEND CAMERA)
+    // ========================================================
+    let faceStream = null;
+    let currentFaceMode = 'register'; // 'register' atau 'verify'
+    let pendingPresenceToken = null;
+    let pendingPresenceEventId = null;
+
+    async function openFaceModal(mode = 'verify', token = null, eventId = null) {
+      if (mode === 'register') {
+        window.location.href = '/verif-wajah' + (token ? `?token=${encodeURIComponent(token)}` : '');
+        return;
+      }
+      currentFaceMode = mode;
+      pendingPresenceToken = token;
+      pendingPresenceEventId = eventId;
+
+      const title = document.getElementById('faceModalTitle');
+      const sub = document.getElementById('faceModalSubtitle');
+      const btnText = document.getElementById('btnCaptureText');
+
+      if (mode === 'register') {
+        if (title) title.innerHTML = '<i class="fas fa-user-plus text-warning mr-2"></i> Pendaftaran Biometrik Wajah ASN';
+        if (sub) sub.textContent = 'Ambil 1 foto wajah resmi untuk data master presensi Anda';
+        if (btnText) btnText.textContent = 'Daftarkan Wajah Saya';
+      } else {
+        if (title) title.innerHTML = '<i class="fas fa-user-check text-success mr-2"></i> Verifikasi Wajah Presensi';
+        if (sub) sub.textContent = 'Arahkan wajah ke kamera untuk mencatat kehadiran resmi';
+        if (btnText) btnText.textContent = 'Verifikasi Kehadiran';
+      }
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).show();
+      setTimeout(startFaceCamera, 300);
+    }
+
+    async function startFaceCamera() {
+      const video = document.getElementById('faceCameraVideo');
+      const badge = document.getElementById('faceStatusBadge');
+      const oval = document.getElementById('faceOvalGuide');
+
+      if (badge) badge.innerHTML = '<i class="spinner-border spinner-border-sm mr-1"></i> Mengakses kamera depan...';
+
+      try {
+        if (faceStream) {
+          faceStream.getTracks().forEach(t => t.stop());
+        }
+
+        faceStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 480 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+
+        if (video) {
+          video.srcObject = faceStream;
+          video.onloadedmetadata = () => {
+            video.play();
+            if (badge) {
+              badge.innerHTML = '<i class="ti ti-circle-check text-success mr-1"></i> Kamera siap. Posisikan wajah di lingkaran';
+            }
+            if (oval) oval.style.borderColor = '#10b981';
+          };
+        }
+      } catch (err) {
+        console.error('Kamera error:', err);
+        if (badge) {
+          badge.innerHTML = '<i class="ti ti-alert-triangle text-warning mr-1"></i> Kamera diblokir / tidak tersedia';
+        }
+        showToast('Izin kamera depan diperlukan untuk biometrik wajah: ' + err.message, 'error');
+      }
+    }
+
+    function closeFaceCamera() {
+      if (faceStream) {
+        faceStream.getTracks().forEach(t => t.stop());
+        faceStream = null;
+      }
+    }
+
+    $('#faceBiometricModal').on('hidden.bs.modal', function () {
+      closeFaceCamera();
+    });
+
+    async function captureAndProcessFace() {
+      const video = document.getElementById('faceCameraVideo');
+      const canvas = document.getElementById('faceCaptureCanvas');
+      const badge = document.getElementById('faceStatusBadge');
+      const btn = document.getElementById('btnCaptureFace');
+
+      if (!video || !canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      canvas.width = 400;
+      canvas.height = 400;
+
+      // Mirror canvas agar orientasi sama persis dengan preview selfie
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+      const photoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+      if (btn) btn.disabled = true;
+      if (badge) badge.innerHTML = '<i class="spinner-border spinner-border-sm mr-1"></i> Memproses foto biometrik...';
+
+      try {
+        if (currentFaceMode === 'register') {
+          const res = await fetch(`/api/employees/${currentAuthUser.nip}/register-face`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              facePhoto: photoBase64
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast('Foto biometrik wajah berhasil didaftarkan!', 'success');
+            currentAuthUser = data.employee;
+            renderEmployeeProfile(currentAuthUser);
+            closeFaceCamera();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
+
+            // Jika ada pending presensi token, langsung eksekusi sekarang
+            if (pendingPresenceToken) {
+              await executeAutoPresence(pendingPresenceToken, pendingPresenceEventId, photoBase64);
+              pendingPresenceToken = null;
+              pendingPresenceEventId = null;
+            }
+          } else {
+            showToast(data.message || 'Gagal mendaftarkan wajah.', 'error');
+          }
+        } else {
+          // Mode Verifikasi Presensi
+          closeFaceCamera();
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
+          if (pendingPresenceToken) {
+            await executeAutoPresence(pendingPresenceToken, pendingPresenceEventId, photoBase64);
+            pendingPresenceToken = null;
+            pendingPresenceEventId = null;
+          }
+        }
+      } catch (err) {
+        showToast('Terjadi kesalahan memproses foto: ' + err.message, 'error');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function autoFillCurrentToken() {
+      try {
+        const queryEv = currentEvent?.id ? `?eventId=${encodeURIComponent(currentEvent.id)}` : '';
+        const res = await fetch(`/api/qr/current${queryEv}`);
+        const data = await res.json();
+        if (data.success && data.token) {
+          document.getElementById('inputPresenceToken').value = data.token;
+          showToast(`Token aktif aula "${data.token}" (${data.eventTitle}) berhasil diisikan!`, 'success');
+        } else {
+          showToast(data.message || 'Belum ada QR Code aktif dari server.', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal mengambil token server: ' + err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // FEATURE: SCAN KAMERA QR CODE (HTML5-QRCODE)
+    // ========================================================
+    function extractQrData(decodedText) {
+      if (!decodedText) return { token: null, eventId: null };
+      let token = null;
+      let eventId = null;
+
+      try {
+        const url = new URL(decodedText);
+        token = url.searchParams.get('token');
+        eventId = url.searchParams.get('event') || url.searchParams.get('eventId');
+      } catch (e) {}
+
+      if (!token) {
+        const match = decodedText.match(/token=([A-Za-z0-9\-_]+)/i);
+        if (match) token = match[1];
+      }
+      if (!token) {
+        const tokenMatch = decodedText.match(/LPTI-[A-Z0-9]+/i);
+        if (tokenMatch) token = tokenMatch[0];
+        else token = decodedText.trim();
+      }
+      if (!eventId) {
+        const evMatch = decodedText.match(/event(?:Id)?=([A-Za-z0-9\-_]+)/i);
+        if (evMatch) eventId = evMatch[1];
+      }
+
+      return {
+        token: token ? token.trim().toUpperCase() : null,
+        eventId: eventId ? eventId.trim() : null
+      };
+    }
+
+    async function openCameraScanner() {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('cameraScannerModal')).show();
+      setTimeout(startCameraScanner, 350);
+    }
+
+    async function startCameraScanner() {
+      const qrReaderDiv = document.getElementById('cameraQrReader');
+      if (!qrReaderDiv) return;
+
+      document.getElementById('scannerLoadingStatus').classList.remove('d-none');
+      document.getElementById('scannerErrorMessage').classList.add('d-none');
+
+      try {
+        if (html5QrScanner) {
+          await stopCameraScanner();
+        }
+
+        html5QrScanner = new Html5Qrcode("cameraQrReader");
+
+        const config = {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        };
+
+        const onScanSuccess = async (decodedText) => {
+          console.log('Scanned QR Raw:', decodedText);
+          const qrData = extractQrData(decodedText);
+          if (qrData.token) {
+            await stopCameraScanner();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('cameraScannerModal')).hide();
+            showToast(`📸 QR Code Terdeteksi: ${qrData.token}`, 'success');
+
+            if (currentAuthUser) {
+              await executeAutoPresence(qrData.token, qrData.eventId);
+            } else {
+              pendingScannedToken = qrData.token;
+              pendingScannedEventId = qrData.eventId;
+              const alertBox = document.getElementById('loginQrAlert');
+              const tokenBadge = document.getElementById('alertDetectedToken');
+              if (alertBox && tokenBadge) {
+                tokenBadge.textContent = qrData.token;
+                alertBox.classList.remove('d-none');
+              }
+              showToast(`Silakan login dengan NIP Anda untuk mencatat kehadiran token ${qrData.token}.`, 'success');
+            }
+          }
+        };
+
+        const onScanError = (errorMessage) => {
+          // Abaikan scan frame error berkala
+        };
+
+        await html5QrScanner.start(
+          { facingMode: currentCameraFacing },
+          config,
+          onScanSuccess,
+          onScanError
+        );
+
+        document.getElementById('scannerLoadingStatus').classList.add('d-none');
+      } catch (err) {
+        document.getElementById('scannerLoadingStatus').classList.add('d-none');
+        const errBox = document.getElementById('scannerErrorMessage');
+        errBox.classList.remove('d-none');
+        document.getElementById('scannerErrorText').textContent = 'Kamera tidak dapat diakses atau diblokir izin peramban: ' + err.message;
+      }
+    }
+
+    async function switchCameraFacing() {
+      currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
+      await startCameraScanner();
+    }
+
+    async function stopCameraScanner() {
+      if (html5QrScanner) {
+        try {
+          await html5QrScanner.stop();
+          html5QrScanner.clear();
+        } catch (e) {
+          console.warn('Stop scanner note:', e);
+        }
+        html5QrScanner = null;
+      }
+    }
+
+    $('#cameraScannerModal').on('hidden.bs.modal', function () {
+      stopCameraScanner();
+    });
+
+    // ========================================================
+    // FEATURE: UNGGAH DOKUMEN LPTI (PDF ONLY)
+    // ========================================================
+    function handleFileSelected(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        showToast('Hanya dokumen format PDF (.pdf) yang diperbolehkan!', 'error');
+        input.value = '';
+        return;
+      }
+
+      if (file.size > 15 * 1024 * 1024) {
+        showToast('Ukuran file maksimal 15 MB!', 'error');
+        input.value = '';
+        return;
+      }
+
+      document.getElementById('fileUploadPrompt').classList.add('d-none');
+      document.getElementById('fileSelectedInfo').classList.remove('d-none');
+      document.getElementById('selectedFileName').textContent = file.name;
+      document.getElementById('selectedFileSize').textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    async function handleUploadLpti(e) {
+      e.preventDefault();
+      if (!currentAuthUser) return;
+
+      const fileInput = document.getElementById('lptiFileInput');
+      const file = fileInput.files[0];
+      if (!file) {
+        showToast('Pilih berkas PDF LPTI terlebih dahulu!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnUploadSubmit');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-1"></span> Mengunggah Berkas...';
+
+      const formData = new FormData();
+      formData.append('lptiFile', file);
+      if (currentEvent?.id) formData.append('eventId', currentEvent.id);
+
+      try {
+        const res = await fetch(`/api/employees/${currentAuthUser.nip}/upload-lpti`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Berkas LPTI berhasil diunggah! Status: Menunggu Verifikasi Admin.', 'success');
+          fileInput.value = '';
+          document.getElementById('fileUploadPrompt').classList.remove('d-none');
+          document.getElementById('fileSelectedInfo').classList.add('d-none');
+          await syncCurrentProfile();
+        } else {
+          showToast(data.message || 'Gagal mengunggah berkas LPTI.', 'error');
+        }
+      } catch (err) {
+        showToast('Terjadi kesalahan unggah: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-cloud-upload mr-1.5"></i> <span>Unggah Berkas LPTI</span>';
+      }
+    }
+
+    // ========================================================
+    // FEATURE: PREVIEW & DOWNLOAD E-SERTIFIKAT
+    // ========================================================
+    async function openCertificateModal() {
+      if (!currentAuthUser) return;
+      try {
+        const queryEv = currentEvent?.id ? `?eventId=${encodeURIComponent(currentEvent.id)}` : '';
+        const res = await fetch(`/api/employees/${currentAuthUser.nip}/certificate${queryEv}`);
+        const data = await res.json();
+        if (data.success && data.certificate) {
+          const cert = data.certificate;
+          const emp = data.employee;
+
+          document.getElementById('certModalNumber').textContent = `Nomor: ${cert.certificateNumber}`;
+          document.getElementById('certModalName').textContent = emp.name;
+          document.getElementById('certModalNip').textContent = `NIP. ${emp.nip}`;
+          document.getElementById('certModalJabatanInstansi').textContent = `${emp.position || 'Aparatur Sipil Negara'} • ${emp.institution || 'BPMP Provinsi Sulawesi Tenggara'}`;
+          document.getElementById('certModalEventTitle').textContent = `"${cert.eventTitle}"`;
+          document.getElementById('certModalSchedule').textContent = cert.schedule || '18 - 20 November 2026';
+          document.getElementById('certModalJp').textContent = `${cert.jp || 32} JP`;
+          document.getElementById('certModalIssueDate').textContent = `Ditetapkan pada: ${cert.issuedDate || '16 November 2026'}`;
+          document.getElementById('certModalVerifier').textContent = cert.verifierName || 'Junaiddin Pagala, ST, M.T.';
+
+          if (cert.qrCode) {
+            document.getElementById('certModalQr').src = cert.qrCode;
+          }
+
+          const printArea = document.getElementById('certificatePrintArea');
+          const defaultOrnaments = document.getElementById('defaultTemplateOrnaments');
+
+          if (cert.customTemplateUrl) {
+            printArea.style.backgroundImage = `url('${cert.customTemplateUrl}')`;
+            printArea.style.backgroundSize = '100% 100%';
+            printArea.style.backgroundRepeat = 'no-repeat';
+            printArea.style.border = 'none';
+            if (defaultOrnaments) defaultOrnaments.style.display = 'none';
+            printArea.style.paddingTop = '180px';
+          } else {
+            printArea.style.backgroundImage = 'none';
+            printArea.style.border = '4px double #064e3b';
+            if (defaultOrnaments) defaultOrnaments.style.display = 'block';
+            printArea.style.paddingTop = '';
+          }
+
+          const pdfUrl = `/api/employees/${emp.nip}/certificate.pdf${currentEvent ? `?eventId=${encodeURIComponent(currentEvent.id)}` : ''}`;
+          document.getElementById('btnDownloadCertPdf').href = pdfUrl;
+          document.getElementById('btnModalDownloadPdf').href = pdfUrl;
+
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('certificateModal')).show();
+        } else {
+          showToast(data.message || 'Sertifikat belum dapat diterbitkan.', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal memuat sertifikat: ' + err.message, 'error');
+      }
+    }
+
+    // ========================================================
+    // AUTO DETECTION DARI URL PARAMS (SCAN HP LANGSUNG)
+    // ========================================================
+    async function checkUrlParamsAndSession() {
+      const params = new URLSearchParams(window.location.search);
+      const tokenParam = params.get('token');
+      const eventParam = params.get('event') || params.get('eventId');
+
+      const savedNip = localStorage.getItem('bpmp_auth_nip');
+      if (savedNip) {
+        try {
+          const queryEv = eventParam ? `?eventId=${encodeURIComponent(eventParam)}` : '';
+          const res = await fetch(`/api/employees/${savedNip}${queryEv}`);
+          const data = await res.json();
+          if (data.success && data.employee) {
+            currentAuthUser = data.employee;
+            if (data.event) currentEvent = data.event;
+
+            // Route Guard: Jika belum rekam master wajah, wajib diarahkan ke /verif-wajah
+            const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
+            if (!hasFace) {
+              const redirectParam = tokenParam ? `?token=${encodeURIComponent(tokenParam)}` : '';
+              window.location.href = `/verif-wajah${redirectParam}`;
+              return;
+            }
+
+            activateDashboardView();
+
+            if (tokenParam) {
+              const cleanToken = tokenParam.trim().toUpperCase();
+              showToast(`📸 Kode token presensi aula "${cleanToken}" terdeteksi dari scan HP!`, 'success');
+              await executeAutoPresence(cleanToken, eventParam);
+            }
+            return;
+          }
+        } catch (err) {
+          console.warn('Sesi kadaluarsa / gagal muat:', err.message);
+        }
+      }
+
+      if (tokenParam) {
+        const cleanToken = tokenParam.trim().toUpperCase();
+        pendingScannedToken = cleanToken;
+        pendingScannedEventId = eventParam;
+
+        const alertBox = document.getElementById('loginQrAlert');
+        const tokenBadge = document.getElementById('alertDetectedToken');
+        if (alertBox && tokenBadge) {
+          tokenBadge.textContent = cleanToken;
+          alertBox.classList.remove('d-none');
+        }
+        showToast(`📸 Presensi aula (${cleanToken}) terdeteksi! Silakan login dengan NIP untuk menyelesaikan presensi.`, 'success');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      checkUrlParamsAndSession();
+    });
+  
+  </script>
+</body>
+</html>
