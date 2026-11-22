@@ -8,13 +8,15 @@ const BPMPLayout = {
   menuConfig: {
     pegawai: [
       { id: 'home', label: 'Beranda', href: '/', icon: 'ti-home' },
-      { id: 'dashboard', label: 'Presensi & E-Sertifikat', href: '/login', icon: 'ti-id-badge' },
+      { id: 'dashboard', label: 'Presensi & Pelatihan', href: '/login', icon: 'ti-id-badge' },
+      { id: 'sertifikat', label: 'Cek Sertifikat', href: '/sertifikat', icon: 'ti-certificate' },
       { id: 'verif-wajah', label: 'Registrasi Wajah', href: '/verif-wajah', icon: 'ti-scan' },
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' },
       { id: 'admin-login', label: 'Login Admin', href: '/admin/login', icon: 'ti-lock-access', isSecondary: true }
     ],
     admin: [
       { id: 'admin-dashboard', label: 'Dashboard Presensi', href: '/admin', icon: 'ti-layout-dashboard' },
+      { id: 'sertifikat', label: 'Cek Sertifikat Publik', href: '/sertifikat', icon: 'ti-certificate', target: '_blank' },
       { id: 'section-lpti', label: 'Verifikasi LPTI', href: '#section-lpti', icon: 'ti-file-check' },
       { id: 'section-template', label: 'Pengaturan Sertifikat', href: '#section-template', icon: 'ti-certificate' },
       { id: 'section-event', label: 'Kelola Pelatihan', href: '#section-event', icon: 'ti-calendar-event' },
@@ -24,6 +26,7 @@ const BPMPLayout = {
     ],
     superadmin: [
       { id: 'superadmin-summary', label: 'Ringkasan Sistem', href: '/superadmin', icon: 'ti-shield-lock' },
+      { id: 'sertifikat', label: 'Cek Sertifikat Publik', href: '/sertifikat', icon: 'ti-certificate', target: '_blank' },
       { id: 'section-admins', label: 'Admin Kepegawaian', href: '#section-admins', icon: 'ti-users' },
       { id: 'section-employees', label: 'Master Data 104 ASN', href: '#section-employees', icon: 'ti-address-book' },
       { id: 'section-sync', label: 'Database Supabase', href: '#section-sync', icon: 'ti-cloud-upload' },

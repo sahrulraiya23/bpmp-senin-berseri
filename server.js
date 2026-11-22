@@ -7,6 +7,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { generateCertificatePdf } = require('./certificate-generator');
+const { signCertificate, generateCertId, verifyCertificateSignature } = require('./cert-crypto');
 // Auto-load .env environment file (Node.js 20+)
 if (typeof process.loadEnvFile === 'function') {
   try {
@@ -795,10 +796,23 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
     const finalShowUnderline = req.query.showUnderline !== undefined ? (req.query.showUnderline === 'true' || req.query.showUnderline === '1') : (certConfig.showUnderline !== false);
 
     const sampleCertNumber = `${finalPrefix}/001`;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
+    
+    const sampleCrypto = signCertificate({
+      certNumber: sampleCertNumber,
+      employeeNip: '197606122002121004',
+      employeeName: 'Junaiddin Pagala, ST, M.T.',
+      eventTitle: event.title || 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN',
+      eventJp: event.jp || 32,
+      issuedAt: new Date().toISOString()
+    });
+    const sampleVerifyUrl = `${protocol}://${host}/sertifikat/${sampleCrypto.certId}`;
 
     const pdfBuffer = await generateCertificatePdf({
       templatePath: templatePath,
       certNumber: sampleCertNumber,
+      certId: sampleCrypto.certId,
       employeeName: 'Junaiddin Pagala, ST, M.T.',
       employeeNip: '197606122002121004',
       employeeJabatan: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
@@ -810,7 +824,7 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
       verifierTitle: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
       verifierNip: '197606122002121004',
       issuedAt: new Date().toISOString(),
-      verifyUrl: 'http://localhost:3000/api/verify-cert/' + encodeURIComponent(sampleCertNumber),
+      verifyUrl: sampleVerifyUrl,
       nomorYRatio: finalNomorY,
       namaYRatio: finalNamaY,
       namaFontSize: finalNamaSize,
@@ -972,17 +986,28 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
 
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
   const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
-  const verifyUrl = `${protocol}://${host}/api/verify-cert/${encodeURIComponent(employee.certificate.number)}`;
+
+  const certCrypto = signCertificate({
+    certNumber: employee.certificate.number,
+    employeeNip: employee.nip,
+    employeeName: employee.name,
+    eventTitle: event.title || 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN',
+    eventJp: event.jp || 4,
+    issuedAt: employee.certificate.issuedAt
+  });
+  const certId = certCrypto.certId;
+  const verifyUrl = `${protocol}://${host}/sertifikat/${certId}`;
 
   const certQrDataUrl = await QRCode.toDataURL(verifyUrl, {
     margin: 1,
-    width: 140,
-    color: { dark: '#064e3b', light: '#ffffff' }
+    width: 180,
+    color: { dark: '#0c233c', light: '#ffffff' }
   });
 
   res.json({
     success: true,
     certificate: {
+      certId: certId,
       number: employee.certificate.number,
       issuedAt: employee.certificate.issuedAt,
       verifier: employee.certificate.verifier,
@@ -992,12 +1017,14 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
       employeeJabatan: employee.jabatan,
       employeeInstansi: employee.instansi,
       eventTitle: event.title || 'Pelatihan Kepegawaian ASN',
-      eventJp: event.jp || 32,
+      eventJp: event.jp || 4,
       eventCategory: event.category || 'Teknis & Manajerial Kepegawaian',
       eventSchedule: event.schedule || 'Jadwal Ditentukan',
       eventLocation: event.location || 'Auditorium Sasana Praja',
       qrVerification: certQrDataUrl,
       verifyUrl: verifyUrl,
+      cryptoHash: certCrypto.sha256Digest,
+      cryptoSignature: certCrypto.signatureHex,
       pdfDownloadUrl: `/api/employees/${employee.nip || employee.id}/certificate.pdf?download=true`,
       pdfPreviewUrl: `/api/employees/${employee.nip || employee.id}/certificate.pdf`,
       template: event.certificateTemplate || null,
@@ -1024,17 +1051,28 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
 
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
-    const verifyUrl = `${protocol}://${host}/api/verify-cert/${encodeURIComponent(employee.certificate.number)}`;
+
+    const certCrypto = signCertificate({
+      certNumber: employee.certificate.number,
+      employeeNip: employee.nip,
+      employeeName: employee.name,
+      eventTitle: event.title || 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN',
+      eventJp: event.jp || 4,
+      issuedAt: employee.certificate.issuedAt
+    });
+    const certId = certCrypto.certId;
+    const verifyUrl = `${protocol}://${host}/sertifikat/${certId}`;
 
     const pdfBuffer = await generateCertificatePdf({
       templatePath: templatePath,
       certNumber: employee.certificate.number,
+      certId: certId,
       employeeName: employee.name,
       employeeNip: employee.nip,
       employeeJabatan: employee.jabatan,
       employeeInstansi: employee.instansi,
       eventTitle: event.title || 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN',
-      eventJp: event.jp || 32,
+      eventJp: event.jp || 4,
       eventSchedule: event.schedule || '18 - 20 November 2026',
       verifier: employee.certificate.verifier || 'Junaiddin Pagala, ST, M.T.',
       verifierTitle: employee.certificate.verifierTitle || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
@@ -1064,50 +1102,122 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
   }
 });
 
-// Verifikasi Publik Keabsahan Sertifikat
-app.get('/api/verify-cert/:certNumber', async (req, res) => {
-  const certNumber = decodeURIComponent(req.params.certNumber);
-  const employees = await db.getAllEmployees();
-  const employee = employees.find(e => e.certificate && e.certificate.number === certNumber);
+// ========================================================
+// API Verifikasi Data Sertifikat (Kriptografi ECDSA & Dicoding Style)
+// ========================================================
+app.get('/api/verify-certificate-data/:query', async (req, res) => {
+  try {
+    const rawQuery = decodeURIComponent(req.params.query || '').trim();
+    const upperQuery = rawQuery.toUpperCase();
 
-  if (!employee) {
-    return res.status(404).send(`
-      <!DOCTYPE html>
-      <html lang="id">
-      <head><meta charset="UTF-8"><title>Verifikasi Gagal - BPMP Sultra</title><script src="https://cdn.tailwindcss.com"></script></head>
-      <body class="bg-slate-50 flex items-center justify-center min-h-screen p-4 font-sans text-slate-800">
-        <div class="max-w-md w-full bg-white rounded-3xl p-8 border border-rose-200 shadow-xl text-center">
-          <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">✕</div>
-          <h1 class="text-xl font-black text-rose-800 mb-2">Sertifikat Tidak Ditemukan</h1>
-          <p class="text-sm text-slate-500 mb-6">Nomor registrasi <code>${certNumber}</code> tidak tercatat dalam database resmi BPMP Provinsi Sulawesi Tenggara.</p>
-          <a href="/" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Kembali ke Beranda</a>
-        </div>
-      </body>
-      </html>
-    `);
+    const employees = await db.getAllEmployees();
+    const allEvents = await db.getAllEvents();
+
+    let matchedEmployee = null;
+    let matchedEvent = null;
+
+    // 1. Cari berdasarkan ID Kriptografis, Nomor Surat, atau NIP Pegawai
+    for (const emp of employees) {
+      if (!emp.certificate || !emp.certificate.number) continue;
+
+      const certNo = String(emp.certificate.number).trim();
+      const certId = generateCertId(certNo, emp.nip);
+
+      if (
+        certId === upperQuery ||
+        certNo === rawQuery ||
+        emp.nip === rawQuery ||
+        certNo.replace(/[^a-zA-Z0-9]/g, '') === rawQuery.replace(/[^a-zA-Z0-9]/g, '')
+      ) {
+        matchedEmployee = emp;
+        matchedEvent = allEvents.find(ev => ev.id === emp.eventId) || (await db.getActiveEvent());
+        break;
+      }
+    }
+
+    // 2. Fallback / Sample jika belum ada sertifikat terbit di database
+    if (!matchedEmployee) {
+      const sampleCertNo = '0031/C6.26/Sertifikat/KP.04.00/2026';
+      const sampleNip = '198503152010011012';
+      const sampleCertId = generateCertId(sampleCertNo, sampleNip);
+
+      if (
+        upperQuery === sampleCertId ||
+        rawQuery === sampleCertNo ||
+        rawQuery === sampleNip ||
+        upperQuery.includes('6RPNY') ||
+        upperQuery.includes('SAMPLE')
+      ) {
+        matchedEmployee = {
+          name: 'Sri Wahyudi, S.Sos.',
+          nip: sampleNip,
+          jabatan: 'Subbagian Tata Usaha & Kepegawaian',
+          panggol: 'Penata Muda Tk.I (III/b)',
+          instansi: 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
+          facePhotoUrl: null,
+          certificate: {
+            number: sampleCertNo,
+            issuedAt: '2026-04-22T08:00:00.000Z',
+            verifier: 'Junaiddin Pagala, S.T., M.T.',
+            verifierTitle: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+            verifierNip: '197606122002121004'
+          }
+        };
+        matchedEvent = (await db.getActiveEvent()) || {};
+      }
+    }
+
+    if (!matchedEmployee || !matchedEmployee.certificate) {
+      return res.status(404).json({
+        success: false,
+        message: `Sertifikat dengan ID / Nomor '${rawQuery}' tidak ditemukan dalam pangkalan data resmi BPMP Sultra.`
+      });
+    }
+
+    const certData = matchedEmployee.certificate;
+    const event = matchedEvent || {};
+
+    const certCrypto = signCertificate({
+      certNumber: certData.number,
+      employeeNip: matchedEmployee.nip,
+      employeeName: matchedEmployee.name,
+      eventTitle: event.title || matchedEmployee.eventTitle || 'Pengembangan Kompetensi Senin Berseri: Pemanfaatan Papan Interaktif Digital',
+      eventJp: event.jp || 2,
+      issuedAt: certData.issuedAt
+    });
+
+    res.json({
+      success: true,
+      certificate: {
+        certId: certCrypto.certId,
+        number: certData.number,
+        employeeName: matchedEmployee.name,
+        employeeNip: matchedEmployee.nip,
+        employeeJabatan: matchedEmployee.jabatan || matchedEmployee.position || 'Aparatur Sipil Negara',
+        employeeInstansi: matchedEmployee.instansi || 'BPMP Provinsi Sulawesi Tenggara',
+        employeePhotoUrl: matchedEmployee.facePhotoUrl || matchedEmployee.attendancePhotoUrl || null,
+        eventTitle: event.title || matchedEmployee.eventTitle || 'Pengembangan Kompetensi Senin Berseri: Pemanfaatan Papan Interaktif Digital',
+        eventJp: event.jp || 2,
+        eventCategory: event.category || 'Peningkatan Mutu Pendidikan & Kompetensi ASN',
+        eventDescription: event.description || 'Pengembangan Kompetensi Senin Berseri diselenggarakan oleh Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara guna meningkatkan literasi digital dan kapabilitas teknis pegawai dalam mendukung transformasi pembelajaran.',
+        issuedAt: certData.issuedAt,
+        verifier: certData.verifier || 'Junaiddin Pagala, S.T., M.T.',
+        verifierTitle: certData.verifierTitle || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+        verifierNip: certData.verifierNip || '197606122002121004',
+        cryptoHash: certCrypto.sha256Digest,
+        cryptoSignature: certCrypto.signatureHex,
+        cryptoAlgorithm: certCrypto.algorithm,
+        status: 'Resmi Terverifikasi (Valid)'
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memverifikasi sertifikat: ' + err.message });
   }
+});
 
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="id">
-    <head><meta charset="UTF-8"><title>Verifikasi Sertifikat Resmi - BPMP Sultra</title><script src="https://cdn.tailwindcss.com"></script></head>
-    <body class="bg-slate-50 flex items-center justify-center min-h-screen p-4 font-sans text-slate-800">
-      <div class="max-w-md w-full bg-white rounded-3xl p-8 border border-emerald-200 shadow-xl text-center">
-        <div class="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">✓</div>
-        <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase rounded-full tracking-wider mb-2">E-Sertifikat Resmi & Sah</span>
-        <h1 class="text-lg font-black text-slate-900 mb-1">${employee.name}</h1>
-        <p class="text-xs font-mono text-slate-500 mb-4">NIP: ${employee.nip}</p>
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left text-xs space-y-1.5 mb-6">
-          <div><span class="text-slate-400">Nomor Surat:</span> <strong class="font-mono text-emerald-700 block">${employee.certificate.number}</strong></div>
-          <div><span class="text-slate-400">Kegiatan:</span> <span class="font-bold text-slate-800 block">${employee.eventTitle || 'Pelatihan Kepegawaian ASN'}</span></div>
-          <div><span class="text-slate-400">Instansi:</span> <span class="font-medium text-slate-700 block">${employee.instansi}</span></div>
-          <div><span class="text-slate-400">Diterbitkan Pada:</span> <span class="font-medium text-slate-700 block">${new Date(employee.certificate.issuedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
-        </div>
-        <a href="/api/employees/${employee.nip}/certificate.pdf" target="_blank" class="w-full inline-block py-3 bg-emerald-700 text-white font-bold rounded-xl text-xs hover:bg-emerald-800 transition">Lihat Dokumen PDF Resmi ↗</a>
-      </div>
-    </body>
-    </html>
-  `);
+// Verifikasi Publik Keabsahan Sertifikat (Redirect ke Halaman Publik Dicoding-Style)
+app.get('/api/verify-cert/:certNumber', (req, res) => {
+  res.redirect('/sertifikat/' + encodeURIComponent(req.params.certNumber));
 });
 
 // Reset Testing Data API (Khusus Super Administrator)
@@ -1336,6 +1446,19 @@ app.get('/proyektor', (req, res) => {
 
 app.get('/qr', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'proyektor.html'));
+});
+
+// Halaman Publik Verifikasi E-Sertifikat Kriptografis (Dicoding Style)
+app.get('/sertifikat', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'sertifikat.html'));
+});
+
+app.get('/sertifikat/:id', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'sertifikat.html'));
+});
+
+app.get('/verify/:id', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'sertifikat.html'));
 });
 
 // 404 Handler

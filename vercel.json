@@ -1,6 +1,9 @@
 {
   "version": 2,
   "rewrites": [
+    { "source": "/sertifikat/:id", "destination": "/sertifikat.html" },
+    { "source": "/sertifikat", "destination": "/sertifikat.html" },
+    { "source": "/verify/:id", "destination": "/sertifikat.html" },
     { "source": "/login", "destination": "/pegawai.html" },
     { "source": "/pegawai", "destination": "/pegawai.html" },
     { "source": "/admin/login", "destination": "/admin-login.html" },

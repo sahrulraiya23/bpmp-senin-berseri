@@ -1839,12 +1839,19 @@
 
         let certInfo = '';
         if (emp.certificate) {
+          const certNum = emp.certificate.number || '';
+          const certId = emp.certificate.certId || certNum || emp.nip;
           certInfo = `
             <div>
-              <span class="font-mono small font-weight-bold text-success d-block">${emp.certificate.number}</span>
-              <a href="/api/employees/${emp.nip || emp.id}/certificate.pdf" target="_blank" class="small text-primary font-weight-bold">
-                <i class="fas fa-print mr-1"></i> Cetak Dokumen
-              </a>
+              <span class="font-mono small font-weight-bold text-success d-block mb-1">${certNum}</span>
+              <div class="d-flex flex-wrap align-items-center gap-1">
+                <a href="/api/employees/${emp.nip || emp.id}/certificate.pdf" target="_blank" class="badge bg-primary text-white text-decoration-none">
+                  <i class="ti ti-printer me-0.5"></i> Cetak PDF
+                </a>
+                <a href="/sertifikat/${encodeURIComponent(certId)}" target="_blank" class="badge bg-teal-lt text-teal text-decoration-none">
+                  <i class="ti ti-shield-check me-0.5"></i> Cek Publik ↗
+                </a>
+              </div>
             </div>
           `;
         } else {

@@ -2,6 +2,7 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+const { generateCertId } = require('./cert-crypto');
 
 /**
  * Helper untuk normalisasi rasio vertikal Y (0.05 - 0.95 dari bawah halaman).
@@ -22,6 +23,7 @@ function parseYRatio(val, fallback) {
 async function generateCertificatePdf({
   templatePath,
   certNumber = '800.1.3/SERT-LPTI/2026/001',
+  certId = '',
   employeeName = 'Nama Pegawai, S.Pd.',
   employeeNip = '',
   employeeJabatan = '',
@@ -304,46 +306,75 @@ async function generateCertificatePdf({
   }
 
   // ========================================================
-  // 4. QR CODE KEABSAHAN (DISCRETELY IN CORNER)
+  // 4. QR CODE KEABSAHAN (DI KANAN BAWAH / BOTTOM RIGHT)
+  // Dilengkapi Kredensial Kriptografis ECDSA & ID Unik Instansi
   // ========================================================
   if (showQr) {
     try {
-      const qrUrl = verifyUrl || `http://localhost:3000/api/verify-cert/${encodeURIComponent(cleanNumber)}`;
-      const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 140, color: { dark: '#064e3b', light: '#ffffff' } });
+      const displayCertId = certId || generateCertId(cleanNumber, employeeNip);
+      const targetVerifyUrl = verifyUrl || `https://bpmp-senin-berseri.vercel.app/sertifikat/${displayCertId}`;
+
+      const qrDataUrl = await QRCode.toDataURL(targetVerifyUrl, {
+        margin: 1,
+        width: 180,
+        color: { dark: '#0c233c', light: '#ffffff' }
+      });
       const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
       const qrImage = await doc.embedPng(qrImageBytes);
 
-      const qrSize = 55;
-      const qrX = 40;
-      const qrY = 35;
+      // Posisi di Pojok Kanan Bawah
+      const qrSize = 65;
+      const boxWidth = qrSize + 18;
+      const boxHeight = qrSize + 34;
+      const qrX = width - qrSize - 40;
+      const qrY = 32;
 
+      // Kotak Latar Belakang Putih Berbingkai Elegan (Agar QR selalu terbaca jelas di template apapun)
+      page.drawRectangle({
+        x: qrX - 9,
+        y: qrY - 14,
+        width: boxWidth,
+        height: boxHeight,
+        color: rgb(1, 1, 1),
+        borderColor: rgb(0.82, 0.86, 0.90),
+        borderWidth: 1
+      });
+
+      // Teks Header QR
+      const headerTitle = 'VERIFIKASI KEABSAHAN';
+      const headerSub = 'Pindai untuk validasi';
+      page.drawText(headerTitle, {
+        x: qrX - 5,
+        y: qrY + qrSize + 8,
+        size: 5.5,
+        font: fontBold,
+        color: rgb(0.10, 0.23, 0.36)
+      });
+      page.drawText(headerSub, {
+        x: qrX - 5,
+        y: qrY + qrSize + 1,
+        size: 4.8,
+        font: fontRegular,
+        color: rgb(0.45, 0.50, 0.55)
+      });
+
+      // Gambar QR Code
       page.drawImage(qrImage, {
         x: qrX,
-        y: qrY,
+        y: qrY - 3,
         width: qrSize,
         height: qrSize
       });
 
-      page.drawText('VERIFIKASI RESMI', {
-        x: qrX + qrSize + 6,
-        y: qrY + 36,
-        size: 6.5,
+      // Teks Kode ID Kriptografis di bawah QR (Dicoding Style)
+      const idText = `ID: ${displayCertId}`;
+      const idWidth = fontBold.widthOfTextAtSize(idText, 5.8);
+      page.drawText(idText, {
+        x: qrX + (qrSize - idWidth) / 2,
+        y: qrY - 10,
+        size: 5.8,
         font: fontBold,
-        color: rgb(0.02, 0.35, 0.25)
-      });
-      page.drawText('Pindai untuk memeriksa keabsahan', {
-        x: qrX + qrSize + 6,
-        y: qrY + 26,
-        size: 5.5,
-        font: fontRegular,
-        color: rgb(0.4, 0.4, 0.4)
-      });
-      page.drawText('STATUS: RESMI TERDAFTAR', {
-        x: qrX + qrSize + 6,
-        y: qrY + 16,
-        size: 6,
-        font: fontBold,
-        color: rgb(0.02, 0.35, 0.25)
+        color: rgb(0.10, 0.23, 0.36)
       });
     } catch (e) {
       console.warn('QR code print error:', e.message);

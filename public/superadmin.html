@@ -1385,7 +1385,12 @@
               </td>
               <td>${statusBadge}</td>
               <td class="font-monospace small fw-bold text-primary">
-                ${emp.certificate && emp.certificate.number ? emp.certificate.number : '-'}
+                ${emp.certificate && emp.certificate.number ? `
+                  <div>${emp.certificate.number}</div>
+                  <a href="/sertifikat/${encodeURIComponent(emp.certificate.certId || emp.certificate.number || emp.nip)}" target="_blank" class="badge bg-teal-lt text-teal text-decoration-none mt-1">
+                    <i class="ti ti-shield-check me-0.5"></i> Cek Publik ↗
+                  </a>
+                ` : '-'}
               </td>
               <td class="text-center">
                 <div class="btn-list flex-nowrap justify-content-center">

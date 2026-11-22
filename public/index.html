@@ -113,11 +113,14 @@
                 <a href="/login" class="btn btn-warning text-dark fw-bold px-4 py-2">
                   <i class="ti ti-login me-1"></i> Buka Portal Pegawai
                 </a>
+                <a href="/sertifikat" class="btn btn-teal text-white fw-bold px-3 py-2">
+                  <i class="ti ti-certificate me-1"></i> Cek Keaslian Sertifikat
+                </a>
                 <a href="/verif-wajah" class="btn btn-outline-light px-3 py-2">
                   <i class="ti ti-scan me-1"></i> Registrasi Wajah
                 </a>
                 <a href="#alur" class="btn btn-ghost-light text-white px-3 py-2">
-                  <i class="ti ti-help-circle me-1"></i> Pelajari Alur 3 Langkah
+                  <i class="ti ti-help-circle me-1"></i> Panduan Alur
                 </a>
               </div>
 
@@ -182,7 +185,23 @@
                   </a>
                 </div>
 
-                <!-- Card 4: Konsol Admin Kepegawaian -->
+                <!-- Card 4: Cek & Verifikasi Sertifikat Publik -->
+                <div class="col-12">
+                  <a href="/sertifikat" class="portal-quick-card" style="border-left: 4px solid var(--tblr-teal); background: rgba(13, 148, 136, 0.15);">
+                    <div class="d-flex align-items-center">
+                      <span class="avatar avatar-md rounded bg-teal text-white me-3">
+                        <i class="ti ti-certificate fs-2"></i>
+                      </span>
+                      <div class="flex-fill">
+                        <div class="fw-bold fs-4 text-white mb-0.5">Cek Sertifikat & Validasi QR (ECDSA)</div>
+                        <div class="text-white-75 small">Validasi kredensial 12 digit gaya Dicoding atau scan QR code resmi.</div>
+                      </div>
+                      <span class="badge bg-teal text-white ms-2">Cek ↗</span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- Card 5: Konsol Admin Kepegawaian -->
                 <div class="col-12">
                   <a href="/admin/login" class="portal-quick-card">
                     <div class="d-flex align-items-center">
@@ -256,6 +275,60 @@
             </div>
           </div>
         </div>
+
+        <!-- SECTION: CEK KEABSAHAN E-SERTIFIKAT (ECDSA & QR VERIFICATION) -->
+        <section id="cek-sertifikat" class="card shadow-sm border-teal-subtle mb-5 overflow-hidden">
+          <div class="card-status-top bg-teal"></div>
+          <div class="card-body p-4">
+            <div class="row align-items-center g-4">
+              <div class="col-lg-5">
+                <div class="d-inline-flex align-items-center gap-2 px-2.5 py-1 rounded bg-teal-lt text-teal mb-2 font-monospace small">
+                  <i class="ti ti-shield-check"></i>
+                  <span>PORTAL VERIFIKASI RESMI</span>
+                </div>
+                <h3 class="fw-bold text-primary mb-2">
+                  <i class="ti ti-certificate text-teal me-1"></i> Cek Keaslian & Validasi E-Sertifikat
+                </h3>
+                <p class="text-secondary small mb-3">
+                  Setiap E-Sertifikat kegiatan Senin Berseri BPMP Provinsi Sulawesi Tenggara dilengkapi dengan <strong>QR Code Keabsahan di pojok kanan bawah</strong> dan tanda tangan kriptografis digital <strong>ECDSA (NIST P-256)</strong> untuk mencegah pemalsuan dokumen.
+                </p>
+                <div class="d-flex align-items-start gap-2 text-secondary small bg-light-subtle p-2.5 rounded border">
+                  <i class="ti ti-qrcode text-teal fs-2 mt-0.5"></i>
+                  <div>
+                    <strong>Pindai QR Code:</strong> Arahkan kamera smartphone ke QR Code di pojok kanan bawah sertifikat untuk langsung membuka halaman verifikasi kredensial resmi (mirip Dicoding).
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-7">
+                <div class="p-3 bg-light rounded border">
+                  <label class="form-label fw-bold text-dark mb-1">
+                    <i class="ti ti-search me-1 text-teal"></i> Cari Berdasarkan ID Kredensial / Nomor Surat / NIP ASN
+                  </label>
+                  <form id="formCekIndex" onsubmit="handleCekSertifikatIndex(event)">
+                    <div class="input-group mb-2">
+                      <span class="input-group-text bg-white border-end-0">
+                        <i class="ti ti-scan text-muted"></i>
+                      </span>
+                      <input type="text" id="inputQueryIndex" class="form-control font-monospace border-start-0" placeholder="Contoh: 6RPNYVJL4Z2M atau 0031 atau NIP" required>
+                      <button type="submit" class="btn btn-teal text-white fw-bold px-3">
+                        <i class="ti ti-check me-1"></i> Periksa Keaslian
+                      </button>
+                    </div>
+                  </form>
+                  <div class="d-flex flex-wrap align-items-center gap-2 small">
+                    <span class="text-secondary">Contoh verifikasi cepat:</span>
+                    <a href="/sertifikat/6RPNYVJL4Z2M" class="badge bg-teal-lt text-teal text-decoration-none">
+                      <i class="ti ti-award me-1"></i> ID: 6RPNYVJL4Z2M (Sri Wahyudi, S.Sos.)
+                    </a>
+                    <a href="/sertifikat" class="badge bg-primary-lt text-primary text-decoration-none ms-auto">
+                      <i class="ti ti-external-link me-1"></i> Halaman Cek Penuh ↗
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <!-- SECTION: TENTANG APLIKASI (PENJELASAN SEDERHANA) -->
         <section id="tentang" class="mb-5">
@@ -624,6 +697,13 @@
   <script src="/pwa-install.js"></script>
 
   <script>
+    function handleCekSertifikatIndex(event) {
+      event.preventDefault();
+      const query = (document.getElementById('inputQueryIndex')?.value || '').trim();
+      if (!query) return;
+      window.location.href = `/sertifikat/${encodeURIComponent(query)}`;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       // Inisialisasi shared layout BPMP untuk halaman publik
       if (window.BPMPLayout) {
