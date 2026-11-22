@@ -1,8 +1,8 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/login", "destination": "/index.html" },
-    { "source": "/pegawai", "destination": "/index.html" },
+    { "source": "/login", "destination": "/pegawai.html" },
+    { "source": "/pegawai", "destination": "/pegawai.html" },
     { "source": "/admin/login", "destination": "/admin-login.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/superadmin", "destination": "/superadmin.html" },

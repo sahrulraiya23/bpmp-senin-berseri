@@ -1296,18 +1296,18 @@ app.get('/api/superadmin/export-data', requireSuperAdminMiddleware, async (req, 
 });
 
 // ========================================================
-// PAGE ROUTES (Alur Utama: Langsung Login Pegawai di "/")
+// PAGE ROUTES (Landing Page di "/", Portal Pegawai di "/login")
 // ========================================================
 app.get('/', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'pegawai.html'));
 });
 
 app.get('/pegawai', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'pegawai.html'));
 });
 
 app.get('/verif-wajah', (req, res) => {

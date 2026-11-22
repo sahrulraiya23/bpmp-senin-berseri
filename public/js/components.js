@@ -55,6 +55,104 @@ const BPMPComponents = {
   },
 
   /**
+   * Institutional Alert Box (Standar Instansi)
+   * @param {Object} opts - { type: 'info'|'success'|'warning'|'danger'|'primary', title, message, icon, badgeText, dismissable, actionBtn, id }
+   */
+  createAlert(opts) {
+    const type = opts.type || 'info';
+    let alertClass = 'alert-info border-info-subtle';
+    let defaultIcon = 'ti-info-circle';
+    let defaultBadge = 'PEMBERITAHUAN';
+
+    if (type === 'success') {
+      alertClass = 'alert-success border-success-subtle';
+      defaultIcon = 'ti-circle-check';
+      defaultBadge = 'BERHASIL';
+    } else if (type === 'warning') {
+      alertClass = 'alert-warning border-warning-subtle';
+      defaultIcon = 'ti-alert-triangle';
+      defaultBadge = 'PERHATIAN';
+    } else if (type === 'danger' || type === 'error') {
+      alertClass = 'alert-danger border-danger-subtle';
+      defaultIcon = 'ti-alert-circle';
+      defaultBadge = 'PERINGATAN';
+    } else if (type === 'primary') {
+      alertClass = 'alert-primary border-primary-subtle';
+      defaultIcon = 'ti-shield-check';
+      defaultBadge = 'STANDAR INSTANSI';
+    }
+
+    const icon = opts.icon || defaultIcon;
+    const badgeText = opts.badgeText || defaultBadge;
+    const badgeColor = type === 'danger' ? 'danger' : (type === 'warning' ? 'warning text-dark' : (type === 'success' ? 'success' : 'primary'));
+    const titleHtml = opts.title ? `
+      <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+        <span class="badge bg-${badgeColor} text-uppercase font-monospace" style="font-size: 0.65rem; letter-spacing: 0.5px;">${badgeText}</span>
+        <h4 class="alert-title mb-0 fw-bold">${opts.title}</h4>
+      </div>
+    ` : '';
+    const dismissBtn = opts.dismissable ? `<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>` : '';
+    const actionHtml = opts.actionBtn ? `<div class="mt-2 pt-2 border-top border-opacity-10">${opts.actionBtn}</div>` : '';
+    const idAttr = opts.id ? `id="${opts.id}"` : '';
+
+    return `
+      <div class="alert ${alertClass} ${opts.dismissable ? 'alert-dismissible' : ''} shadow-sm mb-3" ${idAttr} role="alert">
+        <div class="d-flex">
+          <div class="me-3">
+            <span class="avatar avatar-sm rounded bg-${type === 'warning' ? 'warning-lt text-warning' : (type === 'danger' ? 'danger-lt text-danger' : (type === 'success' ? 'success-lt text-success' : 'primary-lt text-primary'))}">
+              <i class="ti ${icon} fs-2"></i>
+            </span>
+          </div>
+          <div class="flex-fill">
+            ${titleHtml}
+            <div class="text-secondary small lh-base">${opts.message}</div>
+            ${actionHtml}
+          </div>
+          ${dismissBtn}
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * Institutional Announcement Banner (Maklumat Pelayanan / Petunjuk Resmi)
+   */
+  createAnnouncementBanner(opts) {
+    const icon = opts.icon || 'ti-speakerphone';
+    const itemsHtml = Array.isArray(opts.items) ? `
+      <ul class="mb-0 mt-2 ps-3 small text-secondary">
+        ${opts.items.map(item => `<li class="mb-1">${item}</li>`).join('')}
+      </ul>
+    ` : '';
+    const badge = opts.dateBadge || 'MAKLUMAT RESMI BPMP SULTRA';
+
+    return `
+      <div class="card border-primary-subtle shadow-sm mb-3 bg-light-subtle overflow-hidden">
+        <div class="card-status-top bg-primary"></div>
+        <div class="card-body p-3">
+          <div class="d-flex align-items-start gap-3">
+            <div class="col-auto">
+              <span class="avatar avatar-md rounded bg-primary text-white shadow-sm">
+                <i class="ti ${icon} fs-2"></i>
+              </span>
+            </div>
+            <div class="col">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                <span class="badge bg-primary-lt text-primary font-monospace" style="font-size: 0.7rem; letter-spacing: 0.5px;">${badge}</span>
+                <span class="text-secondary font-monospace" style="font-size: 0.72rem;"><i class="ti ti-shield-check me-1 text-primary"></i>Standar Kepegawaian BPMP Sultra</span>
+              </div>
+              <h4 class="card-title fw-bold text-primary mb-1">${opts.title}</h4>
+              <p class="text-secondary small mb-1">${opts.subtitle || ''}</p>
+              ${itemsHtml}
+              ${opts.footer ? `<div class="mt-2 pt-2 border-top border-light-subtle small text-secondary">${opts.footer}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
    * Stat Card
    * @param {Object} opts - { icon, value, label, subtext, color, id }
    */

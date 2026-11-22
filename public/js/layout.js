@@ -7,7 +7,8 @@ const BPMPLayout = {
   // Menu configuration per role
   menuConfig: {
     pegawai: [
-      { id: 'dashboard', label: 'Presensi & E-Sertifikat', href: '/', icon: 'ti-id-badge' },
+      { id: 'home', label: 'Beranda', href: '/', icon: 'ti-home' },
+      { id: 'dashboard', label: 'Presensi & E-Sertifikat', href: '/login', icon: 'ti-id-badge' },
       { id: 'verif-wajah', label: 'Registrasi Wajah', href: '/verif-wajah', icon: 'ti-scan' },
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' },
       { id: 'admin-login', label: 'Login Admin', href: '/admin/login', icon: 'ti-lock-access', isSecondary: true }
@@ -18,7 +19,8 @@ const BPMPLayout = {
       { id: 'section-template', label: 'Pengaturan Sertifikat', href: '#section-template', icon: 'ti-certificate' },
       { id: 'section-event', label: 'Kelola Pelatihan', href: '#section-event', icon: 'ti-calendar-event' },
       { id: 'proyektor', label: 'Layar Proyektor', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' },
-      { id: 'pegawai', label: 'Portal Pegawai', href: '/', icon: 'ti-user', target: '_blank' }
+      { id: 'home', label: 'Beranda Aplikasi', href: '/', icon: 'ti-home', target: '_blank' },
+      { id: 'pegawai', label: 'Portal Pegawai', href: '/login', icon: 'ti-user', target: '_blank' }
     ],
     superadmin: [
       { id: 'superadmin-summary', label: 'Ringkasan Sistem', href: '/superadmin', icon: 'ti-shield-lock' },
@@ -27,7 +29,8 @@ const BPMPLayout = {
       { id: 'section-sync', label: 'Database Supabase', href: '#section-sync', icon: 'ti-cloud-upload' },
       { id: 'section-export', label: 'Ekspor Rekap', href: '#section-export', icon: 'ti-download' },
       { id: 'admin', label: 'Dashboard Admin', href: '/admin', icon: 'ti-id-badge', target: '_blank' },
-      { id: 'pegawai', label: 'Portal Pegawai', href: '/', icon: 'ti-user', target: '_blank' }
+      { id: 'home', label: 'Beranda Aplikasi', href: '/', icon: 'ti-home', target: '_blank' },
+      { id: 'pegawai', label: 'Portal Pegawai', href: '/login', icon: 'ti-user', target: '_blank' }
     ]
   },
 

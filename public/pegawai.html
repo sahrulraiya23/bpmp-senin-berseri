@@ -40,6 +40,39 @@
           <div class="row justify-content-center">
             <div class="col-12 col-md-8 col-lg-5">
               
+              <!-- Maklumat Resmi Instansi -->
+              <div class="card border-primary-subtle shadow-sm mb-3 bg-light-subtle overflow-hidden">
+                <div class="card-status-top bg-primary"></div>
+                <div class="card-body p-3">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge bg-primary text-white font-monospace" style="font-size: 0.68rem; letter-spacing: 0.5px;">MAKLUMAT RESMI BPMP SULTRA</span>
+                    <span class="text-secondary small font-monospace"><i class="ti ti-shield-check text-primary me-1"></i>Sistem Terintegrasi</span>
+                  </div>
+                  <h4 class="card-title fw-bold text-primary mb-1">
+                    <i class="ti ti-speakerphone me-1"></i> Presensi Digital & E-Sertifikat "Senin Berseri"
+                  </h4>
+                  <p class="text-secondary small mb-2">
+                    Pelatihan mingguan peningkatan mutu & kompetensi bagi 104 ASN di Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara.
+                  </p>
+                  <div class="alert alert-info py-2 px-3 small mb-2 border-info-subtle">
+                    <div class="fw-bold mb-1"><i class="ti ti-info-circle me-1"></i> Petunjuk Akses ASN:</div>
+                    <ul class="mb-0 ps-3">
+                      <li>Masukkan 18-digit NIP Anda yang terdaftar pada basis data kepegawaian.</li>
+                      <li>Kata sandi bawaan pertama kali: <strong>bpmp123</strong>.</li>
+                      <li>Presensi wajib kehadiran fisik di aula menggunakan QR Dinamis 30 detik & foto selfie biometrik.</li>
+                    </ul>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <a href="/" class="btn btn-sm btn-outline-primary">
+                      <i class="ti ti-help-circle me-1"></i> Pelajari Cara Kerja Aplikasi
+                    </a>
+                    <a href="/admin/login" class="text-secondary small text-decoration-none">
+                      <i class="ti ti-lock me-1"></i> Portal Admin
+                    </a>
+                  </div>
+                </div>
+              </div>
+
               <!-- QR Detected Alert -->
               <div id="loginQrAlert" class="alert alert-success d-none mb-3" role="alert">
                 <div class="d-flex align-items-center">
@@ -199,6 +232,48 @@
                   <span class="badge bg-white text-primary border px-3 py-2 font-monospace" id="empAccumulatedJp">
                     Total: 4 JP
                   </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alur 3 Langkah Resmi Instansi -->
+          <div class="card border-primary-subtle shadow-sm mb-3 bg-white">
+            <div class="card-body p-3">
+              <div class="row g-2 align-items-center mb-2">
+                <div class="col-auto">
+                  <span class="avatar avatar-md rounded bg-primary-lt text-primary">
+                    <i class="ti ti-route font-24"></i>
+                  </span>
+                </div>
+                <div class="col">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary text-white font-monospace" style="font-size: 0.65rem;">SOP KEPEGAWAIAN</span>
+                    <h4 class="mb-0 fw-bold text-primary">Alur 3 Langkah Wajib Pelatihan Senin Berseri</h4>
+                  </div>
+                  <div class="text-secondary small">
+                    Selesaikan tahapan berurutan di bawah ini untuk penerbitan E-Sertifikat resmi bernomor induk kepegawaian:
+                  </div>
+                </div>
+              </div>
+              <div class="row g-2 pt-2 border-top">
+                <div class="col-md-4">
+                  <div class="p-2 rounded bg-light border border-light-subtle h-100">
+                    <div class="fw-bold small text-primary mb-1"><i class="ti ti-qrcode me-1"></i> Langkah 1: Presensi Aula</div>
+                    <div class="text-secondary" style="font-size: 0.78rem;">Pindai QR dinamis di layar proyektor aula atau ketik 6-digit token aktif dan selesaikan verifikasi wajah biometrik.</div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="p-2 rounded bg-light border border-light-subtle h-100">
+                    <div class="fw-bold small text-warning mb-1"><i class="ti ti-file-text me-1"></i> Langkah 2: Laporan LPTI</div>
+                    <div class="text-secondary" style="font-size: 0.78rem;">Unggah resume/notula materi format PDF (Maks. 5 MB) yang telah disetujui atasan langsung maksimal 1x24 jam pasca sesi.</div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="p-2 rounded bg-light border border-light-subtle h-100">
+                    <div class="fw-bold small text-teal mb-1"><i class="ti ti-award me-1"></i> Langkah 3: E-Sertifikat 4 JP</div>
+                    <div class="text-secondary" style="font-size: 0.78rem;">Setelah kurasi disetujui Admin Kepegawaian, piagam ber-QR validasi keabsahan dapat langsung diunduh secara resmi.</div>
+                  </div>
                 </div>
               </div>
             </div>
