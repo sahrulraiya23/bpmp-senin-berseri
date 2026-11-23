@@ -47,6 +47,72 @@
   ],
   "employees": [
     {
+      "id": "BPMP-TEST-03",
+      "username": "user",
+      "nip": "199811052024031003",
+      "name": "User Pegawai ASN (Testing)",
+      "password": "bpmp123",
+      "panggol": "Pengatur, II/c",
+      "jabatan": "Staf Pelaksana BPMP Sultra",
+      "instansi": "BPMP Provinsi Sulawesi Tenggara",
+      "pendidikan": "D3",
+      "eventId": null,
+      "eventTitle": null,
+      "attended": false,
+      "attendedAt": null,
+      "accumulatedJp": 4,
+      "lpti": {
+        "status": "none",
+        "fileName": null,
+        "revisionNote": ""
+      },
+      "certificate": null
+    },
+    {
+      "id": "BPMP-TEST-02",
+      "username": "rafli",
+      "nip": "199703142024021002",
+      "name": "M. Rafli",
+      "password": "bpmp123",
+      "panggol": "Penata Muda, III/a",
+      "jabatan": "Pengelola Kepegawaian & Mutu ASN",
+      "instansi": "BPMP Provinsi Sulawesi Tenggara",
+      "pendidikan": "S1",
+      "eventId": null,
+      "eventTitle": null,
+      "attended": false,
+      "attendedAt": null,
+      "accumulatedJp": 4,
+      "lpti": {
+        "status": "none",
+        "fileName": null,
+        "revisionNote": ""
+      },
+      "certificate": null
+    },
+    {
+      "id": "BPMP-TEST-01",
+      "username": "sahrul",
+      "nip": "199508232024011001",
+      "name": "Muhammad Saharullah Raiya",
+      "password": "bpmp123",
+      "panggol": "Penata Muda, III/a",
+      "jabatan": "Pranata Komputer / Pengembang Sistem",
+      "instansi": "BPMP Provinsi Sulawesi Tenggara",
+      "pendidikan": "S1",
+      "eventId": null,
+      "eventTitle": null,
+      "attended": false,
+      "attendedAt": null,
+      "accumulatedJp": 4,
+      "lpti": {
+        "status": "none",
+        "fileName": null,
+        "revisionNote": ""
+      },
+      "certificate": null
+    },
+    {
       "id": "BPMP-001",
       "nip": "197606122002121004",
       "name": "Junaiddin Pagala, ST, M.T.",
@@ -2667,6 +2733,30 @@
       "name": "Bagian Kepegawaian BPMP Sultra",
       "role": "kepegawaian",
       "createdAt": "2026-11-20T05:08:46.030Z"
+    },
+    {
+      "id": 3,
+      "username": "sahrul",
+      "name": "Muhammad Saharullah Raiya",
+      "password": "bpmp123",
+      "role": "kepegawaian",
+      "createdAt": "2026-11-23T02:06:08.199Z"
+    },
+    {
+      "id": 4,
+      "username": "rafli",
+      "name": "M. Rafli",
+      "password": "bpmp123",
+      "role": "kepegawaian",
+      "createdAt": "2026-11-23T02:06:08.228Z"
+    },
+    {
+      "id": 5,
+      "username": "user",
+      "name": "User Pegawai ASN (Testing)",
+      "password": "bpmp123",
+      "role": "kepegawaian",
+      "createdAt": "2026-11-23T02:06:08.228Z"
     }
   ]
 }

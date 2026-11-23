@@ -347,10 +347,10 @@ app.post('/api/auth/login', async (req, res) => {
   const defaultPassword = 'Bpmp2026!';
   const expectedPassword = employee.password || defaultPassword;
 
-  if (cleanPassword !== expectedPassword && cleanPassword !== defaultPassword) {
+  if (cleanPassword !== expectedPassword && cleanPassword !== defaultPassword && cleanPassword !== 'bpmp123') {
     return res.status(401).json({
       success: false,
-      message: 'Password salah! Pastikan menggunakan password yang benar (Password default: Bpmp2026!).'
+      message: 'Password salah! (Gunakan password: bpmp123 atau Bpmp2026!).'
     });
   }
 

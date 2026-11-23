@@ -988,7 +988,13 @@
 
       try {
         // Cari di cache lokal terlebih dahulu jika ada
-        let matched = allEmployeesCache.find(e => e.nip === rawInput || (e.name && e.name.toLowerCase().includes(rawInput.toLowerCase())));
+        const inputLower = rawInput.toLowerCase();
+        let matched = allEmployeesCache.find(e => 
+          e.nip === rawInput || 
+          (e.name && e.name.toLowerCase().includes(inputLower)) ||
+          (e.username && e.username.toLowerCase() === inputLower) ||
+          (e.id && e.id.toLowerCase() === inputLower)
+        );
 
         // Jika tidak ditemukan di cache, tanyakan ke server
         if (!matched) {
