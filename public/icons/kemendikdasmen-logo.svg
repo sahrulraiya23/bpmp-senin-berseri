@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Background Circle & Shadow -->
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="85%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </radialGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#1e3a8a" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Ring Shield Border -->
+  <circle cx="250" cy="250" r="236" fill="url(#bgGrad)" stroke="#ffffff" stroke-width="8" filter="url(#dropShadow)"/>
+  <circle cx="250" cy="250" r="222" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="3" stroke-dasharray="6,4"/>
+
+  <!-- Arched Text TUT WURI HANDAYANI -->
+  <path id="textArc" d="M 85,250 A 165,165 0 0,1 415,250" fill="none"/>
+  <text font-family="'Inter', 'Arial', sans-serif" font-size="28" font-weight="900" fill="#ffffff" letter-spacing="4">
+    <textPath href="#textArc" startOffset="50%" text-anchor="middle">
+      TUT WURI HANDAYANI
+    </textPath>
+  </text>
+
+  <!-- Belencong Flame (Golden Torch) -->
+  <path d="M 250,115 C 265,145 285,165 265,195 C 255,210 245,210 235,195 C 215,165 235,145 250,115 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="3"/>
+  <path d="M 250,135 C 258,155 268,170 258,185 C 253,193 247,193 242,185 C 232,170 242,155 250,135 Z" fill="#fef08a"/>
+
+  <!-- Stylized Garuda Wings (White Wings of Education) -->
+  <!-- Center Stem -->
+  <polygon points="245,200 255,200 258,320 242,320" fill="#ffffff"/>
+  
+  <!-- Left Wing Feathers -->
+  <path d="M 242,210 C 210,215 150,225 110,270 C 135,275 165,265 190,250 C 150,275 130,305 125,335 C 155,330 185,310 210,290 C 180,320 165,350 165,375 C 195,360 225,340 242,315 Z" fill="#ffffff"/>
+  
+  <!-- Right Wing Feathers -->
+  <path d="M 258,210 C 290,215 350,225 390,270 C 365,275 335,265 310,250 C 350,275 370,305 375,335 C 345,330 315,310 290,290 C 320,320 335,350 335,375 C 305,360 275,340 258,315 Z" fill="#ffffff"/>
+
+  <!-- Open Book Base (Buku Terbuka) -->
+  <path d="M 250,345 C 220,335 170,340 130,360 C 130,380 180,365 250,375 C 320,365 370,380 370,360 C 330,340 280,335 250,345 Z" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+  <path d="M 250,355 L 250,390" stroke="#cbd5e1" stroke-width="3"/>
+  <path d="M 250,375 C 210,365 170,375 135,395 C 170,385 210,380 250,390 C 290,380 330,385 365,395 C 330,375 290,365 250,375 Z" fill="#f8fafc"/>
+</svg>

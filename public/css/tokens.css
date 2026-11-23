@@ -242,3 +242,197 @@ body {
   .card { box-shadow: none !important; border: none !important; }
   body { background: #fff !important; }
 }
+
+/* ======================================================
+   12. INSTITUTIONAL GOVERNMENT ALERTS
+   Standard rapi, kontras tinggi, dan beraksen resmi instansi
+   ====================================================== */
+.alert {
+  border-radius: var(--tblr-border-radius);
+  border: 1px solid transparent;
+  padding: 0.9rem 1.15rem;
+  font-size: 0.875rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.alert-primary {
+  background-color: #f0f7ff !important;
+  border-color: #bcdbfc !important;
+  border-left: 4px solid #1a3a5c !important;
+  color: #0f2740 !important;
+}
+
+.alert-info {
+  background-color: #f0fdfa !important;
+  border-color: #99f6e4 !important;
+  border-left: 4px solid #0d9488 !important;
+  color: #115e59 !important;
+}
+
+.alert-success {
+  background-color: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  border-left: 4px solid #16a34a !important;
+  color: #166534 !important;
+}
+
+.alert-warning {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  border-left: 4px solid #d97706 !important;
+  color: #92400e !important;
+}
+
+.alert-danger {
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+  border-left: 4px solid #dc2626 !important;
+  color: #991b1b !important;
+}
+
+.alert-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* ======================================================
+   13. STILISASI PORTAL RESMI BPMP SULTRA KEMENDIKDASMEN
+   Sesuai desain bpmpsultra.kemendikdasmen.go.id
+   ====================================================== */
+.bpmp-badge-pill {
+  background: #e0f2fe;
+  color: #0284c7;
+  font-weight: 700;
+  border-radius: 50rem;
+  padding: 0.35rem 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(2, 132, 199, 0.15);
+}
+
+.bpmp-heading-accent {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 12px;
+}
+.bpmp-heading-accent::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 65px;
+  height: 4px;
+  background: #0056b3;
+  border-radius: 3px;
+}
+
+.bpmp-tutwuri-circle {
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 60%, #f0f7ff 100%);
+  border: 8px solid #ffffff;
+  box-shadow: 0 15px 35px rgba(26, 58, 92, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+}
+.bpmp-tutwuri-circle::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 2px dashed rgba(2, 132, 199, 0.25);
+  pointer-events: none;
+}
+
+.bpmp-feature-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.bpmp-feature-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 45, 91, 0.06);
+  border-color: #cbd5e1;
+}
+
+.bpmp-feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+/* Floating Helpdesk Widget (WhatsApp) */
+.bpmp-floating-help {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.bpmp-floating-bubble {
+  background: #ffffff;
+  color: #1e293b;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.bpmp-floating-bubble .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+}
+.bpmp-floating-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
+  transition: transform 0.2s ease;
+}
+.bpmp-floating-help:hover .bpmp-floating-btn {
+  transform: scale(1.08);
+  color: #ffffff;
+}

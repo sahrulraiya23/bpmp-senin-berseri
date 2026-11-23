@@ -136,12 +136,10 @@ const BPMPLayout = {
           
           <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
             <a href="/" class="d-flex align-items-center text-decoration-none text-dark">
-              <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded-3 me-2" style="width: 38px; height: 38px; box-shadow: 0 2px 6px rgba(26,58,92,0.3);">
-                <i class="ti ti-building-government fs-2"></i>
-              </div>
+              <img src="/icons/kemendikdasmen-logo.svg" alt="Logo Kemendikdasmen" width="40" height="40" class="me-2 rounded-circle shadow-xs">
               <div class="d-flex flex-column text-start">
-                <span class="fw-bold text-uppercase text-primary" style="font-size: 13px; letter-spacing: 0.6px; line-height: 1.2;">BPMP SULTRA</span>
-                <span class="text-muted fw-bold" style="font-size: 10px; letter-spacing: 0.4px;">SENIN BERSERI</span>
+                <span class="fw-bold" style="font-size: 15px; letter-spacing: -0.2px; line-height: 1.15; color: #0056b3;">Kemendikdasmen</span>
+                <span class="text-secondary fw-semibold" style="font-size: 10px; letter-spacing: 0.2px; line-height: 1.2;">BPMP Provinsi Sulawesi Tenggara</span>
               </div>
             </a>
           </h1>
