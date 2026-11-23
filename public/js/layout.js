@@ -48,8 +48,8 @@ const BPMPLayout = {
       <div class="gov-top-strip d-print-none">
         <div class="container-xl d-flex justify-content-between align-items-center">
           <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-yellow text-yellow-fg" style="font-size: 9px; padding: 2px 6px;">RESMI</span>
-            <span class="d-none d-md-inline">KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI</span>
+            <span class="badge bg-primary text-white" style="font-size: 9px; padding: 2px 6px;">RESMI</span>
+            <span class="d-none d-md-inline">KEMENTERIAN PENDIDIKAN DASAR DAN MENENGAH</span>
             <span class="d-none d-md-inline">•</span>
             <span>BALAI PENJAMINAN MUTU PENDIDIKAN PROVINSI SULAWESI TENGGARA</span>
           </div>

@@ -10,29 +10,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* ---- Warna Utama Institusional ---- */
-  --tblr-primary:        #1a3a5c;
-  --tblr-primary-rgb:    26, 58, 92;
+  /* ---- Warna Utama Institusional Kemendikdasmen ---- */
+  --tblr-primary:        #0056b3;
+  --tblr-primary-rgb:    0, 86, 179;
   --tblr-primary-fg:     #ffffff;
-  --tblr-primary-darken: #0f2740;
-  --tblr-primary-lighten:#2d5a8a;
+  --tblr-primary-darken: #004085;
+  --tblr-primary-lighten:#0d6efd;
 
   /* ---- Warna Aksen ---- */
-  --tblr-secondary:      #6c7a89;
-  --tblr-secondary-rgb:  108, 122, 137;
+  --tblr-secondary:      #64748b;
+  --tblr-secondary-rgb:  100, 116, 139;
 
   /* ---- Warna Status ---- */
-  --tblr-success:        #2fb344;   /* Disetujui / Hadir */
-  --tblr-success-rgb:    47, 179, 68;
-  --tblr-warning:        #f59f00;   /* Pending / Menunggu */
-  --tblr-warning-rgb:    245, 159, 0;
-  --tblr-danger:         #d63939;   /* Revisi / Ditolak */
-  --tblr-danger-rgb:     214, 57, 57;
-  --tblr-info:           #4299e1;   /* Informasi */
-  --tblr-info-rgb:       66, 153, 225;
+  --tblr-success:        #16a34a;   /* Disetujui / Hadir */
+  --tblr-success-rgb:    22, 163, 74;
+  --tblr-warning:        #d97706;   /* Pending / Menunggu */
+  --tblr-warning-rgb:    217, 119, 6;
+  --tblr-danger:         #dc2626;   /* Revisi / Ditolak */
+  --tblr-danger-rgb:     220, 38, 38;
+  --tblr-info:           #0284c7;   /* Informasi */
+  --tblr-info-rgb:       2, 132, 199;
 
-  /* ---- Background & Surface ---- */
-  --tblr-body-bg:        #f1f5f9;
+  /* ---- Background & Surface (Bersih & Terang Tanpa Celah Hitam) ---- */
+  --tblr-body-bg:        #ffffff;
   --tblr-card-bg:        #ffffff;
   --tblr-border-color:   #e2e8f0;
 
@@ -49,14 +49,14 @@
   --tblr-shadow-card:      0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
   --tblr-shadow-dropdown:  0 10px 25px rgba(0,0,0,0.1);
 
-  /* ---- BPMP Custom Tokens ---- */
-  --bpmp-gov-strip-bg:   linear-gradient(90deg, #0f2740 0%, #1a3a5c 50%, #0f2740 100%);
-  --bpmp-gov-strip-border: #d97706;
+  /* ---- BPMP Custom Tokens (Terang & Bersih) ---- */
+  --bpmp-gov-strip-bg:   #f8fafc;
+  --bpmp-gov-strip-border: #e2e8f0;
   --bpmp-gold:           #d97706;
   --bpmp-gold-bg:        #fef3c7;
   --bpmp-teal:           #0f766e;
   --bpmp-teal-bg:        #ccfbf1;
-  --bpmp-sidebar-bg:     #1a3a5c;
+  --bpmp-sidebar-bg:     #0056b3;
   --bpmp-sidebar-active:  rgba(255,255,255,0.12);
   --bpmp-sidebar-text:    rgba(255,255,255,0.75);
   --bpmp-sidebar-text-active: #ffffff;
@@ -112,13 +112,13 @@ body {
    4. GOV TOP STRIP (Shared across all pages except proyektor)
    ====================================================== */
 .gov-top-strip {
-  background: var(--bpmp-gov-strip-bg);
-  color: rgba(255,255,255,0.9);
+  background: #f8fafc;
+  color: #475569;
   padding: 6px 20px;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid var(--bpmp-gov-strip-border);
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
