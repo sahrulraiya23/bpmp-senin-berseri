@@ -503,6 +503,7 @@ async function ensureEmployeeJp(id, eventJp = 32) {
 async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, attendancePhotoUrl = null) {
   const now = new Date().toISOString();
   const clean = String(id).trim();
+  const lower = clean.toLowerCase();
   const jpToAdd = parseInt(eventJp, 10) || 32;
 
   const existing = await getEmployeeByIdOrNip(clean);
@@ -511,7 +512,55 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
   const currentJp = Number(existing.accumulatedJp) || 0;
   const newJp = currentJp > 0 ? currentJp + jpToAdd : jpToAdd;
   const targetId = existing.id;
+  const targetNip = existing.nip;
 
+  // 1. Selalu perbarui memory store agar konsisten seketika
+  const mem = getMemoryStore();
+  const rawEmp = (mem.employees || []).find(e => 
+    (e.id && e.id.toLowerCase() === lower) || 
+    String(e.nip || '').trim() === clean || 
+    (e.username && e.username.toLowerCase() === lower) ||
+    e.id === targetId ||
+    String(e.nip || '').trim() === String(targetNip).trim()
+  );
+  if (rawEmp) {
+    rawEmp.attended = true;
+    rawEmp.attendedAt = now;
+    rawEmp.eventId = eventId || null;
+    rawEmp.eventTitle = eventTitle || null;
+    rawEmp.accumulatedJp = newJp;
+    if (attendancePhotoUrl) {
+      rawEmp.attendancePhotoUrl = attendancePhotoUrl;
+      rawEmp.attendance_photo_url = attendancePhotoUrl;
+    }
+    rawEmp.attendance = {
+      status: 'present',
+      attendedAt: now,
+      time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+    };
+  }
+
+  // 2. Simpan juga ke file db.json lokal jika tersedia
+  try {
+    const jsonPath = path.join(__dirname, 'db.json');
+    if (fs.existsSync(jsonPath)) {
+      fs.writeFileSync(jsonPath, JSON.stringify(mem, null, 2), 'utf8');
+    }
+  } catch(e) {}
+
+  existing.attended = true;
+  existing.attendedAt = now;
+  existing.eventId = eventId || null;
+  existing.eventTitle = eventTitle || null;
+  existing.accumulatedJp = newJp;
+  if (attendancePhotoUrl) existing.attendancePhotoUrl = attendancePhotoUrl;
+  existing.attendance = {
+    status: 'present',
+    attendedAt: now,
+    time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
+  };
+
+  // 3. Sinkronisasi ke Supabase
   const client = getClient();
   if (client) {
     const updatePayload = {
@@ -526,54 +575,22 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
       updatePayload.attendance_photo_url = attendancePhotoUrl;
     }
 
-    const { data, error } = await client
-      .from('employees')
-      .update(updatePayload)
-      .eq('id', targetId)
-      .select()
-      .single();
+    try {
+      const { data, error } = await client
+        .from('employees')
+        .update(updatePayload)
+        .or(`id.eq."${targetId}",nip.eq."${targetNip}"`)
+        .select()
+        .maybeSingle();
 
-    if (error) {
-      console.warn('Supabase markEmployeeAttended note:', error.message);
-      // Jika kolom attendance_photo_url belum ada di Supabase, update tanpa kolom tersebut
-      if (error.message && error.message.includes('attendance_photo_url')) {
-        delete updatePayload.attendance_photo_url;
-        const retry = await client.from('employees').update(updatePayload).eq('id', targetId).select().single();
-        if (!retry.error && retry.data) return formatSupabaseEmployee(retry.data);
+      if (!error && data) {
+        return formatSupabaseEmployee(data);
       }
-      return null;
+    } catch(errClient) {
+      console.warn('Supabase markEmployeeAttended client error:', errClient.message);
     }
-    return formatSupabaseEmployee(data);
   }
 
-  // Memory fallback
-  const mem = getMemoryStore();
-  const rawEmp = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
-  if (rawEmp) {
-    rawEmp.attended = true;
-    rawEmp.attendedAt = now;
-    rawEmp.eventId = eventId || null;
-    rawEmp.eventTitle = eventTitle || null;
-    rawEmp.accumulatedJp = newJp;
-    if (attendancePhotoUrl) {
-      rawEmp.attendancePhotoUrl = attendancePhotoUrl;
-      rawEmp.attendance_photo_url = attendancePhotoUrl;
-    }
-    rawEmp.attendance = {
-      status: 'present',
-      time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
-    };
-  }
-  existing.attended = true;
-  existing.attendedAt = now;
-  existing.eventId = eventId || null;
-  existing.eventTitle = eventTitle || null;
-  existing.accumulatedJp = newJp;
-  if (attendancePhotoUrl) existing.attendancePhotoUrl = attendancePhotoUrl;
-  existing.attendance = {
-    status: 'present',
-    time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
-  };
   return existing;
 }
 

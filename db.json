@@ -100,17 +100,22 @@
       "jabatan": "Pranata Komputer / Pengembang Sistem",
       "instansi": "BPMP Provinsi Sulawesi Tenggara",
       "pendidikan": "S1",
-      "eventId": null,
-      "eventTitle": null,
-      "attended": false,
-      "attendedAt": null,
-      "accumulatedJp": 4,
+      "eventId": "EVT-2026-001",
+      "eventTitle": "Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra",
+      "attended": true,
+      "attendedAt": "2026-11-23T04:17:27.699Z",
+      "accumulatedJp": 40,
       "lpti": {
         "status": "none",
         "fileName": null,
         "revisionNote": ""
       },
-      "certificate": null
+      "certificate": null,
+      "attendance": {
+        "status": "present",
+        "attendedAt": "2026-11-23T04:17:27.699Z",
+        "time": "Pukul 12.17.27 WITA"
+      }
     },
     {
       "id": "BPMP-001",

@@ -925,6 +925,7 @@
       // Cek Kehadiran pada Event Aktif
       const isAttendedThisEvent = Boolean(
         emp.attended ||
+        localStorage.getItem('bpmp_attended_' + emp.nip) === 'true' ||
         (emp.attendance && (
           (currentEvent && (
             emp.attendance[currentEvent.id] === true ||
@@ -948,10 +949,16 @@
         attBadge.innerHTML = '<i class="ti ti-check me-1"></i> Hadir Terverifikasi';
         actionBox.classList.add('d-none');
         successBox.classList.remove('d-none');
-        const attendedTime = emp.attendedAt || emp.attendance?.[currentEvent?.id]?.time;
+        const attendedTime = emp.attendedAt || emp.attendance?.[currentEvent?.id]?.time || localStorage.getItem('bpmp_attended_time_' + emp.nip);
         if (attendedTime) {
-          const dt = new Date(attendedTime);
-          document.getElementById('attendanceTimeLabel').textContent = 'Hadir pada ' + dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA';
+          try {
+            const dt = new Date(attendedTime);
+            document.getElementById('attendanceTimeLabel').textContent = 'Hadir pada ' + (!isNaN(dt.getTime()) ? dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA' : attendedTime);
+          } catch(e) {
+            document.getElementById('attendanceTimeLabel').textContent = 'Hadir Terverifikasi';
+          }
+        } else {
+          document.getElementById('attendanceTimeLabel').textContent = 'Hadir Terverifikasi';
         }
       } else {
         attBadge.className = 'badge bg-secondary-lt';
@@ -1412,17 +1419,24 @@
 
         if (data.success) {
           localStorage.setItem(`bpmp_face_registered_${currentAuthUser.nip}`, 'true');
+          localStorage.setItem(`bpmp_attended_${currentAuthUser.nip}`, 'true');
+          localStorage.setItem(`bpmp_attended_time_${currentAuthUser.nip}`, new Date().toISOString());
           if (faceSnapshotBase64) {
             localStorage.setItem(`bpmp_face_photo_${currentAuthUser.nip}`, faceSnapshotBase64);
             currentAuthUser.facePhotoUrl = faceSnapshotBase64;
           }
           currentAuthUser.faceRegistered = true;
           currentAuthUser.attended = true;
+          currentAuthUser.attendedAt = new Date().toISOString();
+          if (data.employee) {
+            currentAuthUser = { ...currentAuthUser, ...data.employee, attended: true };
+          }
 
           showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
           closeFaceCamera();
           const faceModal = getBsModal('faceBiometricModal');
           if (faceModal) faceModal.hide();
+          renderEmployeeProfile(currentAuthUser);
           await syncCurrentProfile();
         } else {
           showToast(data.message || 'Presensi gagal. Token kedaluwarsa atau wajah tidak cocok.', 'error');
@@ -1453,11 +1467,18 @@
         });
         const data = await res.json();
         if (data.success) {
+          localStorage.setItem(`bpmp_attended_${currentAuthUser.nip}`, 'true');
+          localStorage.setItem(`bpmp_attended_time_${currentAuthUser.nip}`, new Date().toISOString());
           currentAuthUser.attended = true;
+          currentAuthUser.attendedAt = new Date().toISOString();
+          if (data.employee) {
+            currentAuthUser = { ...currentAuthUser, ...data.employee, attended: true };
+          }
           showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
           closeFaceCamera();
           const faceModal = getBsModal('faceBiometricModal');
           if (faceModal) faceModal.hide();
+          renderEmployeeProfile(currentAuthUser);
           await syncCurrentProfile();
         } else {
           showToast(data.message || 'Presensi gagal verifikasi token.', 'error');
