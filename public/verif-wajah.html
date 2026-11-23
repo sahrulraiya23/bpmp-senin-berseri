@@ -138,11 +138,15 @@
                 </div>
 
                 <!-- Live Capture Action Buttons -->
-                <div id="liveActionGroup" class="d-flex justify-content-center gap-2">
+                <div id="liveActionGroup" class="d-flex flex-column align-items-center gap-2">
                   <button type="button" class="btn btn-primary px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold" id="btnCapture" onclick="takeSnapshot()">
                     <i class="ti ti-camera fs-2"></i>
                     <span>Ambil Foto Wajah Master</span>
                   </button>
+                  <label for="verifSelfieFileInput" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 cursor-pointer">
+                    <i class="ti ti-camera"></i> <span>Buka Kamera HP / Pilih Foto</span>
+                  </label>
+                  <input type="file" id="verifSelfieFileInput" accept="image/*" capture="user" class="d-none" onchange="handleVerifSelfieFile(this)">
                 </div>
 
                 <!-- Confirm Action Buttons (Setelah Foto Diambil) -->
@@ -168,7 +172,10 @@
                       <div class="text-muted small">Data biometrik Anda telah tersimpan aktif untuk validasi presensi aula BPMP Sultra.</div>
                     </div>
                   </div>
-                  <div class="mt-3 text-end">
+                  <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="enableReRecord()">
+                      <i class="ti ti-refresh me-1"></i> Rekam Ulang Wajah
+                    </button>
                     <button class="btn btn-success btn-sm fw-bold" onclick="goToPortal()">
                       Lanjut ke Portal Presensi <i class="ti ti-arrow-right ms-1"></i>
                     </button>
@@ -342,16 +349,33 @@
       try {
         if (cameraStream) {
           cameraStream.getTracks().forEach(t => t.stop());
+          cameraStream = null;
         }
 
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'user',
-            width: { ideal: 640 },
-            height: { ideal: 640 }
-          },
-          audio: false
-        });
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: 'user',
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            },
+            audio: false
+          });
+        } catch (e1) {
+          console.warn('Fallback face 1:', e1);
+          try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user' },
+              audio: false
+            });
+          } catch (e2) {
+            console.warn('Fallback face 2:', e2);
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false
+            });
+          }
+        }
 
         video.srcObject = cameraStream;
         video.onloadedmetadata = () => {
@@ -360,10 +384,60 @@
           pill.innerHTML = `<i class="ti ti-video me-1"></i> Kamera Depan Aktif • Posisikan wajah di lingkaran`;
         };
       } catch (err) {
-        pill.className = 'badge bg-danger-lt px-3 py-1';
-        pill.innerHTML = `<i class="ti ti-alert-triangle me-1"></i> Izin kamera ditolak atau tidak ditemukan`;
-        BPMPComponents.showToast('Harap izinkan browser mengakses kamera smartphone/laptop Anda untuk verifikasi biometrik.', 'danger');
+        pill.className = 'badge bg-warning-lt px-3 py-1';
+        pill.innerHTML = `<i class="ti ti-alert-triangle me-1"></i> Kamera otomatis tidak aktif. Gunakan tombol kamera HP di bawah.`;
+        BPMPComponents.showToast('Kamera langsung belum aktif. Anda bisa menggunakan tombol "Buka Kamera HP / Pilih Foto" di bawah.', 'warning');
       }
+    }
+
+    function handleVerifSelfieFile(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.getElementById('faceCanvas');
+          const previewImg = document.getElementById('previewImg');
+          const video = document.getElementById('faceVideo');
+          const pill = document.getElementById('cameraStatusPill');
+
+          canvas.width = 480;
+          canvas.height = 480;
+          const ctx = canvas.getContext('2d');
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 480, 480);
+
+          capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+          previewImg.src = capturedPhotoBase64;
+          previewImg.classList.remove('d-none');
+          video.classList.add('d-none');
+
+          document.getElementById('liveActionGroup').classList.add('d-none');
+          document.getElementById('confirmActionGroup').classList.remove('d-none');
+          document.getElementById('confirmActionGroup').classList.add('d-flex');
+
+          pill.className = 'badge bg-primary-lt px-3 py-1';
+          pill.innerHTML = `<i class="ti ti-check me-1"></i> Foto wajah terpilih dari kamera HP`;
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function enableReRecord() {
+      document.getElementById('alreadyRegisteredBox').classList.add('d-none');
+      document.getElementById('previewImg').classList.add('d-none');
+      document.getElementById('faceVideo').classList.remove('d-none');
+      document.getElementById('scannerLine').classList.remove('d-none');
+      document.getElementById('ovalGuide').style.borderColor = 'rgba(255, 255, 255, 0.4)';
+      document.getElementById('liveActionGroup').classList.remove('d-none');
+      document.getElementById('liveActionGroup').classList.add('d-flex');
+      startCamera();
     }
 
     function stopCamera() {

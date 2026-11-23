@@ -706,20 +706,31 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopCameraScanner()" aria-label="Close"></button>
         </div>
         <div class="modal-body p-2 text-center">
-          <div id="cameraQrReader" style="width: 100%; border-radius: 8px; overflow: hidden;"></div>
+          <div id="cameraQrReader" style="width: 100%; min-height: 250px; background: #000; border-radius: 8px; overflow: hidden; position: relative;"></div>
           <div id="scannerLoadingStatus" class="small text-secondary mt-2">
             Mengaktifkan kamera pemindai...
           </div>
           <div id="scannerErrorMessage" class="alert alert-danger py-1 px-2 small mt-2 d-none">
             <span id="scannerErrorText">Kamera tidak dapat diakses.</span>
           </div>
+
+          <!-- Pilihan Buka Kamera HP Langsung (Native Camera Fallback) -->
+          <div class="mt-2 pt-2 border-top">
+            <label for="qrFileInput" class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 cursor-pointer shadow-xs mb-1">
+              <i class="ti ti-camera fs-2"></i> <span>Buka Kamera HP / Foto QR Proyektor</span>
+            </label>
+            <input type="file" id="qrFileInput" accept="image/*" capture="environment" class="d-none" onchange="handleQrFileSelected(this)">
+            <div class="text-muted small" style="font-size: 0.72rem;">
+              Solusi cepat: Foto langsung layar proyektor aula dari kamera HP Anda.
+            </div>
+          </div>
         </div>
-        <div class="modal-footer py-1 d-flex justify-content-between">
+        <div class="modal-footer py-1 d-flex justify-content-between align-items-center">
           <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchCameraFacing()">
             <i class="ti ti-switch-horizontal me-1"></i> Ganti Kamera
           </button>
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="stopCameraScanner()">
-            Batal
+            Tutup
           </button>
         </div>
       </div>
@@ -759,6 +770,10 @@
           <button type="button" id="btnCaptureFace" class="btn btn-primary w-100" onclick="captureAndProcessFace()">
             <i class="ti ti-camera me-1"></i> <span id="btnCaptureText">Ambil Foto & Verifikasi</span>
           </button>
+          <label for="faceMobileFileInput" class="btn btn-outline-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 cursor-pointer">
+            <i class="ti ti-camera"></i> <span>Buka Kamera Selfie HP / Unggah Foto</span>
+          </label>
+          <input type="file" id="faceMobileFileInput" accept="image/*" capture="user" class="d-none" onchange="handleModalSelfieCaptured(this)">
           <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none py-1" onclick="confirmDirectPresence()">
             <i class="ti ti-arrow-right me-0.5"></i> Lewati Kamera &amp; Konfirmasi Hadir
           </button>
@@ -1370,43 +1385,111 @@
       openFaceModal(token, eventId);
     }
 
-    // 10. Kamera Pemindai QR Aula
+    // 10. Kamera Pemindai QR Aula (Multi-Device Mobile Support)
+    let isScannerStarting = false;
+    let currentCameraFacing = 'environment';
+    let currentCameraDeviceId = null;
+
     function openCameraScanner() {
       const modalEl = document.getElementById('cameraScannerModal');
-      bootstrap.Modal.getOrCreateInstance(modalEl).show();
-      setTimeout(startCameraScanner, 300);
+      const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+      
+      // Bersihkan scanner aktif sebelum membuka kembali
+      stopCameraScanner();
+
+      modalInstance.show();
+
+      // Gunakan event shown.bs.modal agar dimensi DOM modal sudah 100% siap
+      modalEl.removeEventListener('shown.bs.modal', onModalShown);
+      modalEl.addEventListener('shown.bs.modal', onModalShown, { once: true });
     }
 
-    function startCameraScanner() {
+    function onModalShown() {
+      setTimeout(startCameraScanner, 150);
+    }
+
+    async function startCameraScanner() {
+      if (isScannerStarting) return;
+      isScannerStarting = true;
+
       const readerEl = document.getElementById('cameraQrReader');
       const statusEl = document.getElementById('scannerLoadingStatus');
       const errEl = document.getElementById('scannerErrorMessage');
       if (errEl) errEl.classList.add('d-none');
+      if (statusEl) statusEl.textContent = 'Menghubungkan ke sensor kamera...';
 
       if (typeof Html5Qrcode === 'undefined') {
+        isScannerStarting = false;
         if (errEl) {
           errEl.classList.remove('d-none');
-          document.getElementById('scannerErrorText').textContent = 'Pustaka pemindai QR belum siap. Gunakan input token manual.';
+          document.getElementById('scannerErrorText').textContent = 'Pustaka pemindai belum siap. Silakan klik tombol "Buka Kamera HP" di bawah atau masukkan token manual.';
         }
         return;
       }
 
-      html5QrScanner = new Html5Qrcode('cameraQrReader');
-      html5QrScanner.start(
-        { facingMode: currentCameraFacing },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        (decodedText) => {
-          handleQrCodeScanned(decodedText);
-        },
-        (error) => {}
-      ).then(() => {
-        if (statusEl) statusEl.textContent = 'Arahkan kamera ke QR Code di layar proyektor aula';
-      }).catch(err => {
-        if (errEl) {
-          errEl.classList.remove('d-none');
-          document.getElementById('scannerErrorText').textContent = 'Izin kamera ditolak atau tidak tersedia: ' + err;
+      // Pastikan instance lama di-stop tuntas
+      try {
+        if (html5QrScanner) {
+          await html5QrScanner.stop().catch(() => {});
+          html5QrScanner.clear();
+          html5QrScanner = null;
         }
-      });
+      } catch (e) {
+        console.warn('Cleanup scanner notice:', e);
+      }
+
+      readerEl.innerHTML = '';
+      html5QrScanner = new Html5Qrcode('cameraQrReader');
+
+      const config = {
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.75);
+          return { width: Math.max(edge, 160), height: Math.max(edge, 160) };
+        },
+        aspectRatio: 1.0
+      };
+
+      const onScanSuccess = (decodedText) => {
+        handleQrCodeScanned(decodedText);
+      };
+
+      try {
+        // Coba cari kamera belakang via getCameras
+        let selectedCamera = null;
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length > 0) {
+            if (currentCameraFacing === 'environment') {
+              selectedCamera = devices.find(d => /back|rear|environment|belakang/i.test(d.label)) || devices[devices.length - 1];
+            } else {
+              selectedCamera = devices.find(d => /front|user|depan/i.test(d.label)) || devices[0];
+            }
+          }
+        } catch (deviceErr) {
+          console.warn('getCameras notice, will fallback to facingMode:', deviceErr);
+        }
+
+        const cameraConfig = selectedCamera ? selectedCamera.id : { facingMode: currentCameraFacing };
+        await html5QrScanner.start(cameraConfig, config, onScanSuccess, () => {});
+        if (statusEl) statusEl.textContent = 'Arahkan kamera ke QR Code di layar proyektor aula';
+      } catch (err) {
+        console.warn('Initial start error, retrying with flexible constraints:', err);
+        try {
+          // Fallback kedua: gunakan facingMode generic tanpa exact
+          await html5QrScanner.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+          if (statusEl) statusEl.textContent = 'Arahkan kamera ke QR Code di layar proyektor aula';
+        } catch (errFallback) {
+          console.error('All camera attempts failed:', errFallback);
+          if (errEl) {
+            errEl.classList.remove('d-none');
+            document.getElementById('scannerErrorText').textContent = 'Kamera langsung belum aktif. Silakan klik tombol "Buka Kamera HP / Foto QR Proyektor" di bawah untuk foto QR langsung dari kamera HP Anda.';
+          }
+          if (statusEl) statusEl.textContent = 'Izin kamera ditolak atau belum diizinkan';
+        }
+      } finally {
+        isScannerStarting = false;
+      }
     }
 
     function stopCameraScanner() {
@@ -1414,14 +1497,47 @@
         html5QrScanner.stop().then(() => {
           html5QrScanner.clear();
           html5QrScanner = null;
-        }).catch(() => {});
+        }).catch(() => {
+          try { html5QrScanner.clear(); } catch(e){}
+          html5QrScanner = null;
+        });
       }
+      isScannerStarting = false;
     }
 
     function switchCameraFacing() {
       currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
       stopCameraScanner();
-      setTimeout(startCameraScanner, 400);
+      setTimeout(startCameraScanner, 300);
+    }
+
+    async function handleQrFileSelected(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('scannerLoadingStatus');
+      const errEl = document.getElementById('scannerErrorMessage');
+      if (errEl) errEl.classList.add('d-none');
+      if (statusEl) statusEl.textContent = 'Memproses foto QR dari kamera HP...';
+
+      try {
+        let scanner = html5QrScanner;
+        if (!scanner) {
+          scanner = new Html5Qrcode('cameraQrReader');
+        }
+        const decodedText = await scanner.scanFile(file, true);
+        if (decodedText) {
+          handleQrCodeScanned(decodedText);
+        }
+      } catch (err) {
+        if (errEl) {
+          errEl.classList.remove('d-none');
+          document.getElementById('scannerErrorText').textContent = 'QR Code tidak terdeteksi dari foto. Pastikan gambar QR proyektor jelas dan tidak miring.';
+        }
+        if (statusEl) statusEl.textContent = 'Gagal memindai gambar QR';
+      } finally {
+        input.value = '';
+      }
     }
 
     function handleQrCodeScanned(text) {
@@ -1458,14 +1574,36 @@
 
     async function startFaceCamera() {
       const video = document.getElementById('faceCameraVideo');
+      if (!video) return;
+
+      closeFaceCamera();
+
       try {
-        faceVideoStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-          audio: false
-        });
+        try {
+          faceVideoStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+            audio: false
+          });
+        } catch (e1) {
+          console.warn('Fallback face 1:', e1);
+          try {
+            faceVideoStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user' },
+              audio: false
+            });
+          } catch (e2) {
+            console.warn('Fallback face 2:', e2);
+            faceVideoStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false
+            });
+          }
+        }
         video.srcObject = faceVideoStream;
+        await video.play().catch(() => {});
       } catch (err) {
-        showToast('Kamera tidak dapat diakses untuk foto selfie: ' + err.message, 'error');
+        console.warn('Live selfie camera notice:', err);
+        showToast('Kamera selfie otomatis tidak aktif. Silakan ambil foto melalui tombol kamera HP di bawah.', 'warning');
       }
     }
 
@@ -1476,6 +1614,36 @@
       }
     }
 
+    function handleModalSelfieCaptured(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.getElementById('faceCaptureCanvas');
+          if (!canvas) return;
+          canvas.width = 400;
+          canvas.height = 400;
+          const ctx = canvas.getContext('2d');
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 400, 400);
+
+          // Update video preview placeholder
+          const video = document.getElementById('faceCameraVideo');
+          if (video) {
+            video.poster = canvas.toDataURL('image/jpeg', 0.85);
+          }
+          showToast('Foto swafoto dari kamera HP berhasil dimuat! Klik "Ambil Foto & Verifikasi".', 'success');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
     async function captureAndProcessFace() {
       const video = document.getElementById('faceCameraVideo');
       const canvas = document.getElementById('faceCaptureCanvas');
@@ -1483,15 +1651,21 @@
       const btnText = document.getElementById('btnCaptureText');
 
       let faceSnapshotBase64 = null;
-      if (video && canvas) {
-        canvas.width = 400;
-        canvas.height = 400;
-        const ctx = canvas.getContext('2d');
+      if (canvas) {
+        if (video && video.videoWidth > 0) {
+          canvas.width = 400;
+          canvas.height = 400;
+          const ctx = canvas.getContext('2d');
+          try {
+            ctx.drawImage(video, 0, 0, 400, 400);
+          } catch (e) {
+            console.warn('Canvas snapshot notice:', e);
+          }
+        }
         try {
-          ctx.drawImage(video, 0, 0, 400, 400);
           faceSnapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
         } catch (e) {
-          console.warn('Canvas snapshot notice:', e);
+          console.warn('Canvas toDataURL notice:', e);
         }
       }
 
