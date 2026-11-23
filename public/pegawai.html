@@ -374,9 +374,12 @@
                     <h4 class="text-green fw-bold mb-1">Presensi Terverifikasi!</h4>
                     <p class="text-secondary small mb-2" id="attendanceTimeLabel">Hadir pada 07.35 WITA</p>
                     <div id="empFaceStatusCell" class="mb-2"></div>
-                    <div class="alert alert-success py-2 px-3 small mb-0">
+                    <div class="alert alert-success py-2 px-3 small mb-2">
                       Kehadiran Anda di aula telah dicatat dalam sistem kepegawaian.
                     </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFaceModal('ATTENDED', currentEvent?.id)">
+                      <i class="ti ti-camera me-1"></i> Foto Selfie Kehadiran (Opsional)
+                    </button>
                   </div>
 
                 </div>
@@ -688,18 +691,48 @@
     let html5QrScanner = null;
     let currentCameraFacing = 'environment';
 
-    // Inisialisasi Layout Tabler
+    // Inisialisasi Layout Tabler & Pemulihan Sesi Cepat (Zero-Flicker)
     document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Pulihkan sesi login seketika dari local storage agar tidak perlu login ulang saat refresh
+      restoreLocalSessionFast();
+
       if (window.BPMPLayout) {
         BPMPLayout.init({
           role: 'pegawai',
-          activeMenu: 'dashboard'
+          activeMenu: 'dashboard',
+          user: currentAuthUser ? {
+            name: currentAuthUser.name,
+            role: 'Aparatur Sipil Negara (ASN)',
+            nip: currentAuthUser.nip
+          } : null
         });
       }
 
-      await loadActiveEventAndEmployees();
       await checkUrlParamsAndSession();
+      loadActiveEventAndEmployees().catch(() => {});
     });
+
+    // Pemulihan Sesi Instan dari Penyimpanan Lokal
+    function restoreLocalSessionFast() {
+      const savedUserStr = localStorage.getItem('bpmp_auth_user') || sessionStorage.getItem('bpmp_auth_user');
+      const savedNip = localStorage.getItem('bpmp_auth_nip');
+      if (savedUserStr) {
+        try {
+          currentAuthUser = JSON.parse(savedUserStr);
+        } catch (e) {}
+      } else if (savedNip) {
+        currentAuthUser = { nip: savedNip, name: 'Pegawai ASN' };
+      }
+
+      if (currentAuthUser && (currentAuthUser.nip || currentAuthUser.id)) {
+        if (localStorage.getItem('bpmp_attended_' + currentAuthUser.nip) === 'true') {
+          currentAuthUser.attended = true;
+          currentAuthUser.attendedAt = localStorage.getItem('bpmp_attended_time_' + currentAuthUser.nip) || currentAuthUser.attendedAt;
+        }
+        activateDashboardView(false);
+        renderEmployeeProfile(currentAuthUser);
+      }
+    }
 
     // 1. Muat Informasi Kegiatan Aktif & Daftar 104 ASN
     async function loadActiveEventAndEmployees() {
@@ -790,6 +823,8 @@
           currentAuthUser = data.employee;
           if (data.event) currentEvent = data.event;
           localStorage.setItem('bpmp_auth_nip', currentAuthUser.nip);
+          localStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
+          sessionStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
 
           // Cek Biometrik Wajah & Persistensi Lokal
           const isFaceRegLocal = Boolean(
@@ -805,11 +840,11 @@
           }
 
           showToast('Selamat datang, ' + currentAuthUser.name + '!', 'success');
-          activateDashboardView();
+          activateDashboardView(true);
 
           // Eksekusi presensi otomatis jika ada token dari scan QR kamera
           if (pendingScannedToken) {
-            await executeAutoPresence(pendingScannedToken, pendingScannedEventId);
+            await submitPresenceDirect(pendingScannedToken, pendingScannedEventId);
             pendingScannedToken = null;
             pendingScannedEventId = null;
           }
@@ -826,7 +861,7 @@
     }
 
     // Navigasi & Aktivasi Tampilan Dashboard
-    function activateDashboardView() {
+    function activateDashboardView(shouldScroll = true) {
       const loginSec = document.getElementById('loginCardSection');
       if (loginSec) loginSec.classList.add('d-none');
 
@@ -850,7 +885,9 @@
       if (pollInterval) clearInterval(pollInterval);
       pollInterval = setInterval(syncCurrentProfile, 10000);
 
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (shouldScroll) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
     // 6. Sinkronisasi Data Pegawai & Status Acara Terkini
@@ -1049,29 +1086,100 @@
       }
     }
 
-    // 9. Presensi Aula (Kirim Token)
+    // 9. Presensi Aula (Kirim Token & Validasi Dinamis Proyektor)
     async function submitPresenceToken() {
       const tokenInput = document.getElementById('inputPresenceToken');
-      let token = tokenInput.value.trim().toUpperCase();
+      let token = tokenInput ? tokenInput.value.trim().toUpperCase() : '';
       if (!token || token.length < 5) {
         showToast('Masukkan kode token aktif dari layar proyektor aula (contoh: LPTI-27DD43 atau 27DD43)!', 'error');
         return;
       }
-      if (!token.startsWith('LPTI-') && token.length === 6) {
-        token = 'LPTI-' + token;
-      }
+      await submitPresenceDirect(token, currentEvent?.id);
+    }
+
+    // Eksekusi Presensi Langsung (Tanpa Beban Selfie Wajib Berulang)
+    async function submitPresenceDirect(token, eventId, options = {}) {
       if (!currentAuthUser) {
         showToast('Identitas pegawai belum terotentikasi!', 'error');
-        goToFlowStep(2);
         return;
       }
 
-      openFaceModal(token, currentEvent?.id);
+      if (!token) {
+        showToast('Kode token presensi tidak ditemukan!', 'error');
+        return;
+      }
+
+      // Normalisasi token jika user hanya mengetik heksadesimal 6 karakter
+      let cleanToken = String(token).trim().toUpperCase();
+      if (!cleanToken.startsWith('LPTI-') && cleanToken.length === 6) {
+        cleanToken = 'LPTI-' + cleanToken;
+      }
+
+      const btnSubmit = document.getElementById('btnSubmitPresence');
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengirim...';
+      }
+
+      try {
+        const payload = {
+          employeeId: currentAuthUser.nip || currentAuthUser.id,
+          nip: currentAuthUser.nip,
+          token: cleanToken,
+          eventId: eventId || currentEvent?.id,
+          attendancePhoto: options.photoBase64 || null
+        };
+
+        const res = await fetch('/api/attendance/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          const nowIso = new Date().toISOString();
+          localStorage.setItem('bpmp_attended_' + currentAuthUser.nip, 'true');
+          localStorage.setItem('bpmp_attended_time_' + currentAuthUser.nip, nowIso);
+          if (currentEvent?.id) {
+            localStorage.setItem('bpmp_attended_' + currentAuthUser.nip + '_' + currentEvent.id, 'true');
+          }
+
+          currentAuthUser.attended = true;
+          currentAuthUser.attendedAt = nowIso;
+          if (data.employee) {
+            currentAuthUser = { ...currentAuthUser, ...data.employee, attended: true, attendedAt: nowIso };
+          }
+          localStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
+
+          showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
+
+          // Tutup modal pemindai jika terbuka
+          const camModal = getBsModal('cameraScannerModal');
+          if (camModal) camModal.hide();
+          const faceModal = getBsModal('faceBiometricModal');
+          if (faceModal) faceModal.hide();
+          closeFaceCamera();
+          stopCameraScanner();
+
+          renderEmployeeProfile(currentAuthUser);
+          await syncCurrentProfile();
+        } else {
+          showToast(data.message || 'Presensi gagal. Token QR tidak cocok atau kedaluwarsa.', 'error');
+        }
+      } catch (err) {
+        showToast('Kesalahan koneksi presensi: ' + err.message, 'error');
+      } finally {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = 'Kirim Presensi';
+        }
+      }
     }
 
     async function executeAutoPresence(token, eventId) {
       if (!currentAuthUser) return;
-      openFaceModal(token, eventId);
+      await submitPresenceDirect(token, eventId);
     }
 
     // Helper Modal Aman (Kompatibel Tabler & Bootstrap 5)
@@ -1281,10 +1389,12 @@
         }
       } catch (e) {}
 
-      document.getElementById('inputPresenceToken').value = token;
-      showToast('QR Code aula berhasil dipindai! Token: ' + token, 'success');
+      const tokenInput = document.getElementById('inputPresenceToken');
+      if (tokenInput) tokenInput.value = token;
+      showToast('QR Code aula terbaca! Memverifikasi kehadiran...', 'info');
 
-      openFaceModal(token, eventId);
+      // Langsung proses presensi aula tanpa memaksa selfie berulang
+      submitPresenceDirect(token, eventId);
     }
 
     // 11. Modal Verifikasi Biometrik Wajah
@@ -1580,6 +1690,8 @@
     // 14. Logout
     function handleLogout() {
       localStorage.removeItem('bpmp_auth_nip');
+      localStorage.removeItem('bpmp_auth_user');
+      sessionStorage.removeItem('bpmp_auth_user');
       currentAuthUser = null;
       if (pollInterval) clearInterval(pollInterval);
 
@@ -1589,11 +1701,14 @@
       const loginSec = document.getElementById('loginCardSection');
       if (loginSec) loginSec.classList.remove('d-none');
 
-      showToast('Anda telah keluar dari akun pegawai.', 'success');
+      showToast('Anda telah keluar dari akun pegawai.', 'info');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.BPMPLayout) {
+        BPMPLayout.init({ role: 'pegawai', activeMenu: 'dashboard', user: null });
+      }
     }
 
-    // 15. Cek Parameter URL & Sesi Tersimpan
+    // 15. Cek Parameter URL & Sinkronisasi Sesi Tersimpan
     async function checkUrlParamsAndSession() {
       const params = new URLSearchParams(window.location.search);
       const tokenParam = params.get('token');
@@ -1604,27 +1719,39 @@
         pendingScannedEventId = eventParam;
         const alertEl = document.getElementById('loginQrAlert');
         if (alertEl) alertEl.classList.remove('d-none');
+        const tokenInput = document.getElementById('inputPresenceToken');
+        if (tokenInput) tokenInput.value = tokenParam;
       }
 
-      const savedNip = localStorage.getItem('bpmp_auth_nip');
-      if (savedNip && !tokenParam) {
+      const activeIdentifier = currentAuthUser?.nip || currentAuthUser?.id || localStorage.getItem('bpmp_auth_nip');
+      if (activeIdentifier) {
         try {
-          const res = await fetch('/api/employees/' + encodeURIComponent(savedNip));
+          const res = await fetch('/api/employees/' + encodeURIComponent(activeIdentifier));
           const data = await res.json();
           if (data.success && data.employee) {
-            currentAuthUser = data.employee;
+            currentAuthUser = { ...currentAuthUser, ...data.employee };
+            if (localStorage.getItem('bpmp_attended_' + currentAuthUser.nip) === 'true') {
+              currentAuthUser.attended = true;
+            }
             if (localStorage.getItem('bpmp_face_registered_' + currentAuthUser.nip) === 'true') {
               currentAuthUser.faceRegistered = true;
             }
             if (!currentAuthUser.facePhotoUrl && localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip)) {
               currentAuthUser.facePhotoUrl = localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip);
             }
+            localStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
+            localStorage.setItem('bpmp_auth_nip', currentAuthUser.nip);
             if (data.event) currentEvent = data.event;
-            activateDashboardView();
-            return;
+            renderEmployeeProfile(currentAuthUser);
           }
         } catch (e) {
-          console.warn('Auto restore session notice:', e);
+          console.warn('Background session sync notice:', e);
+        }
+
+        // Jika ada token dari URL atau scan proyektor, langsung proses presensi otomatis
+        if (tokenParam) {
+          await submitPresenceDirect(tokenParam, eventParam);
+          pendingScannedToken = null;
         }
       }
     }
