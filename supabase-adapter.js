@@ -6,6 +6,16 @@
 
 const path = require('path');
 const fs = require('fs');
+
+// Polyfill Dummy WebSocket untuk Node.js < 22 (mencegah error supabase-js realtime di backend)
+if (typeof globalThis.WebSocket === 'undefined') {
+  globalThis.WebSocket = class DummyWebSocket {
+    constructor() {}
+    addEventListener() {}
+    removeEventListener() {}
+  };
+}
+
 const { createClient } = require('@supabase/supabase-js');
 
 // Load environment variables automatically jika belum dimuat
@@ -27,6 +37,7 @@ function isProd() {
 
 let _supabaseInstance = null;
 let _isConfigured = false;
+let _explicitNull = false;
 
 // In-Memory store untuk development lokal sebelum file .env diisi credential Supabase
 let _memoryStore = null;
@@ -155,6 +166,7 @@ function getMemoryStore() {
 }
 
 function getClient() {
+  if (_explicitNull) return null;
   if (_supabaseInstance) return _supabaseInstance;
   const SUPABASE_URL = (
     process.env.SUPABASE_URL ||
@@ -186,6 +198,7 @@ function getClient() {
 function setSupabaseInstance(instance) {
   _supabaseInstance = instance;
   _isConfigured = Boolean(instance);
+  _explicitNull = (instance === null);
 }
 
 function isSupabaseAvailable() {

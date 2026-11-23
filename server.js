@@ -457,41 +457,43 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
     }
 
-    // Validasi / Registrasi Otomatis Biometrik Wajah
-    let hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl);
-    if (!hasFace) {
-      if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
-        // Otomatis daftarkan foto selfie ini sebagai master wajah agar pegawai langsung lolos presensi!
-        try {
-          await db.registerEmployeeFace(employee.id, {
-            facePhotoUrl: attendancePhoto
-          });
-          hasFace = true;
-          employee.faceRegistered = true;
-        } catch (errFace) {
-          console.warn('Auto face register note:', errFace.message);
-        }
-      }
-    }
-
-    // Simpan foto bukti presensi (jika ada snapshot selfie)
+    // Simpan foto bukti presensi (jika ada snapshot selfie) ke Supabase Storage
     let attendancePhotoUrl = null;
     if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
       try {
         const base64Data = attendancePhoto.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Data, 'base64');
         const filename = `ATTEND-${employee.nip || employee.id}-${Date.now()}.jpg`;
-        const localFilePath = path.join(FACES_DIR, filename);
-        fs.writeFileSync(localFilePath, buffer);
-        attendancePhotoUrl = `/uploads/faces/${filename}`;
+        try {
+          const localFilePath = path.join(FACES_DIR, filename);
+          fs.writeFileSync(localFilePath, buffer);
+          attendancePhotoUrl = `/uploads/faces/${filename}`;
+        } catch (fsErr) {}
 
-        // Upload ke Supabase Storage bucket 'faces' jika tersedia
+        // Upload langsung ke Supabase Storage bucket 'faces'
         try {
           const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
           if (cloudUrl) attendancePhotoUrl = cloudUrl;
-        } catch (storageErr) {}
+        } catch (storageErr) {
+          console.warn('Gagal upload presensi ke Supabase Storage:', storageErr.message);
+        }
       } catch (photoErr) {
-        console.warn('Gagal menyimpan attendancePhoto:', photoErr.message);
+        console.warn('Gagal memproses attendancePhoto:', photoErr.message);
+      }
+    }
+
+    // Validasi / Registrasi Otomatis Biometrik Wajah ke Supabase Cloud
+    let hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl);
+    if (!hasFace && attendancePhotoUrl) {
+      try {
+        await db.registerEmployeeFace(employee.id, {
+          facePhotoUrl: attendancePhotoUrl
+        });
+        hasFace = true;
+        employee.faceRegistered = true;
+        employee.facePhotoUrl = attendancePhotoUrl;
+      } catch (errFace) {
+        console.warn('Auto face register to Supabase note:', errFace.message);
       }
     }
 
