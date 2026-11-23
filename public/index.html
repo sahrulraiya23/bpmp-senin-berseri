@@ -3,836 +3,239 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Senin Berseri - Presensi Digital & E-Sertifikat ASN BPMP Sulawesi Tenggara</title>
+  <title>Senin Berseri — BPMP Provinsi Sulawesi Tenggara</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a3a5c">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Senin Berseri">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="/icons/favicon.png">
 
-  <!-- Tabler Core CSS (Local Dist) -->
+  <!-- Tabler Core CSS & Tabler Icons (Local Dist) -->
   <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
-  <!-- Tabler Icons (Local Dist) -->
   <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
-  <!-- Design Tokens BPMP Sultra -->
-  <link rel="stylesheet" href="/css/tokens.css?v=2.3">
+
+  <!-- BPMP Custom Design Tokens -->
+  <link rel="stylesheet" href="/css/tokens.css?v=2.4">
 
   <style>
-    .hero-section {
+    body {
+      background-color: #f8fafc;
+    }
+    .hero-card {
       background: #ffffff;
-      color: var(--tblr-body-color);
-      padding: 3rem 0 2.5rem;
-      border-bottom: 1px solid #e2e8f0;
-      position: relative;
-    }
-    .step-number-badge {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1rem;
-    }
-    .feature-card {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      border: 1px solid var(--tblr-border-color);
-    }
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 25px rgba(0, 45, 91, 0.08);
-      border-color: var(--tblr-primary);
-    }
-    .portal-quick-card {
       border: 1px solid #e2e8f0;
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 1.15rem 1.25rem;
-      color: var(--tblr-body-color);
-      box-shadow: 0 1px 3px rgba(0, 45, 91, 0.04);
-      transition: all 0.2s ease;
-      text-decoration: none;
-      display: block;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 45, 91, 0.05);
     }
-    .portal-quick-card:hover {
-      background: #f8fafc;
+    .service-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .service-card:hover {
       border-color: #0056b3;
-      box-shadow: 0 8px 24px rgba(0, 86, 179, 0.08);
-      color: var(--tblr-body-color);
-      transform: translateY(-2px);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 86, 179, 0.08);
+      color: inherit;
     }
   </style>
 </head>
-<body class="bg-white">
+<body class="bg-light">
   <div class="page">
     
     <!-- Top Official Identity Strip (Kemendikdasmen Standard) -->
     <div id="bpmp-top-strip"></div>
 
-    <!-- Main Navigation Header (Kemendikdasmen Official Navbar) -->
+    <!-- Main Navigation Header -->
     <div id="bpmp-navbar"></div>
 
     <!-- Page Body Content -->
     <div class="page-wrapper">
-      
-      <!-- =================================================================
-           SECTION 1: PROFIL RESMI KEMENDIKDASMEN BPMP SULTRA 
-           Persis sesuai tata letak portal resmi bpmpsultra.kemendikdasmen.go.id
-           ================================================================= -->
-      <section id="profil-resmi" class="bg-white py-5 border-bottom">
-        <div class="container-xl">
+      <div class="container-xl py-4 py-lg-5">
+        
+        <!-- HERO CARD: BERSIH & FOKUS -->
+        <div class="hero-card p-4 p-md-5 mb-4 text-center">
+          <div class="d-inline-flex align-items-center justify-content-center mb-3">
+            <img src="/icons/tutwurihandayani.png" alt="Logo Kemendikdasmen" width="76" height="76" style="object-fit: contain;">
+          </div>
           
-          <!-- Top Row: Pill Badge & Heading Accent -->
-          <div class="mb-4">
-            <div class="bpmp-badge-pill mb-2">
-              <i class="ti ti-sparkles me-1"></i> PROFIL KAMI
-            </div>
-            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
-              <div>
-                <h1 class="display-6 fw-bold text-dark bpmp-heading-accent mb-0">
-                  Tentang BPMP Provinsi Sulawesi Tenggara
-                </h1>
-              </div>
-              <div class="text-secondary small fw-medium">
-                Pelajari profil, sejarah, dan visi misi BPMP Provinsi Sulawesi Tenggara.
-              </div>
-            </div>
+          <div class="mb-2">
+            <span class="badge bg-primary-lt text-primary px-3 py-1 font-monospace">KEMENDIKDASMEN &bull; BPMP SULTRA</span>
           </div>
-
-          <!-- Content Grid: Emblem Tut Wuri Handayani + Institutional Info & Values -->
-          <div class="row align-items-center g-4 mt-1">
-            
-            <!-- Left Column: Circular Tut Wuri Handayani Emblem -->
-            <div class="col-lg-5 text-center">
-              <div class="bpmp-tutwuri-circle">
-                <img src="/icons/tutwurihandayani.png" width="220" height="220" alt="Emblem Tut Wuri Handayani Kemendikdasmen" class="img-fluid" style="object-fit: contain;">
-              </div>
-              <div class="mt-3 text-secondary small font-monospace">
-                <i class="ti ti-shield-check text-primary me-1"></i>Kementerian Pendidikan Dasar dan Menengah
-              </div>
-            </div>
-
-            <!-- Right Column: Institutional Profile & Value Cards -->
-            <div class="col-lg-7">
-              <h2 class="h2 fw-bold text-dark mb-2">
-                Balai Penjaminan Mutu Pendidikan Sultra
-              </h2>
-              <p class="text-secondary lh-base mb-4" style="font-size: 1.05rem;">
-                Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara adalah unit pelaksana teknis Kementerian Pendidikan Dasar dan Menengah yang memiliki tugas mulia untuk mengawal, memfasilitasi, dan meningkatkan mutu pendidikan di wilayah Sulawesi Tenggara.
-              </p>
-
-              <!-- Institutional Feature Cards -->
-              <div class="space-y-3">
-                
-                <div class="bpmp-feature-box">
-                  <div class="bpmp-feature-icon">
-                    <i class="ti ti-heart"></i>
-                  </div>
-                  <div>
-                    <h4 class="fw-bold text-dark mb-1">Pelayanan Sepenuh Hati</h4>
-                    <div class="text-secondary small">Sikap melayani dengan tulus, ramah, profesional, dan berdedikasi tinggi dalam penjaminan mutu pendidikan serta pembinaan ASN.</div>
-                  </div>
-                </div>
-
-                <div class="bpmp-feature-box">
-                  <div class="bpmp-feature-icon">
-                    <i class="ti ti-shield-check"></i>
-                  </div>
-                  <div>
-                    <h4 class="fw-bold text-dark mb-1">Zona Integritas WBK</h4>
-                    <div class="text-secondary small">Berkomitmen kuat mewujudkan birokrasi yang bersih, akuntabel, transparan, bebas dari korupsi, dan berorientasi pelayanan prima.</div>
-                  </div>
-                </div>
-
-                <div class="bpmp-feature-box">
-                  <div class="bpmp-feature-icon" style="background: #eef2ff; color: #4338ca;">
-                    <i class="ti ti-award"></i>
-                  </div>
-                  <div>
-                    <h4 class="fw-bold text-dark mb-1">Pengembangan Kompetensi ASN "Senin Berseri"</h4>
-                    <div class="text-secondary small">Inovasi pelatihan mingguan berbobot 4 Jam Pelajaran (JP) dengan presensi QR aula dinamis 30 detik, kurasi LPTI paperless, dan e-sertifikat bertanda tangan digital ECDSA.</div>
-                  </div>
-                </div>
-
-              </div>
-
-              <!-- Quick Action Buttons -->
-              <div class="d-flex flex-wrap gap-2 mt-4 pt-2">
-                <a href="/login" class="btn btn-primary px-4 py-2 fw-bold shadow-sm">
-                  <i class="ti ti-login me-1"></i> Buka Portal Mandiri Pegawai
-                </a>
-                <a href="/sertifikat" class="btn btn-teal text-white px-3 py-2 fw-bold shadow-sm">
-                  <i class="ti ti-certificate me-1"></i> Cek Sertifikat (ECDSA)
-                </a>
-                <a href="/admin/login" class="btn btn-outline-secondary px-3 py-2">
-                  <i class="ti ti-lock me-1"></i> Portal Administrator
-                </a>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      <!-- =================================================================
-           SECTION 2: PORTAL LAYANAN TERPADU SENIN BERSERI (KARTU TERANG)
-           ================================================================= -->
-      <section id="portal-hub" class="py-5 bg-light-subtle border-bottom">
-        <div class="container-xl">
           
-          <div class="text-center mb-4">
-            <span class="badge bg-primary-lt text-primary px-3 py-1 font-monospace mb-2">PORTAL AKSES KEGIATAN</span>
-            <h2 class="fw-bold text-dark mb-1">Pusat Layanan Presensi &amp; E-Sertifikat</h2>
-            <p class="text-secondary mx-auto" style="max-width: 620px;">
-              Pilih menu layanan di bawah ini untuk pencatatan kehadiran aula, pengelolaan laporan tugas instansional (LPTI), atau verifikasi sertifikat resmi 4 JP.
-            </p>
-          </div>
+          <h1 class="display-6 fw-bold text-dark mb-2" style="letter-spacing: -0.5px;">
+            Presensi Digital &amp; E-Sertifikat <span style="color: #0056b3;">"Senin Berseri"</span>
+          </h1>
+          
+          <p class="text-secondary mx-auto mb-4" style="max-width: 650px; font-size: 1.05rem; line-height: 1.6;">
+            Platform resmi presensi aula berbasis Dynamic QR, kurasi laporan tugas instansional (LPTI) tanpa kertas, dan penerbitan otomatis E-Sertifikat 4 JP bagi seluruh ASN BPMP Sulawesi Tenggara.
+          </p>
 
-          <div class="row g-3 justify-content-center">
-            
-            <!-- Card 1: Portal Mandiri Pegawai -->
-            <div class="col-md-6 col-lg-4">
-              <a href="/login" class="portal-quick-card h-100">
-                <div class="d-flex align-items-center mb-2">
-                  <span class="avatar avatar-md rounded bg-warning-lt text-warning me-3">
-                    <i class="ti ti-user-check fs-2"></i>
-                  </span>
-                  <div>
-                    <div class="fw-bold fs-3 text-dark mb-0.5">Portal Mandiri Pegawai</div>
-                    <span class="badge bg-warning-lt text-warning">Peserta ASN</span>
-                  </div>
-                </div>
-                <div class="text-secondary small mb-3">
-                  Masuk dengan NIP 18 digit untuk memindai kode QR aula, mengunggah notula LPTI, dan mengunduh E-Sertifikat resmi.
-                </div>
-                <div class="d-flex align-items-center text-primary fw-bold small">
-                  <span>Masuk Portal Mandiri</span>
-                  <i class="ti ti-arrow-right ms-1"></i>
-                </div>
-              </a>
-            </div>
-
-            <!-- Card 2: Layar Proyektor Aula -->
-            <div class="col-md-6 col-lg-4">
-              <a href="/proyektor" target="_blank" class="portal-quick-card h-100">
-                <div class="d-flex align-items-center mb-2">
-                  <span class="avatar avatar-md rounded bg-primary-lt text-primary me-3">
-                    <i class="ti ti-device-projector fs-2"></i>
-                  </span>
-                  <div>
-                    <div class="fw-bold fs-3 text-dark mb-0.5">Layar Aula Proyektor</div>
-                    <span class="badge bg-primary-lt text-primary">Tampilan Utama</span>
-                  </div>
-                </div>
-                <div class="text-secondary small mb-3">
-                  Menampilkan Dynamic QR Code dan token 6 digit yang berganti otomatis setiap 30 detik di panggung aula utama.
-                </div>
-                <div class="d-flex align-items-center text-primary fw-bold small">
-                  <span>Buka Layar Proyektor ↗</span>
-                </div>
-              </a>
-            </div>
-
-            <!-- Card 3: Registrasi Biometrik Wajah -->
-            <div class="col-md-6 col-lg-4">
-              <a href="/verif-wajah" class="portal-quick-card h-100">
-                <div class="d-flex align-items-center mb-2">
-                  <span class="avatar avatar-md rounded bg-teal-lt text-teal me-3">
-                    <i class="ti ti-scan fs-2"></i>
-                  </span>
-                  <div>
-                    <div class="fw-bold fs-3 text-dark mb-0.5">Perekaman Wajah</div>
-                    <span class="badge bg-teal-lt text-teal">Master Biometrik</span>
-                  </div>
-                </div>
-                <div class="text-secondary small mb-3">
-                  Pendaftaran mandiri foto master wajah pegawai untuk verifikasi kehadiran aula anti-titip presensi.
-                </div>
-                <div class="d-flex align-items-center text-teal fw-bold small">
-                  <span>Daftarkan Foto Wajah</span>
-                  <i class="ti ti-arrow-right ms-1"></i>
-                </div>
-              </a>
-            </div>
-
-            <!-- Card 4: Cek Sertifikat Publik (ECDSA) -->
-            <div class="col-md-6 col-lg-6">
-              <a href="/sertifikat" class="portal-quick-card h-100" style="border-left: 4px solid var(--tblr-teal); background: #f0fdfa;">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                  <div class="d-flex align-items-center">
-                    <span class="avatar avatar-md rounded bg-teal text-white me-3">
-                      <i class="ti ti-certificate fs-2"></i>
-                    </span>
-                    <div>
-                      <div class="fw-bold fs-3 text-dark mb-0.5">Verifikasi E-Sertifikat Publik (ECDSA)</div>
-                      <span class="badge bg-teal text-white">Standar Kriptografi</span>
-                    </div>
-                  </div>
-                  <span class="badge bg-teal text-white">Buka ↗</span>
-                </div>
-                <div class="text-secondary small mb-2">
-                  Validasi keaslian dokumen piagam 4 JP menggunakan 12-digit kode kredensial unik atau scan QR Code resmi instansi (mirip Dicoding).
-                </div>
-                <div class="d-flex align-items-center text-teal fw-bold small">
-                  <span>Periksa Sertifikat Anda Sekarang</span>
-                  <i class="ti ti-arrow-right ms-1"></i>
-                </div>
-              </a>
-            </div>
-
-            <!-- Card 5: Konsol Admin Kepegawaian -->
-            <div class="col-md-6 col-lg-6">
-              <a href="/admin/login" class="portal-quick-card h-100" style="border-left: 4px solid var(--tblr-primary); background: #f0f7ff;">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                  <div class="d-flex align-items-center">
-                    <span class="avatar avatar-md rounded bg-primary text-white me-3">
-                      <i class="ti ti-shield-lock fs-2"></i>
-                    </span>
-                    <div>
-                      <div class="fw-bold fs-3 text-dark mb-0.5">Konsol Administrator Kepegawaian</div>
-                      <span class="badge bg-primary text-white">Pengelola BPMP</span>
-                    </div>
-                  </div>
-                  <span class="badge bg-primary text-white">Masuk ↗</span>
-                </div>
-                <div class="text-secondary small mb-2">
-                  Kurasi berkas LPTI, pengelolaan template sertifikat ber-QR, pengaturan kegiatan, dan rekapitulasi data 104 ASN.
-                </div>
-                <div class="d-flex align-items-center text-primary fw-bold small">
-                  <span>Buka Panel Administrator</span>
-                  <i class="ti ti-arrow-right ms-1"></i>
-                </div>
-              </a>
-            </div>
-
-          </div>
-
-          <!-- Live System Indicators -->
-          <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 pt-4 mt-3 border-top text-secondary small">
-            <div class="d-flex align-items-center gap-1.5 text-success fw-bold">
-              <i class="ti ti-circle-filled text-success font-10"></i>
-              <span>Database Supabase Cloud Online</span>
-            </div>
-            <span class="text-muted">&bull;</span>
-            <div class="d-flex align-items-center gap-1.5 text-dark fw-medium">
-              <i class="ti ti-users font-16 text-warning"></i>
-              <span>104 Pegawai Terdaftar</span>
-            </div>
-            <span class="text-muted">&bull;</span>
-            <div class="d-flex align-items-center gap-1.5 text-dark fw-medium">
-              <i class="ti ti-certificate font-16 text-teal"></i>
-              <span>Format Standar 4 JP</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- MAIN CONTENT CONTAINER -->
-      <div class="container-xl py-4">
-
-        <!-- MAKLUMAT RESMI INSTANSI BANNER (INSTITUTIONAL ALERT) -->
-        <div class="alert alert-primary mb-4 p-3 p-md-4 shadow-sm" role="alert">
-          <div class="row align-items-center g-3">
-            <div class="col-auto">
-              <span class="avatar avatar-lg rounded bg-primary text-white shadow-sm">
-                <i class="ti ti-speakerphone font-32"></i>
-              </span>
-            </div>
-            <div class="col">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
-                <span class="badge bg-primary text-white font-monospace" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                  MAKLUMAT PELAYANAN KEPEGAWAIAN
-                </span>
-                <span class="text-secondary small font-monospace">
-                  <i class="ti ti-shield-check text-primary me-1"></i>Standar Mutu BPMP Sultra 2026
-                </span>
-              </div>
-              <h3 class="alert-title fw-bold text-primary mb-1 fs-2">
-                Pemberitahuan Penyelenggaraan Pelatihan "Senin Berseri"
-              </h3>
-              <p class="text-secondary small mb-2">
-                Berdasarkan Program Peningkatan Mutu dan Pengembangan Kompetensi Berkelanjutan ASN di Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara:
-              </p>
-              <div class="row g-2 small text-secondary">
-                <div class="col-md-4">
-                  <div class="d-flex align-items-center gap-1.5">
-                    <i class="ti ti-calendar-event text-primary"></i>
-                    <span><strong>Jadwal:</strong> Setiap Senin, Pukul 07.30 WITA</span>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="d-flex align-items-center gap-1.5">
-                    <i class="ti ti-map-pin text-primary"></i>
-                    <span><strong>Tempat:</strong> Aula Utama BPMP Prov. Sultra</span>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="d-flex align-items-center gap-1.5">
-                    <i class="ti ti-award text-teal"></i>
-                    <span><strong>Sertifikat:</strong> 4 JP per kegiatan terverifikasi</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION: CEK KEABSAHAN E-SERTIFIKAT (ECDSA & QR VERIFICATION) -->
-        <section id="cek-sertifikat" class="card shadow-sm border-teal-subtle mb-5 overflow-hidden">
-          <div class="card-status-top bg-teal"></div>
-          <div class="card-body p-4">
-            <div class="row align-items-center g-4">
-              <div class="col-lg-5">
-                <div class="d-inline-flex align-items-center gap-2 px-2.5 py-1 rounded bg-teal-lt text-teal mb-2 font-monospace small">
-                  <i class="ti ti-shield-check"></i>
-                  <span>PORTAL VERIFIKASI RESMI</span>
-                </div>
-                <h3 class="fw-bold text-primary mb-2">
-                  <i class="ti ti-certificate text-teal me-1"></i> Cek Keaslian & Validasi E-Sertifikat
-                </h3>
-                <p class="text-secondary small mb-3">
-                  Setiap E-Sertifikat kegiatan Senin Berseri BPMP Provinsi Sulawesi Tenggara dilengkapi dengan <strong>QR Code Keabsahan di pojok kanan bawah</strong> dan tanda tangan kriptografis digital <strong>ECDSA (NIST P-256)</strong> untuk mencegah pemalsuan dokumen.
-                </p>
-                <div class="d-flex align-items-start gap-2 text-secondary small bg-light-subtle p-2.5 rounded border">
-                  <i class="ti ti-qrcode text-teal fs-2 mt-0.5"></i>
-                  <div>
-                    <strong>Pindai QR Code:</strong> Arahkan kamera smartphone ke QR Code di pojok kanan bawah sertifikat untuk langsung membuka halaman verifikasi kredensial resmi (mirip Dicoding).
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-7">
-                <div class="p-3 bg-light rounded border">
-                  <label class="form-label fw-bold text-dark mb-1">
-                    <i class="ti ti-search me-1 text-teal"></i> Cari Berdasarkan ID Kredensial / Nomor Surat / NIP ASN
-                  </label>
-                  <form id="formCekIndex" onsubmit="handleCekSertifikatIndex(event)">
-                    <div class="input-group mb-2">
-                      <span class="input-group-text bg-white border-end-0">
-                        <i class="ti ti-scan text-muted"></i>
-                      </span>
-                      <input type="text" id="inputQueryIndex" class="form-control font-monospace border-start-0" placeholder="Contoh: 6RPNYVJL4Z2M atau 0031 atau NIP" required>
-                      <button type="submit" class="btn btn-teal text-white fw-bold px-3">
-                        <i class="ti ti-check me-1"></i> Periksa Keaslian
-                      </button>
-                    </div>
-                  </form>
-                  <div class="d-flex flex-wrap align-items-center gap-2 small">
-                    <span class="text-secondary">Contoh verifikasi cepat:</span>
-                    <a href="/sertifikat/6RPNYVJL4Z2M" class="badge bg-teal-lt text-teal text-decoration-none">
-                      <i class="ti ti-award me-1"></i> ID: 6RPNYVJL4Z2M (Sri Wahyudi, S.Sos.)
-                    </a>
-                    <a href="/sertifikat" class="badge bg-primary-lt text-primary text-decoration-none ms-auto">
-                      <i class="ti ti-external-link me-1"></i> Halaman Cek Penuh ↗
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- SECTION: TENTANG APLIKASI (PENJELASAN SEDERHANA) -->
-        <section id="tentang" class="mb-5">
-          <div class="text-center mb-4">
-            <span class="badge bg-primary-lt text-primary px-3 py-1 font-monospace mb-2">PENGENALAN SISTEM</span>
-            <h2 class="fw-bold text-primary mb-1">Apa Itu Aplikasi "Senin Berseri"?</h2>
-            <p class="text-secondary mx-auto" style="max-width: 680px;">
-              Aplikasi web modern yang dirancang khusus untuk memodernisasi tata kelola presensi dan penerbitan sertifikat pelatihan mingguan ASN di BPMP Provinsi Sulawesi Tenggara.
-            </p>
-          </div>
-
-          <div class="row g-3 align-items-stretch">
-            
-            <!-- Perbandingan: Cara Lama -->
-            <div class="col-md-6">
-              <div class="card h-100 border-danger-subtle shadow-sm bg-white">
-                <div class="card-header bg-danger-lt py-2">
-                  <h4 class="card-title text-danger mb-0 small fw-bold">
-                    <i class="ti ti-x me-1"></i> Kendala Metode Konvensional (Dahulu)
-                  </h4>
-                </div>
-                <div class="card-body p-3">
-                  <ul class="list-unstyled mb-0 space-y-2 text-secondary small">
-                    <li class="d-flex align-items-start gap-2 mb-2">
-                      <i class="ti ti-circle-x text-danger mt-0.5"></i>
-                      <div><strong>Presensi Kertas Manual:</strong> Rentan titip tanda tangan dan antrean panjang di pintu masuk aula.</div>
-                    </li>
-                    <li class="d-flex align-items-start gap-2 mb-2">
-                      <i class="ti ti-circle-x text-danger mt-0.5"></i>
-                      <div><strong>Pemborosan Kertas LPTI:</strong> Setiap pegawai harus mencetak berkas laporan fisik yang menumpuk di meja administrasi.</div>
-                    </li>
-                    <li class="d-flex align-items-start gap-2 mb-2">
-                      <i class="ti ti-circle-x text-danger mt-0.5"></i>
-                      <div><strong>Penerbitan Sertifikat Lambat:</strong> Pembuatan sertifikat memakan waktu berhari-hari dan sering terjadi salah ketik nama atau NIP.</div>
-                    </li>
-                    <li class="d-flex align-items-start gap-2">
-                      <i class="ti ti-circle-x text-danger mt-0.5"></i>
-                      <div><strong>Sulit Memvalidasi Keaslian:</strong> Piagam konvensional tidak memiliki sistem pengecekan barcode/QR langsung ke pangkalan data.</div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <!-- Perbandingan: Solusi Digital Senin Berseri -->
-            <div class="col-md-6">
-              <div class="card h-100 border-success-subtle shadow-sm bg-white">
-                <div class="card-header bg-success-lt py-2">
-                  <h4 class="card-title text-success mb-0 small fw-bold">
-                    <i class="ti ti-check me-1"></i> Keunggulan Aplikasi "Senin Berseri" (Sekarang)
-                  </h4>
-                </div>
-                <div class="card-body p-3">
-                  <ul class="list-unstyled mb-0 space-y-2 text-secondary small">
-                    <li class="d-flex align-items-start gap-2 mb-2">
-                      <i class="ti ti-circle-check text-success mt-0.5"></i>
-                      <div><strong>Dynamic QR 30 Detik + Biometrik Wajah:</strong> Kode QR di proyektor aula berganti otomatis tiap 30 detik untuk menjamin kehadiran fisik ASN.</div>
-                    </li>
-                    <li class="d-flex align-items-start gap-2 mb-2">
-                      <i class="ti ti-circle-check text-success mt-0.5"></i>
-                      <div><strong>LPTI 100% Paperless (PDF):</strong> Cukup unggah dokumen ringkasan materi dari HP; verifikasi dan catatan revisi admin dilakukan secara digital.</div>
-                    </li>
-                    <li class="d-flex align-items-start gap-2 mb-2">
-                      <i class="ti ti-circle-check text-success mt-0.5"></i>
-                      <div><strong>Penerbitan E-Sertifikat Otomatis:</strong> Piagam 4 JP terbit otomatis tepat setelah LPTI disetujui, langsung siap diunduh kapan saja.</div>
-                    </li>
-                    <li class="d-flex align-items-start gap-2">
-                      <i class="ti ti-circle-check text-success mt-0.5"></i>
-                      <div><strong>Verifikasi Keabsahan Publik:</strong> Setiap sertifikat memiliki QR Code unik yang dapat di-scan oleh siapa saja untuk memastikan keaslian data.</div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <!-- SECTION: ALUR 3 LANGKAH (INFOGRAFIS PANDUAN ASN) -->
-        <section id="alur" class="mb-5">
-          <div class="text-center mb-4">
-            <span class="badge bg-teal-lt text-teal px-3 py-1 font-monospace mb-2">PANDUAN OPERASIONAL</span>
-            <h2 class="fw-bold text-primary mb-1">Alur 3 Langkah Mudah Bagi Pegawai ASN</h2>
-            <p class="text-secondary mx-auto" style="max-width: 600px;">
-              Tiga tahapan sederhana yang wajib diselesaikan setiap peserta untuk mendapatkan E-Sertifikat resmi Senin Berseri.
-            </p>
-          </div>
-
-          <div class="row g-3">
-            
-            <!-- Langkah 1 -->
-            <div class="col-md-4">
-              <div class="card h-100 shadow-sm border-0 position-relative">
-                <div class="card-body p-4 text-center">
-                  <div class="step-number-badge bg-primary text-white mb-3 mx-auto shadow-sm">
-                    1
-                  </div>
-                  <div class="avatar avatar-xl rounded bg-primary-lt text-primary mb-3">
-                    <i class="ti ti-qrcode font-32"></i>
-                  </div>
-                  <h4 class="card-title fw-bold text-primary mb-2">Presensi di Aula Utama</h4>
-                  <p class="text-secondary small mb-3">
-                    Hadir di aula sebelum pukul 07.30 WITA. Buka Portal Pegawai di ponsel Anda, scan kode QR yang tampil di layar proyektor (atau ketik 6-digit token aktif) dan lengkapi verifikasi foto selfie biometrik.
-                  </p>
-                  <span class="badge bg-green-lt text-green">
-                    <i class="ti ti-check me-1"></i> Status: Hadir Terverifikasi
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Langkah 2 -->
-            <div class="col-md-4">
-              <div class="card h-100 shadow-sm border-0 position-relative">
-                <div class="card-body p-4 text-center">
-                  <div class="step-number-badge bg-warning text-dark mb-3 mx-auto shadow-sm">
-                    2
-                  </div>
-                  <div class="avatar avatar-xl rounded bg-warning-lt text-warning mb-3">
-                    <i class="ti ti-file-text font-32"></i>
-                  </div>
-                  <h4 class="card-title fw-bold text-primary mb-2">Unggah Berkas LPTI (PDF)</h4>
-                  <p class="text-secondary small mb-3">
-                    Susun notula atau ringkasan hasil materi Senin Berseri yang telah disahkan oleh atasan langsung. Unggah berkas format PDF (maks. 5 MB) melalui menu Laporan LPTI di Portal Pegawai.
-                  </p>
-                  <span class="badge bg-warning-lt text-warning">
-                    <i class="ti ti-clock me-1"></i> Status: Menunggu Kurasi Admin
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Langkah 3 -->
-            <div class="col-md-4">
-              <div class="card h-100 shadow-sm border-0 position-relative">
-                <div class="card-body p-4 text-center">
-                  <div class="step-number-badge bg-teal text-white mb-3 mx-auto shadow-sm">
-                    3
-                  </div>
-                  <div class="avatar avatar-xl rounded bg-teal-lt text-teal mb-3">
-                    <i class="ti ti-certificate font-32"></i>
-                  </div>
-                  <h4 class="card-title fw-bold text-primary mb-2">Unduh E-Sertifikat 4 JP</h4>
-                  <p class="text-secondary small mb-3">
-                    Setelah berkas LPTI disetujui oleh Bagian Kepegawaian, E-Sertifikat resmi berbobot 4 JP akan diterbitkan secara otomatis lengkap dengan QR keabsahan dan siap diunduh dalam format PDF asli.
-                  </p>
-                  <span class="badge bg-teal-lt text-teal">
-                    <i class="ti ti-award me-1"></i> Status: Sertifikat Terbit
-                  </span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Alert Panduan Cepat -->
-          <div class="alert alert-info border-info-subtle shadow-sm mt-4 p-3 d-flex align-items-center gap-3">
-            <span class="avatar avatar-md rounded bg-info text-white">
-              <i class="ti ti-info-circle font-24"></i>
-            </span>
-            <div class="flex-fill small text-secondary">
-              <strong class="text-dark">Penting:</strong> Seluruh 104 data ASN BPMP Sultra telah terintegrasi di dalam sistem. Anda hanya perlu masuk menggunakan <strong>NIP 18 digit</strong> dan kata sandi awal <strong>bpmp123</strong> untuk memulai presensi.
-            </div>
-            <a href="/login" class="btn btn-sm btn-primary text-nowrap">
-              <i class="ti ti-login me-1"></i> Masuk Sekarang
+          <!-- 3 Tombol Aksi Utama -->
+          <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+            <a href="/login" class="btn btn-primary px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+              <i class="ti ti-id-badge fs-2"></i>
+              <span>Buka Portal Mandiri Pegawai (ASN)</span>
+              <i class="ti ti-arrow-right"></i>
+            </a>
+            <a href="/proyektor" target="_blank" class="btn btn-outline-secondary px-3 py-2 d-inline-flex align-items-center gap-1.5">
+              <i class="ti ti-device-projector"></i>
+              <span>Layar Aula Proyektor ↗</span>
+            </a>
+            <a href="/sertifikat" class="btn btn-outline-teal px-3 py-2 d-inline-flex align-items-center gap-1.5">
+              <i class="ti ti-certificate"></i>
+              <span>Cek Keaslian Sertifikat ↗</span>
             </a>
           </div>
-        </section>
 
-        <!-- SECTION: FITUR UTAMA SISTEM -->
-        <section id="fitur" class="mb-5">
-          <div class="text-center mb-4">
-            <span class="badge bg-purple-lt text-purple px-3 py-1 font-monospace mb-2">KEAMANAN & TEKNOLOGI</span>
-            <h2 class="fw-bold text-primary mb-1">Fitur Unggulan Sistem Informasi</h2>
-            <p class="text-secondary mx-auto" style="max-width: 600px;">
-              Dibangun dengan teknologi modern standar instansi untuk memberikan pengalaman yang andal, aman, dan transparan.
-            </p>
+          <!-- Status Indikator Sistem -->
+          <div class="d-flex justify-content-center align-items-center flex-wrap gap-3 pt-3 border-top text-secondary small">
+            <span class="d-inline-flex align-items-center gap-1 text-success fw-semibold">
+              <i class="ti ti-circle-filled text-success" style="font-size: 8px;"></i> Supabase Cloud Online
+            </span>
+            <span class="text-muted">&bull;</span>
+            <span><i class="ti ti-users me-1 text-muted"></i> 104 Pegawai ASN Terdaftar</span>
+            <span class="text-muted">&bull;</span>
+            <span><i class="ti ti-award me-1 text-teal"></i> Standar Bobot 4 JP</span>
+          </div>
+        </div>
+
+        <!-- 3 KARTU LAYANAN TERPADU (RINGKAS & BERJARAK) -->
+        <div class="row g-3 mb-4">
+          
+          <!-- Card 1: Portal ASN -->
+          <div class="col-md-4">
+            <a href="/login" class="service-card">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="avatar avatar-md rounded bg-primary-lt text-primary">
+                  <i class="ti ti-user-check fs-2"></i>
+                </span>
+                <div>
+                  <h3 class="fw-bold fs-3 text-dark mb-0">Portal Pegawai (ASN)</h3>
+                  <span class="badge bg-primary-lt">Masuk dengan NIP</span>
+                </div>
+              </div>
+              <p class="text-secondary small flex-fill mb-3">
+                Akses mandiri untuk scan QR aula, unggah laporan LPTI (PDF), dan unduh e-sertifikat resmi setelah disetujui.
+              </p>
+              <div class="d-flex align-items-center text-primary fw-bold small">
+                <span>Buka Portal Mandiri</span>
+                <i class="ti ti-arrow-right ms-1"></i>
+              </div>
+            </a>
           </div>
 
-          <div class="row g-3">
-            
-            <div class="col-md-4">
-              <div class="card feature-card h-100 p-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="avatar avatar-sm rounded bg-primary-lt text-primary">
-                    <i class="ti ti-refresh"></i>
-                  </span>
-                  <h4 class="card-title mb-0 fs-3 fw-bold">Dynamic QR TOTP 30s</h4>
+          <!-- Card 2: Layar Proyektor Aula -->
+          <div class="col-md-4">
+            <a href="/proyektor" target="_blank" class="service-card">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="avatar avatar-md rounded bg-warning-lt text-warning">
+                  <i class="ti ti-device-projector fs-2"></i>
+                </span>
+                <div>
+                  <h3 class="fw-bold fs-3 text-dark mb-0">Layar Aula Proyektor</h3>
+                  <span class="badge bg-warning-lt text-dark">Layar Utama</span>
                 </div>
-                <p class="text-secondary small mb-0">
-                  Kode QR dan token numerik berganti otomatis setiap 30 detik pada layar proyektor aula untuk memastikan peserta hadir fisik di ruangan.
-                </p>
               </div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="card feature-card h-100 p-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="avatar avatar-sm rounded bg-teal-lt text-teal">
-                    <i class="ti ti-scan"></i>
-                  </span>
-                  <h4 class="card-title mb-0 fs-3 fw-bold">Biometrik Wajah ASN</h4>
-                </div>
-                <p class="text-secondary small mb-0">
-                  Verifikasi kehadiran didukung pemotretan selfie kamera untuk mencocokkan wajah pegawai dengan master foto biometrik terdaftar.
-                </p>
+              <p class="text-secondary small flex-fill mb-3">
+                Dynamic QR Code dan kode token aula yang berganti otomatis setiap 30 detik untuk tampilan layar panggung auditorium.
+              </p>
+              <div class="d-flex align-items-center text-warning fw-bold small">
+                <span>Tampilkan Layar Aula ↗</span>
               </div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="card feature-card h-100 p-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="avatar avatar-sm rounded bg-warning-lt text-warning">
-                    <i class="ti ti-file-check"></i>
-                  </span>
-                  <h4 class="card-title mb-0 fs-3 fw-bold">Kurasi LPTI Terpadu</h4>
-                </div>
-                <p class="text-secondary small mb-0">
-                  Admin Kepegawaian dapat meninjau isi laporan, menyetujui, atau memberikan catatan revisi terarah yang langsung diterima oleh pegawai.
-                </p>
-              </div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="card feature-card h-100 p-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="avatar avatar-sm rounded bg-azure-lt text-azure">
-                    <i class="ti ti-certificate"></i>
-                  </span>
-                  <h4 class="card-title mb-0 fs-3 fw-bold">E-Sertifikat Ber-QR</h4>
-                </div>
-                <p class="text-secondary small mb-0">
-                  Sertifikat PDF berbobot 4 JP terbit otomatis dengan penomoran institusional resmi dan QR code keabsahan yang dapat divalidasi publik.
-                </p>
-              </div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="card feature-card h-100 p-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="avatar avatar-sm rounded bg-danger-lt text-danger">
-                    <i class="ti ti-shield-lock"></i>
-                  </span>
-                  <h4 class="card-title mb-0 fs-3 fw-bold">Multi-Peran (RBAC)</h4>
-                </div>
-                <p class="text-secondary small mb-0">
-                  Hak akses terpisah dan terlindungi secara ketat antara Pegawai ASN, Bagian Kepegawaian, dan Super Administrator.
-                </p>
-              </div>
-            </div>
-
-            <div class="col-md-4">
-              <div class="card feature-card h-100 p-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="avatar avatar-sm rounded bg-green-lt text-green">
-                    <i class="ti ti-device-mobile"></i>
-                  </span>
-                  <h4 class="card-title mb-0 fs-3 fw-bold">PWA Mobile-First</h4>
-                </div>
-                <p class="text-secondary small mb-0">
-                  Desain responsif yang sangat nyaman digunakan di layar smartphone dan dapat dipasang langsung sebagai aplikasi di beranda ponsel.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <!-- SECTION: FAQ / PERTANYAAN UMUM -->
-        <section id="faq" class="mb-5">
-          <div class="text-center mb-4">
-            <span class="badge bg-secondary-lt text-secondary px-3 py-1 font-monospace mb-2">PUSAT BANTUAN</span>
-            <h2 class="fw-bold text-primary mb-1">Pertanyaan yang Sering Diajukan (FAQ)</h2>
-            <p class="text-secondary mx-auto" style="max-width: 600px;">
-              Jawaban atas kendala umum yang sering ditanyakan oleh pegawai terkait operasional aplikasi.
-            </p>
+            </a>
           </div>
 
-          <div class="row justify-content-center">
-            <div class="col-lg-9">
-              <div class="accordion" id="accordionFaq">
-                
-                <div class="accordion-item mb-2 border rounded shadow-xs">
-                  <h2 class="accordion-header" id="headingOne">
-                    <button class="accordion-button fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true">
-                      <i class="ti ti-help me-2"></i> Bagaimana jika kamera ponsel saya tidak dapat memindai QR di layar proyektor?
-                    </button>
-                  </h2>
-                  <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body small text-secondary">
-                      Tidak perlu khawatir! Di bawah kode QR pada layar proyektor aula selalu tertera <strong>Token Numerik 6-Digit</strong>. Anda cukup mengetikkan 6 angka tersebut ke kolom isian token di Portal Pegawai dan menekan tombol "Kirim Presensi".
-                    </div>
-                  </div>
+          <!-- Card 3: Cek Keaslian Sertifikat -->
+          <div class="col-md-4">
+            <a href="/sertifikat" class="service-card">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="avatar avatar-md rounded bg-teal-lt text-teal">
+                  <i class="ti ti-certificate fs-2"></i>
+                </span>
+                <div>
+                  <h3 class="fw-bold fs-3 text-dark mb-0">Verifikasi Sertifikat</h3>
+                  <span class="badge bg-teal-lt text-teal">ECDSA Valid</span>
                 </div>
+              </div>
+              <p class="text-secondary small flex-fill mb-3">
+                Validasi keabsahan dokumen piagam 4 JP menggunakan 12-digit kode kredensial unik atau scan QR Code resmi instansi.
+              </p>
+              <div class="d-flex align-items-center text-teal fw-bold small">
+                <span>Cek Kredensial ↗</span>
+              </div>
+            </a>
+          </div>
 
-                <div class="accordion-item mb-2 border rounded shadow-xs">
-                  <h2 class="accordion-header" id="headingTwo">
-                    <button class="accordion-button collapsed fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
-                      <i class="ti ti-help me-2"></i> Mengapa tombol unggah LPTI masih terkunci dan tidak bisa diklik?
-                    </button>
-                  </h2>
-                  <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body small text-secondary">
-                      Menu unggah LPTI hanya akan terbuka secara otomatis setelah kehadiran Anda tercatat secara resmi di aula (Langkah 1). Pastikan Anda telah menyelesaikan presensi aula terlebih dahulu.
-                    </div>
-                  </div>
-                </div>
+        </div>
 
-                <div class="accordion-item mb-2 border rounded shadow-xs">
-                  <h2 class="accordion-header" id="headingThree">
-                    <button class="accordion-button collapsed fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
-                      <i class="ti ti-help me-2"></i> Apa yang harus dilakukan jika berkas LPTI saya berstatus "Perlu Revisi"?
-                    </button>
-                  </h2>
-                  <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body small text-secondary">
-                      Buka Portal Pegawai dan baca catatan perbaikan yang diberikan oleh Admin Kepegawaian di kotak peringatan merah. Perbaiki berkas PDF Anda (misal melengkapi tanda tangan atau substansi notula), lalu unggah kembali berkas yang telah disempurnakan.
-                    </div>
-                  </div>
-                </div>
-
-                <div class="accordion-item mb-2 border rounded shadow-xs">
-                  <h2 class="accordion-header" id="headingFour">
-                    <button class="accordion-button collapsed fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
-                      <i class="ti ti-help me-2"></i> Berapa bobot Jam Pelajaran (JP) yang diperoleh dari setiap sertifikat?
-                    </button>
-                  </h2>
-                  <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body small text-secondary">
-                      Setiap satu sesi kegiatan pelatihan peningkatan kompetensi "Senin Berseri" memiliki bobot resmi <strong>4 Jam Pelajaran (4 JP)</strong> yang diakui dalam portofolio pengembangan kompetensi ASN.
-                    </div>
-                  </div>
-                </div>
-
-                <div class="accordion-item border rounded shadow-xs">
-                  <h2 class="accordion-header" id="headingFive">
-                    <button class="accordion-button collapsed fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
-                      <i class="ti ti-help me-2"></i> Saya lupa kata sandi login, bagaimana cara meresetnya?
-                    </button>
-                  </h2>
-                  <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body small text-secondary">
-                      Kata sandi default awal adalah <strong>bpmp123</strong>. Apabila Anda pernah menggantinya dan lupa, silakan hubungi Subbagian Tata Usaha & Bagian Kepegawaian BPMP Sultra untuk meminta bantuan reset kata sandi akun Anda.
-                    </div>
-                  </div>
-                </div>
-
+        <!-- FORM PENCARIAN CEPAT SERTIFIKAT (MINIMALIS) -->
+        <div class="card p-4 border shadow-xs mb-4 bg-white">
+          <div class="row align-items-center g-3">
+            <div class="col-lg-5">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="ti ti-shield-check text-teal fs-2"></i>
+                <h4 class="fw-bold text-dark mb-0">Verifikasi Keaslian Dokumen</h4>
+              </div>
+              <div class="text-secondary small">
+                Masukkan ID Kredensial 12-digit atau NIP pegawai untuk memeriksa keaslian e-sertifikat yang telah diterbitkan.
               </div>
             </div>
+            <div class="col-lg-7">
+              <form id="formCekIndex" onsubmit="handleCekSertifikatIndex(event)">
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="ti ti-search text-muted"></i></span>
+                  <input type="text" id="inputQueryIndex" class="form-control font-monospace" placeholder="Ketik ID Kredensial (misal: 6RPNYVJL4Z2M) atau NIP" required>
+                  <button type="submit" class="btn btn-teal text-white fw-bold px-3">
+                    <i class="ti ti-check me-1"></i> Periksa
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </section>
+        </div>
 
-      </div> <!-- End container-xl -->
+        <!-- PINTASAN ADMIN (FOOTER RINGKAS) -->
+        <div class="text-center py-2">
+          <a href="/admin/login" class="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1">
+            <i class="ti ti-lock"></i>
+            <span>Konsol Pengelola Kepegawaian &bull; Masuk Admin &rarr;</span>
+          </a>
+        </div>
 
-      <!-- Footer Resmi Instansi -->
-      <div id="bpmp-footer"></div>
-
-    </div> <!-- End page-wrapper -->
-  </div> <!-- End page -->
-
-  <!-- Floating Helpdesk / WhatsApp Widget (Sesuai Portal bpmpsultra.kemendikdasmen.go.id) -->
-  <a href="https://wa.me/628114000104?text=Halo%20Admin%20Kepegawaian%20BPMP%20Sultra%2C%20saya%20memerlukan%20informasi%20bantuan%20terkait%20Aplikasi%20Senin%20Berseri." target="_blank" class="bpmp-floating-help" title="Layanan Bantuan Kepegawaian BPMP Sultra">
-    <div class="bpmp-floating-bubble">
-      <span class="dot"></span> Perlu Bantuan? <strong>Hubungi kami sekarang</strong>
+      </div>
     </div>
-    <div class="bpmp-floating-btn shadow">
-      <i class="ti ti-brand-whatsapp"></i>
-    </div>
-  </a>
 
-  <!-- Tabler Core JS (Local Dist) -->
+    <!-- Standard Official Footer -->
+    <div id="bpmp-footer"></div>
+  </div>
+
+  <!-- Tabler Core JS & Layout -->
   <script src="/vendor/tabler/js/tabler.min.js"></script>
-  <!-- Components & Layout Helpers -->
   <script src="/js/components.js"></script>
-  <script src="/js/layout.js?v=2.3"></script>
-  <script src="/pwa-install.js"></script>
+  <script src="/js/layout.js?v=2.4"></script>
 
   <script>
-    function handleCekSertifikatIndex(event) {
-      event.preventDefault();
-      const query = (document.getElementById('inputQueryIndex')?.value || '').trim();
-      if (!query) return;
-      window.location.href = `/sertifikat/${encodeURIComponent(query)}`;
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
-      // Inisialisasi shared layout BPMP untuk halaman publik
-      if (window.BPMPLayout) {
-        BPMPLayout.init({
-          role: 'pegawai',
-          activeMenu: 'home'
-        });
-      }
+      BPMPLayout.init({ role: 'pegawai', activeMenu: 'home' });
     });
+
+    function handleCekSertifikatIndex(e) {
+      e.preventDefault();
+      const q = document.getElementById('inputQueryIndex').value.trim();
+      if (q) {
+        window.location.href = '/sertifikat/' + encodeURIComponent(q);
+      }
+    }
   </script>
 </body>
 </html>
