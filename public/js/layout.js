@@ -135,7 +135,7 @@ const BPMPLayout = {
           
           <div class="navbar-brand me-3 flex-shrink-0">
             <a href="/" class="d-flex align-items-center text-decoration-none text-dark">
-              <img src="/icons/kemendikdasmen-logo.svg" alt="Logo Kemendikdasmen" width="38" height="38" class="me-2 rounded-circle flex-shrink-0 shadow-xs">
+              <img src="/public/icons/tutwurihandayani.png" alt="Logo Kemendikdasmen" width="38" height="38" class="me-2 rounded-circle flex-shrink-0 shadow-xs">
               <div class="d-flex flex-column text-start">
                 <span class="fw-bold" style="font-size: 14px; letter-spacing: -0.2px; line-height: 1.15; color: #0056b3;">Kemendikdasmen</span>
                 <span class="text-secondary fw-semibold" style="font-size: 10px; letter-spacing: 0.1px; line-height: 1.2;">
