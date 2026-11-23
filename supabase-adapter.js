@@ -397,11 +397,6 @@ async function getEmployeeByIdOrNip(idOrNip) {
 
   return null;
 }
-      status: isAttended ? 'present' : 'absent',
-      time: isAttended ? (found.attendedAt || 'Pukul 08:30:00 WITA') : null
-    }
-  };
-}
 
 async function ensureEmployeeJp(id, eventJp = 32) {
   const clean = String(id).trim();
