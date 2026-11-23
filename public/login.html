@@ -338,9 +338,18 @@
                       <p class="text-secondary small mb-0">Arahkan kamera ke layar proyektor aula atau ketik token aktif.</p>
                     </div>
 
-                    <button type="button" class="btn btn-primary w-100 mb-2 py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2" onclick="openCameraScanner()">
-                      <i class="ti ti-camera fs-2"></i> Pindai Kode QR Aula
-                    </button>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                      <!-- Pilihan 1: Kamera Pemindai Live (Buka Modal) -->
+                      <button type="button" class="btn btn-primary py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-xs" onclick="openCameraScanner()">
+                        <i class="ti ti-camera fs-2"></i> <span>Pindai Kode QR Aula (Live)</span>
+                      </button>
+
+                      <!-- Pilihan 2: Foto Langsung dari Kamera HP (Native OS Camera) -->
+                      <label for="directQrFileInput" class="btn btn-outline-primary py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-xs cursor-pointer mb-0">
+                        <i class="ti ti-photo-camera fs-2"></i> <span>Foto QR Proyektor via Kamera HP</span>
+                      </label>
+                      <input type="file" id="directQrFileInput" accept="image/*" capture="environment" class="d-none" onchange="handleQrFileSelected(this)">
+                    </div>
 
                     <div class="hr-text my-2">atau ketik token proyektor</div>
 
@@ -644,6 +653,13 @@
   <script src="/lib/html5-qrcode/html5-qrcode.min.js"></script>
   <!-- Tabler Core JS (Local Dist) -->
   <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script>
+    // Pastikan window.bootstrap selalu terhubung ke modul Tabler / Bootstrap 5
+    window.bootstrap = window.bootstrap || window.tabler?.bootstrap || window.tabler || {};
+    if (!window.bootstrap.Modal && window.tabler?.Modal) {
+      window.bootstrap.Modal = window.tabler.Modal;
+    }
+  </script>
   <!-- Components & Layout Helpers -->
   <script src="/js/components.js"></script>
   <script src="/js/layout.js"></script>
@@ -1051,13 +1067,56 @@
       openFaceModal(token, eventId);
     }
 
+    // Helper Modal Aman (Kompatibel Tabler & Bootstrap 5)
+    function getBsModal(element) {
+      if (typeof element === 'string') {
+        element = document.getElementById(element);
+      }
+      if (!element) return null;
+      const bs = window.bootstrap || window.tabler?.bootstrap || window.tabler;
+      if (bs && bs.Modal) {
+        if (typeof bs.Modal.getOrCreateInstance === 'function') {
+          return bs.Modal.getOrCreateInstance(element);
+        }
+        if (typeof bs.Modal.getInstance === 'function') {
+          const inst = bs.Modal.getInstance(element);
+          if (inst) return inst;
+        }
+        try { return new bs.Modal(element); } catch(e){}
+      }
+      return {
+        show: () => {
+          element.classList.add('show');
+          element.style.display = 'block';
+          element.removeAttribute('aria-hidden');
+          element.setAttribute('aria-modal', 'true');
+          document.body.classList.add('modal-open');
+          let backdrop = document.getElementById('bs-fallback-backdrop');
+          if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.id = 'bs-fallback-backdrop';
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+          }
+        },
+        hide: () => {
+          element.classList.remove('show');
+          element.style.display = 'none';
+          element.setAttribute('aria-hidden', 'true');
+          element.removeAttribute('aria-modal');
+          document.body.classList.remove('modal-open');
+          const backdrop = document.getElementById('bs-fallback-backdrop');
+          if (backdrop) backdrop.remove();
+        }
+      };
+    }
+
     // 10. Kamera Pemindai QR Aula (Multi-Device Mobile Support)
     let isScannerStarting = false;
 
     function openCameraScanner() {
-      const modalEl = document.getElementById('cameraScannerModal');
-      const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
-      modalInstance.show();
+      const modal = getBsModal('cameraScannerModal');
+      if (modal) modal.show();
 
       // Panggil kamera dengan delay aman agar modal sudah terpasang di DOM
       setTimeout(startCameraScanner, 250);
@@ -1071,11 +1130,15 @@
       if (statusEl) statusEl.textContent = 'Menghubungkan ke sensor kamera HP...';
 
       if (typeof Html5Qrcode === 'undefined') {
-        if (errEl) {
-          errEl.classList.remove('d-none');
-          document.getElementById('scannerErrorText').textContent = 'Pustaka pemindai belum siap. Silakan klik tombol "Buka Kamera HP" di bawah atau masukkan token manual.';
+        if (statusEl) statusEl.textContent = 'Memuat modul pemindai...';
+        await new Promise(r => setTimeout(r, 500));
+        if (typeof Html5Qrcode === 'undefined') {
+          if (errEl) {
+            errEl.classList.remove('d-none');
+            document.getElementById('scannerErrorText').textContent = 'Pustaka pemindai belum siap. Silakan klik tombol "Buka Kamera HP" di bawah atau masukkan token manual.';
+          }
+          return;
         }
-        return;
       }
 
       // Pastikan scanner sebelumnya dibersihkan tuntas
@@ -1116,6 +1179,18 @@
       } catch (err) {
         console.warn('Initial facingMode start notice, retrying with fallback:', err);
         try {
+          const devices = await Html5Qrcode.getCameras().catch(() => []);
+          if (devices && devices.length > 0) {
+            const targetCam = devices.find(d => /back|rear|environment|belakang/i.test(d.label)) || devices[devices.length - 1];
+            await html5QrScanner.start(
+              targetCam.id,
+              config,
+              onScanSuccess,
+              () => {}
+            );
+            if (statusEl) statusEl.textContent = 'Arahkan kamera ke QR Code di layar proyektor aula';
+            return;
+          }
           // Fallback tanpa constraint facingMode
           await html5QrScanner.start(
             { facingMode: 'user' },
@@ -1178,6 +1253,7 @@
           document.getElementById('scannerErrorText').textContent = 'QR Code tidak terdeteksi dari foto. Pastikan gambar QR proyektor jelas dan tidak miring.';
         }
         if (statusEl) statusEl.textContent = 'Gagal memindai gambar QR';
+        showToast('QR Code tidak terdeteksi dari foto. Coba foto lebih dekat.', 'error');
       } finally {
         input.value = '';
       }
@@ -1185,7 +1261,8 @@
 
     function handleQrCodeScanned(text) {
       stopCameraScanner();
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('cameraScannerModal')).hide();
+      const modal = getBsModal('cameraScannerModal');
+      if (modal) modal.hide();
 
       let token = text;
       let eventId = null;
@@ -1211,7 +1288,8 @@
     function openFaceModal(token, eventId) {
       activePresenceToken = token;
       activePresenceEventId = eventId || currentEvent?.id;
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).show();
+      const modal = getBsModal('faceBiometricModal');
+      if (modal) modal.show();
       setTimeout(startFaceCamera, 300);
     }
 
@@ -1343,7 +1421,8 @@
 
           showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
           closeFaceCamera();
-          bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
+          const faceModal = getBsModal('faceBiometricModal');
+          if (faceModal) faceModal.hide();
           await syncCurrentProfile();
         } else {
           showToast(data.message || 'Presensi gagal. Token kedaluwarsa atau wajah tidak cocok.', 'error');
@@ -1377,7 +1456,8 @@
           currentAuthUser.attended = true;
           showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
           closeFaceCamera();
-          bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
+          const faceModal = getBsModal('faceBiometricModal');
+          if (faceModal) faceModal.hide();
           await syncCurrentProfile();
         } else {
           showToast(data.message || 'Presensi gagal verifikasi token.', 'error');
@@ -1472,7 +1552,8 @@
         window.open('/api/employees/' + (currentAuthUser.nip || currentAuthUser.id) + '/certificate.pdf?download=true', '_blank');
       };
 
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('certificateModal')).show();
+      const certModal = getBsModal('certificateModal');
+      if (certModal) certModal.show();
     }
 
     // 14. Logout

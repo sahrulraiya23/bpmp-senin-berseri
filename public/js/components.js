@@ -3,6 +3,13 @@
  * Satu sumber komponen reusable untuk semua peran: Pegawai, Admin, Superadmin.
  */
 
+if (typeof window !== 'undefined') {
+  window.bootstrap = window.bootstrap || window.tabler?.bootstrap || window.tabler || {};
+  if (!window.bootstrap.Modal && window.tabler?.Modal) {
+    window.bootstrap.Modal = window.tabler.Modal;
+  }
+}
+
 const BPMPComponents = {
   /**
    * Status Badge Mapping
