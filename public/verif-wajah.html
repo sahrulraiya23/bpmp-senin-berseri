@@ -281,6 +281,16 @@
         if (data.success && data.employee) {
           currentAuthUser = data.employee;
           
+          // Cek persistensi lokal browser/HP jika serverless Lambda merestart memori
+          const localFace = localStorage.getItem(`bpmp_face_registered_${currentAuthUser.nip}`) === 'true';
+          const localPhoto = localStorage.getItem(`bpmp_face_photo_${currentAuthUser.nip}`);
+          if (localFace) {
+            currentAuthUser.faceRegistered = true;
+            if (localPhoto && !currentAuthUser.facePhotoUrl) {
+              currentAuthUser.facePhotoUrl = localPhoto;
+            }
+          }
+
           BPMPLayout.init({
             role: 'pegawai',
             activeMenu: 'verif-wajah',
@@ -432,6 +442,11 @@
         const data = await res.json();
         if (data.success) {
           stopCamera();
+          // Simpan persistensi lokal mandiri di HP / browser
+          localStorage.setItem(`bpmp_face_registered_${currentAuthUser.nip}`, 'true');
+          if (capturedPhotoBase64) {
+            localStorage.setItem(`bpmp_face_photo_${currentAuthUser.nip}`, capturedPhotoBase64);
+          }
           BPMPComponents.showToast('Wajah master Anda berhasil didaftarkan secara resmi!', 'success');
           setTimeout(() => {
             goToPortal();

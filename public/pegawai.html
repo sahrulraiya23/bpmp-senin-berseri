@@ -755,9 +755,12 @@
             Pastikan wajah Anda berada di dalam lingkaran panduan dan pencahayaan aula cukup.
           </p>
         </div>
-        <div class="modal-footer py-2">
+        <div class="modal-footer py-2 d-flex flex-column gap-1">
           <button type="button" id="btnCaptureFace" class="btn btn-primary w-100" onclick="captureAndProcessFace()">
             <i class="ti ti-camera me-1"></i> <span id="btnCaptureText">Ambil Foto & Verifikasi</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none py-1" onclick="confirmDirectPresence()">
+            <i class="ti ti-arrow-right me-0.5"></i> Lewati Kamera &amp; Konfirmasi Hadir
           </button>
         </div>
       </div>
@@ -1043,7 +1046,13 @@
       // Status Biometrik Wajah
       const faceBadge = document.getElementById('verifiedFaceBadge');
       const faceBtn = document.getElementById('btnGoToFaceEnroll');
-      if (emp.faceRegistered || emp.facePhotoUrl) {
+      const isFaceReg = Boolean(
+        emp.faceRegistered || 
+        emp.facePhotoUrl || 
+        localStorage.getItem('bpmp_face_registered_' + emp.nip) === 'true'
+      );
+      if (isFaceReg) {
+        emp.faceRegistered = true;
         faceBadge.className = 'badge bg-green text-white ms-1';
         faceBadge.innerHTML = '<i class="ti ti-check me-0.5"></i>Wajah Terdaftar (Siap Presensi)';
         if (faceBtn) faceBtn.classList.add('d-none');
@@ -1094,15 +1103,17 @@
           if (data.event) currentEvent = data.event;
           localStorage.setItem('bpmp_auth_nip', currentAuthUser.nip);
 
-          // Cek Biometrik Wajah
-          const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
-          if (!hasFace) {
-            showToast('Anda belum melakukan verifikasi wajah. Mengalihkan ke perekaman master wajah...', 'info');
-            const tokenToPass = pendingScannedToken || '';
-            setTimeout(() => {
-              window.location.href = '/verif-wajah' + (tokenToPass ? '?token=' + encodeURIComponent(tokenToPass) : '');
-            }, 600);
-            return;
+          // Cek Biometrik Wajah & Persistensi Lokal
+          const isFaceRegLocal = Boolean(
+            currentAuthUser.faceRegistered || 
+            currentAuthUser.facePhotoUrl || 
+            localStorage.getItem('bpmp_face_registered_' + currentAuthUser.nip) === 'true'
+          );
+          if (isFaceRegLocal) {
+            currentAuthUser.faceRegistered = true;
+            if (!currentAuthUser.facePhotoUrl && localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip)) {
+              currentAuthUser.facePhotoUrl = localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip);
+            }
           }
 
           showToast('Otentikasi berhasil! Selamat datang, ' + currentAuthUser.name, 'success');
@@ -1196,7 +1207,16 @@
       // Status Biometrik Wajah
       const faceCell = document.getElementById('empFaceStatusCell');
       const facePrompt = document.getElementById('faceEnrollmentPrompt');
-      if (emp.faceRegistered || emp.facePhotoUrl) {
+      const isFaceOk = Boolean(
+        emp.faceRegistered || 
+        emp.facePhotoUrl || 
+        localStorage.getItem('bpmp_face_registered_' + emp.nip) === 'true'
+      );
+      if (isFaceOk) {
+        emp.faceRegistered = true;
+        if (!emp.facePhotoUrl && localStorage.getItem('bpmp_face_photo_' + emp.nip)) {
+          emp.facePhotoUrl = localStorage.getItem('bpmp_face_photo_' + emp.nip);
+        }
         if (faceCell) {
           faceCell.innerHTML = '<span class="badge bg-green text-white px-2 py-1"><i class="ti ti-check me-1"></i> Biometrik Wajah Cocok</span>';
         }
@@ -1462,22 +1482,29 @@
       const btn = document.getElementById('btnCaptureFace');
       const btnText = document.getElementById('btnCaptureText');
 
-      if (!video || !canvas) return;
-
-      canvas.width = 400;
-      canvas.height = 400;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, 400, 400);
-      const faceSnapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      let faceSnapshotBase64 = null;
+      if (video && canvas) {
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext('2d');
+        try {
+          ctx.drawImage(video, 0, 0, 400, 400);
+          faceSnapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        } catch (e) {
+          console.warn('Canvas snapshot notice:', e);
+        }
+      }
 
       btn.disabled = true;
       btnText.textContent = 'Memverifikasi Presensi...';
 
       try {
         const payload = {
+          employeeId: currentAuthUser.nip || currentAuthUser.id,
           nip: currentAuthUser.nip,
           token: activePresenceToken,
-          eventId: activePresenceEventId,
+          eventId: activePresenceEventId || currentEvent?.id,
+          attendancePhoto: faceSnapshotBase64,
           faceSnapshot: faceSnapshotBase64
         };
 
@@ -1489,7 +1516,15 @@
         const data = await res.json();
 
         if (data.success) {
-          showToast('Presensi aula berhasil dicatat!', 'success');
+          localStorage.setItem(`bpmp_face_registered_${currentAuthUser.nip}`, 'true');
+          if (faceSnapshotBase64) {
+            localStorage.setItem(`bpmp_face_photo_${currentAuthUser.nip}`, faceSnapshotBase64);
+            currentAuthUser.facePhotoUrl = faceSnapshotBase64;
+          }
+          currentAuthUser.faceRegistered = true;
+          currentAuthUser.attended = true;
+
+          showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
           closeFaceCamera();
           bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
           await syncCurrentProfile();
@@ -1501,6 +1536,39 @@
       } finally {
         btn.disabled = false;
         btnText.textContent = 'Ambil Foto & Verifikasi';
+      }
+    }
+
+    async function confirmDirectPresence() {
+      if (!currentAuthUser || !activePresenceToken) return;
+      const btn = document.getElementById('btnCaptureFace');
+      btn.disabled = true;
+      try {
+        const payload = {
+          employeeId: currentAuthUser.nip || currentAuthUser.id,
+          nip: currentAuthUser.nip,
+          token: activePresenceToken,
+          eventId: activePresenceEventId || currentEvent?.id
+        };
+        const res = await fetch('/api/attendance/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentAuthUser.attended = true;
+          showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
+          closeFaceCamera();
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('faceBiometricModal')).hide();
+          await syncCurrentProfile();
+        } else {
+          showToast(data.message || 'Presensi gagal verifikasi token.', 'error');
+        }
+      } catch (err) {
+        showToast('Kesalahan koneksi: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
       }
     }
 
@@ -1622,6 +1690,12 @@
           const data = await res.json();
           if (data.success && data.employee) {
             currentAuthUser = data.employee;
+            if (localStorage.getItem('bpmp_face_registered_' + currentAuthUser.nip) === 'true') {
+              currentAuthUser.faceRegistered = true;
+            }
+            if (!currentAuthUser.facePhotoUrl && localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip)) {
+              currentAuthUser.facePhotoUrl = localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip);
+            }
             if (data.event) currentEvent = data.event;
             activateDashboardView();
             return;

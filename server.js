@@ -371,109 +371,125 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ========================================================
-// PRESENSI SCAN TOKEN (AULA PROYEKTOR)
+// PRESENSI SCAN TOKEN & VERIFIKASI WAJAH AULA
 // ========================================================
-app.post('/api/presensi/verify-token', async (req, res) => {
-  const { employeeId, token, eventId, attendancePhoto } = req.body;
-  if (!employeeId || !token) {
-    return res.status(400).json({ success: false, message: 'Identitas Pegawai dan Kode Token QR wajib diisi!' });
-  }
+app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, res) => {
+  try {
+    const employeeId = req.body.employeeId || req.body.nip || req.body.id;
+    const token = req.body.token || req.body.presenceToken || req.body.qrToken;
+    const eventId = req.body.eventId;
+    const attendancePhoto = req.body.attendancePhoto || req.body.faceSnapshot;
 
-  let activeEvent = null;
-  const requestedId = eventId || req.query.eventId || req.query.id;
-  if (requestedId) {
-    activeEvent = await db.getEventById(requestedId);
-  }
-  if (!activeEvent || !activeEvent.title) {
-    activeEvent = await db.getActiveEvent();
-  }
-
-  if (!activeEvent || !activeEvent.title) {
-    return res.status(400).json({
-      success: false,
-      message: 'Presensi ditolak: Belum ada event kegiatan pelatihan yang aktif di aula!'
-    });
-  }
-
-  const qrState = getCurrentQrState(activeEvent.id);
-  const cleanToken = token.trim().toUpperCase();
-  const isValid = (cleanToken === qrState.token || cleanToken === qrState.previousToken);
-
-  if (!isValid) {
-    return res.status(400).json({
-      success: false,
-      message: `Token QR (${cleanToken}) tidak cocok atau telah kedaluwarsa (>30 detik) untuk kegiatan "${activeEvent.title}". Silakan scan langsung dari layar proyektor aula!`
-    });
-  }
-
-  const employee = await db.getEmployeeByIdOrNip(employeeId);
-  if (!employee) {
-    return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
-  }
-
-  // Validasi Wajib Rekam Wajah: Pegawai harus memiliki foto master biometrik terdaftar sebelum presensi
-  const hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl);
-  if (!hasFace) {
-    return res.status(403).json({
-      success: false,
-      requireFaceRegistration: true,
-      message: 'Presensi ditolak: Anda wajib melakukan perekaman master wajah terlebih dahulu di halaman verifikasi wajah sebelum dapat melakukan presensi.'
-    });
-  }
-
-  // Simpan foto bukti presensi (jika ada snapshot selfie)
-  let attendancePhotoUrl = null;
-  if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
-    try {
-      const base64Data = attendancePhoto.replace(/^data:image\/\w+;base64,/, '');
-      const buffer = Buffer.from(base64Data, 'base64');
-      const filename = `ATTEND-${employee.nip || employee.id}-${Date.now()}.jpg`;
-      const localFilePath = path.join(FACES_DIR, filename);
-      fs.writeFileSync(localFilePath, buffer);
-      attendancePhotoUrl = `/uploads/faces/${filename}`;
-
-      // Upload ke Supabase Storage bucket 'faces' jika tersedia
-      try {
-        const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
-        if (cloudUrl) attendancePhotoUrl = cloudUrl;
-      } catch (storageErr) {}
-    } catch (photoErr) {
-      console.warn('Gagal menyimpan attendancePhoto:', photoErr.message);
+    if (!employeeId || !token) {
+      return res.status(400).json({ success: false, message: 'Identitas Pegawai dan Kode Token QR wajib diisi!' });
     }
-  }
 
-  // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini
-  const isAlreadyAttendedThisEvent = Boolean(employee.attended && employee.eventId === activeEvent.id);
-  if (isAlreadyAttendedThisEvent) {
-    let finalEmp = employee;
-    if (!employee.accumulatedJp || employee.accumulatedJp === 0) {
-      if (typeof db.ensureEmployeeJp === 'function') {
-        finalEmp = await db.ensureEmployeeJp(employee.id, activeEvent.jp || 32);
+    let activeEvent = null;
+    const requestedId = eventId || req.query.eventId || req.query.id;
+    if (requestedId) {
+      activeEvent = await db.getEventById(requestedId);
+    }
+    if (!activeEvent || !activeEvent.title) {
+      activeEvent = await db.getActiveEvent();
+    }
+
+    if (!activeEvent || !activeEvent.title) {
+      return res.status(400).json({
+        success: false,
+        message: 'Presensi ditolak: Belum ada event kegiatan pelatihan yang aktif di aula!'
+      });
+    }
+
+    const qrState = getCurrentQrState(activeEvent.id);
+    const cleanToken = String(token).trim().toUpperCase();
+    const isValid = (cleanToken === qrState.token || cleanToken === qrState.previousToken);
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: `Token QR (${cleanToken}) tidak cocok atau telah kedaluwarsa (>30 detik) untuk kegiatan "${activeEvent.title}". Silakan scan langsung dari layar proyektor aula!`
+      });
+    }
+
+    const employee = await db.getEmployeeByIdOrNip(employeeId);
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
+    }
+
+    // Validasi / Registrasi Otomatis Biometrik Wajah
+    let hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl);
+    if (!hasFace) {
+      if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
+        // Otomatis daftarkan foto selfie ini sebagai master wajah agar pegawai langsung lolos presensi!
+        try {
+          await db.registerEmployeeFace(employee.id, {
+            facePhotoUrl: attendancePhoto
+          });
+          hasFace = true;
+          employee.faceRegistered = true;
+        } catch (errFace) {
+          console.warn('Auto face register note:', errFace.message);
+        }
       }
     }
+
+    // Simpan foto bukti presensi (jika ada snapshot selfie)
+    let attendancePhotoUrl = null;
+    if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
+      try {
+        const base64Data = attendancePhoto.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const filename = `ATTEND-${employee.nip || employee.id}-${Date.now()}.jpg`;
+        const localFilePath = path.join(FACES_DIR, filename);
+        fs.writeFileSync(localFilePath, buffer);
+        attendancePhotoUrl = `/uploads/faces/${filename}`;
+
+        // Upload ke Supabase Storage bucket 'faces' jika tersedia
+        try {
+          const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
+          if (cloudUrl) attendancePhotoUrl = cloudUrl;
+        } catch (storageErr) {}
+      } catch (photoErr) {
+        console.warn('Gagal menyimpan attendancePhoto:', photoErr.message);
+      }
+    }
+
+    // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini
+    const isAlreadyAttendedThisEvent = Boolean(employee.attended && employee.eventId === activeEvent.id);
+    if (isAlreadyAttendedThisEvent) {
+      let finalEmp = employee;
+      if (!employee.accumulatedJp || employee.accumulatedJp === 0) {
+        if (typeof db.ensureEmployeeJp === 'function') {
+          finalEmp = await db.ensureEmployeeJp(employee.id, activeEvent.jp || 32);
+        }
+      }
+      return res.json({
+        success: true,
+        alreadyAttended: true,
+        message: `Pegawai ${employee.name} sudah tercatat HADIR sebelumnya pada kegiatan "${activeEvent.title}".`,
+        employee: finalEmp || employee,
+        event: activeEvent
+      });
+    }
+
+    const updatedEmployee = await db.markEmployeeAttended(
+      employee.id,
+      activeEvent.id,
+      activeEvent.title,
+      activeEvent.jp || 32,
+      attendancePhotoUrl
+    );
+
     return res.json({
       success: true,
-      alreadyAttended: true,
-      message: `Pegawai ${employee.name} sudah tercatat HADIR sebelumnya pada kegiatan "${activeEvent.title}".`,
-      employee: finalEmp || employee,
+      message: `Presensi aula berhasil dicatat! Selamat mengikuti kegiatan "${activeEvent.title}".`,
+      employee: updatedEmployee || employee,
       event: activeEvent
     });
+  } catch (errPresensi) {
+    console.error('Error in presensi verification:', errPresensi);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem: ' + errPresensi.message });
   }
-
-  const updatedEmployee = await db.markEmployeeAttended(
-    employee.id,
-    activeEvent.id,
-    activeEvent.title,
-    activeEvent.jp || 32,
-    attendancePhotoUrl
-  );
-
-  return res.json({
-    success: true,
-    message: `Presensi & Verifikasi Wajah Berhasil! Status kehadiran ${employee.name} kini resmi HADIR pada kegiatan "${activeEvent.title}".`,
-    employee: updatedEmployee,
-    event: activeEvent
-  });
 });
 
 // ========================================================

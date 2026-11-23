@@ -610,9 +610,14 @@ async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = 
     }
   }
 
-  // Memory fallback
+  // Memory fallback & Cache Update
   const mem = getMemoryStore();
-  const rawEmp = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
+  const lowerClean = clean.toLowerCase();
+  const rawEmp = (mem.employees || []).find(e => 
+    e.id === clean || 
+    String(e.nip).trim() === clean || 
+    (e.username && e.username.toLowerCase() === lowerClean)
+  );
   if (rawEmp) {
     rawEmp.faceRegistered = true;
     rawEmp.facePhotoUrl = facePhotoUrl;
@@ -621,6 +626,18 @@ async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = 
     rawEmp.face_descriptor = descStr;
     rawEmp.faceRegisteredAt = now;
   }
+
+  // Update di BUILTIN_TEST_USERS agar persist lintas request
+  const testUser = BUILTIN_TEST_USERS.find(tu => 
+    tu.id === clean || 
+    tu.nip === clean || 
+    tu.username === lowerClean
+  );
+  if (testUser) {
+    testUser.faceRegistered = true;
+    testUser.facePhotoUrl = facePhotoUrl;
+  }
+
   existing.faceRegistered = true;
   existing.facePhotoUrl = facePhotoUrl;
   existing.faceDescriptor = faceDescriptor;
