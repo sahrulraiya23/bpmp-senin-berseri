@@ -401,7 +401,11 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
     }
 
     const qrState = getCurrentQrState(activeEvent.id);
-    const cleanToken = String(token).trim().toUpperCase();
+    let cleanToken = String(token).trim().toUpperCase();
+    // Normalisasi token jika user hanya mengetik 6 karakter heksadesimal tanpa prefix LPTI-
+    if (!cleanToken.startsWith('LPTI-') && cleanToken.length === 6) {
+      cleanToken = 'LPTI-' + cleanToken;
+    }
     const isValid = (cleanToken === qrState.token || cleanToken === qrState.previousToken);
 
     if (!isValid) {
