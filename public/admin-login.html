@@ -16,27 +16,31 @@
   <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
 
   <!-- BPMP Custom Design Tokens -->
-  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/tokens.css?v=2.3">
 </head>
-<body class="d-flex flex-column bg-light">
+<body class="bg-white">
+  <div class="page">
 
-  <!-- Top Government Strip -->
-  <div id="app-topstrip"></div>
+    <!-- Top Government Strip -->
+    <div id="app-topstrip"></div>
 
-  <div class="page page-center flex-fill d-flex align-items-center justify-content-center py-4">
-    <div class="container container-tight">
-      
-      <!-- Brand Logo / Emblem (Kemendikdasmen Tut Wuri Handayani) -->
-      <div class="text-center mb-3">
-        <a href="/" class="d-inline-flex align-items-center gap-2 text-decoration-none">
-          <img src="/icons/kemendikdasmen-logo.svg" alt="Logo Kemendikdasmen BPMP Sultra" width="64" height="64" class="rounded-circle shadow-sm">
-        </a>
-        <div class="mt-2">
-          <h1 class="h3 fw-bold mb-0" style="color: #0056b3; letter-spacing: -0.2px;">Kemendikdasmen</h1>
-          <div class="text-dark fw-bold small text-uppercase" style="letter-spacing: 0.5px;">BPMP PROVINSI SULAWESI TENGGARA</div>
-          <div class="text-muted small fw-medium">Sistem Presensi Mandiri, Verifikasi LPTI &amp; E-Sertifikat ASN</div>
+    <!-- Main Navigation Header -->
+    <div id="app-navbar"></div>
+
+    <div class="page-wrapper">
+      <div class="container container-tight py-4">
+        
+        <!-- Brand Logo / Emblem (Kemendikdasmen Tut Wuri Handayani) -->
+        <div class="text-center mb-3">
+          <a href="/" class="d-inline-flex align-items-center gap-2 text-decoration-none">
+            <img src="/icons/kemendikdasmen-logo.svg" alt="Logo Kemendikdasmen BPMP Sultra" width="56" height="56" class="rounded-circle shadow-xs">
+          </a>
+          <div class="mt-2">
+            <h1 class="h3 fw-bold mb-0" style="color: #0056b3; letter-spacing: -0.2px;">Kemendikdasmen</h1>
+            <div class="text-dark fw-bold small text-uppercase" style="letter-spacing: 0.5px;">BPMP PROVINSI SULAWESI TENGGARA</div>
+            <div class="text-muted small fw-medium">Sistem Presensi Mandiri, Verifikasi LPTI &amp; E-Sertifikat ASN</div>
+          </div>
         </div>
-      </div>
 
       <!-- Card Login -->
       <div class="card card-md shadow-sm border">
@@ -157,11 +161,12 @@
 
   <!-- Standard Footer -->
   <div id="app-footer"></div>
+</div>
 
   <!-- Tabler Core JS & Layout -->
   <script src="/vendor/tabler/js/tabler.min.js"></script>
   <script src="/js/components.js"></script>
-  <script src="/js/layout.js"></script>
+  <script src="/js/layout.js?v=2.3"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
