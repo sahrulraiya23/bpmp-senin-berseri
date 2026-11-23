@@ -328,41 +328,46 @@ app.post('/api/auth/admin-logout', (req, res) => {
 
 // 4. Employee Login (Mandiri Pegawai dengan NIP & Password)
 app.post('/api/auth/login', async (req, res) => {
-  const { nip, password } = req.body;
-  if (!nip || !password) {
-    return res.status(400).json({ success: false, message: 'NIP dan Password wajib diisi!' });
-  }
+  try {
+    const { nip, password } = req.body || {};
+    if (!nip || !password) {
+      return res.status(400).json({ success: false, message: 'NIP dan Password wajib diisi!' });
+    }
 
-  const cleanNip = String(nip).trim();
-  const cleanPassword = String(password).trim();
+    const cleanNip = String(nip).trim();
+    const cleanPassword = String(password).trim();
 
-  const employee = await db.getEmployeeByIdOrNip(cleanNip);
-  if (!employee) {
-    return res.status(401).json({
-      success: false,
-      message: `NIP "${cleanNip}" tidak terdaftar dalam pangkalan data pegawai BPMP Sulawesi Tenggara.`
+    const employee = await db.getEmployeeByIdOrNip(cleanNip);
+    if (!employee) {
+      return res.status(401).json({
+        success: false,
+        message: `NIP "${cleanNip}" tidak terdaftar dalam pangkalan data pegawai BPMP Sulawesi Tenggara.`
+      });
+    }
+
+    const defaultPassword = 'Bpmp2026!';
+    const expectedPassword = employee.password || defaultPassword;
+
+    if (cleanPassword !== expectedPassword && cleanPassword !== defaultPassword && cleanPassword !== 'bpmp123') {
+      return res.status(401).json({
+        success: false,
+        message: 'Password salah! (Gunakan password: bpmp123 atau Bpmp2026!).'
+      });
+    }
+
+    const activeEvent = await db.getActiveEvent();
+    const { password: _, ...safeEmployee } = employee;
+
+    return res.json({
+      success: true,
+      message: `Login berhasil! Selamat datang, ${employee.name}.`,
+      employee: safeEmployee,
+      event: activeEvent
     });
+  } catch (err) {
+    console.error('Error in /api/auth/login:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem: ' + err.message });
   }
-
-  const defaultPassword = 'Bpmp2026!';
-  const expectedPassword = employee.password || defaultPassword;
-
-  if (cleanPassword !== expectedPassword && cleanPassword !== defaultPassword && cleanPassword !== 'bpmp123') {
-    return res.status(401).json({
-      success: false,
-      message: 'Password salah! (Gunakan password: bpmp123 atau Bpmp2026!).'
-    });
-  }
-
-  const activeEvent = await db.getActiveEvent();
-  const { password: _, ...safeEmployee } = employee;
-
-  return res.json({
-    success: true,
-    message: `Login berhasil! Selamat datang, ${employee.name}.`,
-    employee: safeEmployee,
-    event: activeEvent
-  });
 });
 
 // ========================================================

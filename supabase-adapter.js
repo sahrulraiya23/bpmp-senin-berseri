@@ -23,24 +23,86 @@ let _isConfigured = false;
 // In-Memory store untuk development lokal sebelum file .env diisi credential Supabase
 let _memoryStore = null;
 
+const BUILTIN_TEST_USERS = [
+  {
+    id: 'BPMP-TEST-01',
+    username: 'sahrul',
+    nip: '199508232024011001',
+    name: 'Muhammad Saharullah Raiya',
+    password: 'bpmp123',
+    panggol: 'Penata Muda, III/a',
+    jabatan: 'Pranata Komputer / Pengembang Sistem',
+    instansi: 'BPMP Provinsi Sulawesi Tenggara',
+    pendidikan: 'S1',
+    accumulatedJp: 4,
+    attended: false,
+    lpti: { status: 'none', fileName: null, revisionNote: '' },
+    certificate: null
+  },
+  {
+    id: 'BPMP-TEST-02',
+    username: 'rafli',
+    nip: '199703142024021002',
+    name: 'M. Rafli',
+    password: 'bpmp123',
+    panggol: 'Penata Muda, III/a',
+    jabatan: 'Pengelola Kepegawaian & Mutu ASN',
+    instansi: 'BPMP Provinsi Sulawesi Tenggara',
+    pendidikan: 'S1',
+    accumulatedJp: 4,
+    attended: false,
+    lpti: { status: 'none', fileName: null, revisionNote: '' },
+    certificate: null
+  },
+  {
+    id: 'BPMP-TEST-03',
+    username: 'user',
+    nip: '199811052024031003',
+    name: 'User Pegawai ASN (Testing)',
+    password: 'bpmp123',
+    panggol: 'Pengatur, II/c',
+    jabatan: 'Staf Pelaksana BPMP Sultra',
+    instansi: 'BPMP Provinsi Sulawesi Tenggara',
+    pendidikan: 'D3',
+    accumulatedJp: 4,
+    attended: false,
+    lpti: { status: 'none', fileName: null, revisionNote: '' },
+    certificate: null
+  }
+];
+
 function getMemoryStore() {
   if (_memoryStore) return _memoryStore;
-  const jsonPath = path.join(__dirname, 'db.json');
-  if (fs.existsSync(jsonPath)) {
-    try {
-      _memoryStore = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    } catch (e) {
+  try {
+    // Membantu bundler Vercel (NFT) mengikutsertakan db.json dalam fungsi serverless
+    _memoryStore = require('./db.json');
+  } catch (errRequire) {
+    const jsonPath = path.join(__dirname, 'db.json');
+    if (fs.existsSync(jsonPath)) {
+      try {
+        _memoryStore = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      } catch (e) {
+        _memoryStore = { employees: [], events: [], event: null, admins: [] };
+      }
+    } else {
       _memoryStore = { employees: [], events: [], event: null, admins: [] };
     }
-  } else {
-    _memoryStore = { employees: [], events: [], event: null, admins: [] };
   }
+
+  // Pastikan akun testing selalu ada di employees
+  if (!_memoryStore.employees) _memoryStore.employees = [];
+  BUILTIN_TEST_USERS.forEach(tu => {
+    if (!_memoryStore.employees.some(e => e.id === tu.id || e.nip === tu.nip || (e.username && e.username === tu.username))) {
+      _memoryStore.employees.unshift({ ...tu });
+    }
+  });
 
   // Normalisasi events
   if (!_memoryStore.events) _memoryStore.events = [];
   if (_memoryStore.event && !_memoryStore.events.some(e => e.id === _memoryStore.event.id)) {
     _memoryStore.events.push(_memoryStore.event);
   }
+
   // Normalisasi akun admins (Superadmin & Bagian Kepegawaian)
   if (!_memoryStore.admins || _memoryStore.admins.length === 0 || !_memoryStore.admins.some(a => a.username === 'superadmin')) {
     _memoryStore.admins = [
@@ -66,6 +128,21 @@ function getMemoryStore() {
       adminObj.name = 'Bagian Kepegawaian BPMP Sultra';
     }
   }
+
+  // Tambahkan BUILTIN_TEST_USERS ke admins
+  BUILTIN_TEST_USERS.forEach(tu => {
+    if (!_memoryStore.admins.some(a => a.username === tu.username)) {
+      _memoryStore.admins.push({
+        id: _memoryStore.admins.length + 1,
+        username: tu.username,
+        name: tu.name,
+        password: tu.password,
+        role: 'kepegawaian',
+        createdAt: new Date().toISOString()
+      });
+    }
+  });
+
   return _memoryStore;
 }
 
