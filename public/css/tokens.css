@@ -459,6 +459,29 @@ html[data-bs-layout=boxed] .page,
   box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
   transition: transform 0.2s ease;
 }
+
+/* ======================================================
+   NAVBAR ENHANCEMENTS & OVERFLOW PREVENTION
+   ====================================================== */
+.navbar-brand {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.navbar-nav .nav-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.navbar-nav .nav-link.active {
+  color: #0056b3 !important;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #0056b3 !important;
+}
 .bpmp-floating-help:hover .bpmp-floating-btn {
   transform: scale(1.08);
   color: #ffffff;
