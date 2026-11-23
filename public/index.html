@@ -25,22 +25,11 @@
 
   <style>
     .hero-section {
-      background: linear-gradient(135deg, #1a3a5c 0%, #002d5b 60%, #0c233c 100%);
-      color: #ffffff;
-      padding: 3.5rem 0 3rem;
+      background: #ffffff;
+      color: var(--tblr-body-color);
+      padding: 3rem 0 2.5rem;
+      border-bottom: 1px solid #e2e8f0;
       position: relative;
-      overflow: hidden;
-    }
-    .hero-section::before {
-      content: "";
-      position: absolute;
-      top: -30%;
-      right: -10%;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%);
-      border-radius: 50%;
-      pointer-events: none;
     }
     .step-number-badge {
       width: 36px;
@@ -62,20 +51,21 @@
       border-color: var(--tblr-primary);
     }
     .portal-quick-card {
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255, 255, 255, 0.06);
-      backdrop-filter: blur(8px);
-      border-radius: 10px;
-      padding: 1.25rem;
-      color: #ffffff;
-      transition: all 0.25s ease;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      color: var(--tblr-body-color);
+      box-shadow: 0 1px 3px rgba(0, 45, 91, 0.04);
+      transition: all 0.2s ease;
       text-decoration: none;
       display: block;
     }
     .portal-quick-card:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.35);
-      color: #ffffff;
+      background: #f8fafc;
+      border-color: #0056b3;
+      box-shadow: 0 8px 24px rgba(0, 86, 179, 0.08);
+      color: var(--tblr-body-color);
       transform: translateY(-2px);
     }
   </style>
@@ -93,6 +83,144 @@
     <div class="page-wrapper">
       
       <!-- =================================================================
+           HERO SECTION: PRESENSI DIGITAL & E-SERTIFIKAT SENIN BERSERI
+           Tampilan terang, bersih, dan berwibawa selaras Kemendikdasmen
+           ================================================================= -->
+      <section id="hero" class="hero-section">
+        <div class="container-xl">
+          <div class="row align-items-center g-4">
+            
+            <!-- Left Column: Title, Description, and CTA Buttons -->
+            <div class="col-lg-7">
+              <div class="bpmp-badge-pill mb-3">
+                <i class="ti ti-school me-1 text-primary"></i> SISTEM KEPEGAWAIAN &amp; MUTU ASN BPMP SULTRA
+              </div>
+              
+              <h1 class="display-6 fw-bold text-dark bpmp-heading-accent mb-3">
+                Presensi Digital &amp; E-Sertifikat <br class="d-none d-md-inline"><span style="color: #0056b3;">"Senin Berseri"</span>
+              </h1>
+              
+              <p class="lead text-secondary mb-4" style="max-width: 600px; font-size: 1.05rem; line-height: 1.65;">
+                Solusi cerdas terpadu untuk pencatatan kehadiran aula anti-titip presensi, kurasi laporan tugas instansional (LPTI) tanpa kertas, dan penerbitan otomatis E-Sertifikat resmi berbobot <strong>4 Jam Pelajaran (JP)</strong> bagi seluruh ASN BPMP Sulawesi Tenggara.
+              </p>
+
+              <!-- CTA Buttons -->
+              <div class="d-flex flex-wrap gap-2 mb-4">
+                <a href="/login" class="btn btn-primary px-4 py-2 fw-bold shadow-sm">
+                  <i class="ti ti-login me-1"></i> Buka Portal Pegawai
+                </a>
+                <a href="/sertifikat" class="btn btn-teal text-white fw-bold px-3 py-2 shadow-sm">
+                  <i class="ti ti-certificate me-1"></i> Cek Keaslian Sertifikat
+                </a>
+                <a href="/verif-wajah" class="btn btn-outline-secondary px-3 py-2">
+                  <i class="ti ti-scan me-1"></i> Registrasi Wajah
+                </a>
+                <a href="#alur" class="btn btn-ghost-secondary px-3 py-2">
+                  <i class="ti ti-help-circle me-1"></i> Panduan Alur
+                </a>
+              </div>
+
+              <!-- Live Indicators -->
+              <div class="d-flex flex-wrap align-items-center gap-3 pt-3 border-top text-secondary small">
+                <div class="d-flex align-items-center gap-1.5 text-success fw-bold">
+                  <i class="ti ti-circle-filled text-success font-10"></i>
+                  <span>Database Supabase Cloud Online</span>
+                </div>
+                <span class="text-muted">&bull;</span>
+                <div class="d-flex align-items-center gap-1.5 text-dark fw-medium">
+                  <i class="ti ti-users font-16 text-warning"></i>
+                  <span>104 Pegawai Terdaftar</span>
+                </div>
+                <span class="text-muted">&bull;</span>
+                <div class="d-flex align-items-center gap-1.5 text-dark fw-medium">
+                  <i class="ti ti-certificate font-16 text-teal"></i>
+                  <span>Format Standar 4 JP</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Quick Action Cards (Clean White Cards) -->
+            <div class="col-lg-5">
+              <div class="row g-2">
+                
+                <!-- Card 1: Portal Pegawai -->
+                <div class="col-12">
+                  <a href="/login" class="portal-quick-card">
+                    <div class="d-flex align-items-center">
+                      <span class="avatar avatar-md rounded bg-warning-lt text-warning me-3">
+                        <i class="ti ti-user-check fs-2"></i>
+                      </span>
+                      <div class="flex-fill">
+                        <div class="fw-bold fs-3 text-dark mb-0.5">Portal Mandiri Pegawai (ASN)</div>
+                        <div class="text-secondary small">Masuk dengan NIP untuk scan QR aula, upload LPTI, dan download sertifikat.</div>
+                      </div>
+                      <i class="ti ti-arrow-right text-muted ms-2"></i>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- Card 2: Layar Proyektor Aula -->
+                <div class="col-sm-6">
+                  <a href="/proyektor" target="_blank" class="portal-quick-card h-100">
+                    <span class="avatar avatar-sm rounded bg-primary-lt text-primary mb-2">
+                      <i class="ti ti-device-projector font-18"></i>
+                    </span>
+                    <div class="fw-bold text-dark mb-1">Layar Aula Proyektor</div>
+                    <div class="text-secondary small" style="font-size: 0.78rem;">Dynamic QR berputar 30 detik untuk aula utama.</div>
+                  </a>
+                </div>
+
+                <!-- Card 3: Registrasi Biometrik Wajah -->
+                <div class="col-sm-6">
+                  <a href="/verif-wajah" class="portal-quick-card h-100">
+                    <span class="avatar avatar-sm rounded bg-teal-lt text-teal mb-2">
+                      <i class="ti ti-scan font-18"></i>
+                    </span>
+                    <div class="fw-bold text-dark mb-1">Perekaman Wajah</div>
+                    <div class="text-secondary small" style="font-size: 0.78rem;">Pendaftaran mandiri master foto wajah pegawai.</div>
+                  </a>
+                </div>
+
+                <!-- Card 4: Cek & Verifikasi Sertifikat Publik -->
+                <div class="col-12">
+                  <a href="/sertifikat" class="portal-quick-card" style="border-left: 4px solid var(--tblr-teal); background: #f0fdfa;">
+                    <div class="d-flex align-items-center">
+                      <span class="avatar avatar-md rounded bg-teal text-white me-3">
+                        <i class="ti ti-certificate fs-2"></i>
+                      </span>
+                      <div class="flex-fill">
+                        <div class="fw-bold fs-4 text-dark mb-0.5">Cek Sertifikat &amp; Validasi QR (ECDSA)</div>
+                        <div class="text-secondary small">Validasi kredensial 12 digit gaya Dicoding atau scan QR code resmi.</div>
+                      </div>
+                      <span class="badge bg-teal text-white ms-2">Cek ↗</span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- Card 5: Konsol Admin Kepegawaian -->
+                <div class="col-12">
+                  <a href="/admin/login" class="portal-quick-card">
+                    <div class="d-flex align-items-center">
+                      <span class="avatar avatar-md rounded bg-primary text-white me-3">
+                        <i class="ti ti-shield-lock fs-2"></i>
+                      </span>
+                      <div class="flex-fill">
+                        <div class="fw-bold fs-4 text-dark mb-0.5">Konsol Administrator Kepegawaian</div>
+                        <div class="text-secondary small">Kurasi berkas LPTI, kelola template sertifikat, dan rekapitulasi data.</div>
+                      </div>
+                      <i class="ti ti-arrow-right text-muted ms-2"></i>
+                    </div>
+                  </a>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
            SECTION: PROFIL RESMI KEMENDIKDASMEN BPMP SULTRA 
            Selaras dengan portal resmi bpmpsultra.kemendikdasmen.go.id
            ================================================================= -->
@@ -106,9 +234,9 @@
             </div>
             <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
               <div>
-                <h1 class="display-6 fw-bold text-dark bpmp-heading-accent mb-0">
+                <h2 class="display-6 fw-bold text-dark bpmp-heading-accent mb-0">
                   Tentang BPMP Provinsi Sulawesi Tenggara
-                </h1>
+                </h2>
               </div>
               <div class="text-secondary small fw-medium">
                 Pelajari profil, sejarah, dan visi misi BPMP Provinsi Sulawesi Tenggara.
@@ -131,9 +259,9 @@
 
             <!-- Right Column: Institutional Profile & Value Cards -->
             <div class="col-lg-7">
-              <h2 class="h2 fw-bold text-dark mb-2">
+              <h3 class="h2 fw-bold text-dark mb-2">
                 Balai Penjaminan Mutu Pendidikan Sultra
-              </h2>
+              </h3>
               <p class="text-secondary lh-base mb-4" style="font-size: 1.05rem;">
                 Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Sulawesi Tenggara adalah unit pelaksana teknis Kementerian Pendidikan Dasar dan Menengah yang memiliki tugas mulia untuk mengawal, memfasilitasi, dan meningkatkan mutu pendidikan di wilayah Sulawesi Tenggara.
               </p>
@@ -172,154 +300,10 @@
                 </div>
 
               </div>
-
-              <!-- Quick CTA Buttons -->
-              <div class="d-flex flex-wrap gap-2 mt-4 pt-2">
-                <a href="/login" class="btn btn-primary px-4 py-2 fw-bold shadow-sm">
-                  <i class="ti ti-login me-1"></i> Buka Portal Pegawai
-                </a>
-                <a href="/sertifikat" class="btn btn-teal text-white px-3 py-2 fw-bold shadow-sm">
-                  <i class="ti ti-certificate me-1"></i> Cek Sertifikat (ECDSA)
-                </a>
-                <a href="/admin/login" class="btn btn-outline-secondary px-3 py-2">
-                  <i class="ti ti-lock me-1"></i> Login Kepegawaian
-                </a>
-              </div>
             </div>
 
           </div>
 
-        </div>
-      </section>
-
-      <!-- HERO / QUICK ACTION SECTION -->
-      <section id="hero" class="hero-section">
-        <div class="container-xl">
-          <div class="row align-items-center g-4">
-            <div class="col-lg-7">
-              <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-white-lt text-white mb-3" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);">
-                <i class="ti ti-school font-16 text-warning"></i>
-                <span class="small font-monospace text-uppercase" style="letter-spacing: 0.5px;">Sistem Kepegawaian & Mutu ASN BPMP Sultra</span>
-              </div>
-              <h1 class="display-6 fw-bold mb-3 text-white">
-                Presensi Digital & E-Sertifikat <br class="d-none d-md-inline"><span class="text-warning">"Senin Berseri"</span>
-              </h1>
-              <p class="lead text-white-75 mb-4" style="max-width: 600px; font-size: 1.05rem; line-height: 1.6;">
-                Solusi cerdas terpadu untuk pencatatan kehadiran aula anti-titip presensi, kurasi laporan tugas instansional (LPTI) tanpa kertas, dan penerbitan otomatis E-Sertifikat resmi berbobot <strong>4 Jam Pelajaran (JP)</strong> bagi seluruh ASN BPMP Sulawesi Tenggara.
-              </p>
-
-              <!-- CTA Buttons -->
-              <div class="d-flex flex-wrap gap-2 mb-4">
-                <a href="/login" class="btn btn-warning text-dark fw-bold px-4 py-2">
-                  <i class="ti ti-login me-1"></i> Buka Portal Pegawai
-                </a>
-                <a href="/sertifikat" class="btn btn-teal text-white fw-bold px-3 py-2">
-                  <i class="ti ti-certificate me-1"></i> Cek Keaslian Sertifikat
-                </a>
-                <a href="/verif-wajah" class="btn btn-outline-light px-3 py-2">
-                  <i class="ti ti-scan me-1"></i> Registrasi Wajah
-                </a>
-                <a href="#alur" class="btn btn-ghost-light text-white px-3 py-2">
-                  <i class="ti ti-help-circle me-1"></i> Panduan Alur
-                </a>
-              </div>
-
-              <!-- Live Indicators -->
-              <div class="d-flex flex-wrap align-items-center gap-3 pt-3 border-top border-white-10 text-white-50 small">
-                <div class="d-flex align-items-center gap-1.5 text-white">
-                  <i class="ti ti-circle-filled text-success font-10"></i>
-                  <span>Database Supabase Cloud Online</span>
-                </div>
-                <span>&bull;</span>
-                <div class="d-flex align-items-center gap-1.5 text-white">
-                  <i class="ti ti-users font-16 text-warning"></i>
-                  <span>104 Pegawai Terdaftar</span>
-                </div>
-                <span>&bull;</span>
-                <div class="d-flex align-items-center gap-1.5 text-white">
-                  <i class="ti ti-certificate font-16 text-teal"></i>
-                  <span>Format Standar 4 JP</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Quick Action Cards Column -->
-            <div class="col-lg-5">
-              <div class="row g-2">
-                
-                <!-- Card 1: Portal Pegawai -->
-                <div class="col-12">
-                  <a href="/login" class="portal-quick-card">
-                    <div class="d-flex align-items-center">
-                      <span class="avatar avatar-md rounded bg-warning text-dark me-3">
-                        <i class="ti ti-user-check fs-2"></i>
-                      </span>
-                      <div class="flex-fill">
-                        <div class="fw-bold fs-3 text-white mb-0.5">Portal Mandiri Pegawai (ASN)</div>
-                        <div class="text-white-75 small">Masuk dengan NIP untuk scan QR aula, upload LPTI, dan download sertifikat.</div>
-                      </div>
-                      <i class="ti ti-arrow-right text-white-50 ms-2"></i>
-                    </div>
-                  </a>
-                </div>
-
-                <!-- Card 2: Layar Proyektor Aula -->
-                <div class="col-sm-6">
-                  <a href="/proyektor" target="_blank" class="portal-quick-card h-100">
-                    <span class="avatar avatar-sm rounded bg-primary text-white mb-2">
-                      <i class="ti ti-device-projector font-18"></i>
-                    </span>
-                    <div class="fw-bold text-white mb-1">Layar Aula Proyektor</div>
-                    <div class="text-white-75 small" style="font-size: 0.78rem;">Dynamic QR berputar 30 detik untuk aula utama.</div>
-                  </a>
-                </div>
-
-                <!-- Card 3: Registrasi Biometrik Wajah -->
-                <div class="col-sm-6">
-                  <a href="/verif-wajah" class="portal-quick-card h-100">
-                    <span class="avatar avatar-sm rounded bg-teal text-white mb-2">
-                      <i class="ti ti-scan font-18"></i>
-                    </span>
-                    <div class="fw-bold text-white mb-1">Perekaman Wajah</div>
-                    <div class="text-white-75 small" style="font-size: 0.78rem;">Pendaftaran mandiri master foto wajah pegawai.</div>
-                  </a>
-                </div>
-
-                <!-- Card 4: Cek & Verifikasi Sertifikat Publik -->
-                <div class="col-12">
-                  <a href="/sertifikat" class="portal-quick-card" style="border-left: 4px solid var(--tblr-teal); background: rgba(13, 148, 136, 0.15);">
-                    <div class="d-flex align-items-center">
-                      <span class="avatar avatar-md rounded bg-teal text-white me-3">
-                        <i class="ti ti-certificate fs-2"></i>
-                      </span>
-                      <div class="flex-fill">
-                        <div class="fw-bold fs-4 text-white mb-0.5">Cek Sertifikat & Validasi QR (ECDSA)</div>
-                        <div class="text-white-75 small">Validasi kredensial 12 digit gaya Dicoding atau scan QR code resmi.</div>
-                      </div>
-                      <span class="badge bg-teal text-white ms-2">Cek ↗</span>
-                    </div>
-                  </a>
-                </div>
-
-                <!-- Card 5: Konsol Admin Kepegawaian -->
-                <div class="col-12">
-                  <a href="/admin/login" class="portal-quick-card">
-                    <div class="d-flex align-items-center">
-                      <span class="avatar avatar-md rounded bg-primary-lt text-white me-3" style="background: rgba(26,58,92,0.8);">
-                        <i class="ti ti-shield-lock fs-2"></i>
-                      </span>
-                      <div class="flex-fill">
-                        <div class="fw-bold fs-4 text-white mb-0.5">Konsol Administrator Kepegawaian</div>
-                        <div class="text-white-75 small">Kurasi berkas LPTI, kelola template sertifikat, dan rekapitulasi data.</div>
-                      </div>
-                      <i class="ti ti-arrow-right text-white-50 ms-2"></i>
-                    </div>
-                  </a>
-                </div>
-
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
