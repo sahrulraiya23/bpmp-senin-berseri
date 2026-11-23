@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.events (
   active BOOLEAN DEFAULT false,
   status TEXT DEFAULT 'active',
   completed_at TIMESTAMPTZ,
+  current_qr_token TEXT,
+  previous_qr_token TEXT,
+  qr_valid_until TIMESTAMPTZ,
   certificate_template JSONB,
   cert_settings JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -46,6 +49,10 @@ CREATE TABLE IF NOT EXISTS public.employees (
   certificate_issued_at TIMESTAMPTZ,
   certificate_verifier TEXT,
   certificate_verifier_title TEXT,
+  face_descriptor JSONB,
+  face_photo_url TEXT,
+  face_registered_at TIMESTAMPTZ,
+  attendance_photo_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -178,7 +185,91 @@ INSERT INTO public.employees (id, nip, name, password, panggol, jabatan, instans
 INSERT INTO public.employees (id, nip, name, password, panggol, jabatan, instansi, pendidikan) VALUES ('BPMP-103', '197204012025212014', 'Rusnah', 'Bpmp2026!', '-', 'Operator Layanan Operasional', 'BPMP Provinsi Sulawesi Tenggara', 'Paket C') ON CONFLICT (nip) DO UPDATE SET name = EXCLUDED.name, jabatan = EXCLUDED.jabatan, panggol = EXCLUDED.panggol;
 INSERT INTO public.employees (id, nip, name, password, panggol, jabatan, instansi, pendidikan) VALUES ('BPMP-104', '197608042025212016', 'Suharni', 'Bpmp2026!', '-', 'Operator Layanan Operasional', 'BPMP Provinsi Sulawesi Tenggara', 'SMA') ON CONFLICT (nip) DO UPDATE SET name = EXCLUDED.name, jabatan = EXCLUDED.jabatan, panggol = EXCLUDED.panggol;
 
--- 7. STORAGE BUCKETS (Untuk PDF LPTI & Template Piagam)
+-- 7. TABEL CERTIFICATES (Pangkalan Data E-Sertifikat Kriptografis Resmi)
+CREATE TABLE IF NOT EXISTS public.certificates (
+  id TEXT PRIMARY KEY, -- certId unik untuk verifikasi Dicoding-style
+  certificate_number TEXT UNIQUE NOT NULL,
+  employee_id TEXT NOT NULL,
+  nip TEXT NOT NULL,
+  name TEXT NOT NULL,
+  event_id TEXT REFERENCES public.events(id) ON DELETE SET NULL,
+  event_title TEXT,
+  issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  verifier TEXT DEFAULT 'Junaiddin Pagala, ST, M.T.',
+  verifier_title TEXT DEFAULT 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+  pdf_url TEXT,
+  crypto_hash TEXT,
+  crypto_signature TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_certificates_nip ON public.certificates (nip);
+CREATE INDEX IF NOT EXISTS idx_certificates_number ON public.certificates (certificate_number);
+
+-- 8. TABEL ATTENDANCES (Riwayat & Log Kehadiran Pegawai Per Kegiatan)
+CREATE TABLE IF NOT EXISTS public.attendances (
+  id BIGSERIAL PRIMARY KEY,
+  employee_id TEXT NOT NULL,
+  nip TEXT NOT NULL,
+  name TEXT NOT NULL,
+  event_id TEXT REFERENCES public.events(id) ON DELETE SET NULL,
+  event_title TEXT,
+  qr_token TEXT,
+  attendance_photo_url TEXT,
+  attended_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_attendances_nip ON public.attendances (nip);
+CREATE INDEX IF NOT EXISTS idx_attendances_event ON public.attendances (event_id);
+
+-- 9. TABEL QR_TOKENS (Penyimpanan Token QR Aktif & Riwayatnya)
+CREATE TABLE IF NOT EXISTS public.qr_tokens (
+  id BIGSERIAL PRIMARY KEY,
+  event_id TEXT NOT NULL,
+  token TEXT NOT NULL,
+  valid_until TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_qr_event_token ON public.qr_tokens (event_id, token);
+
+-- 10. STORAGE BUCKETS (Untuk PDF LPTI, Template Piagam, Foto Wajah, & Sertifikat PDF)
 INSERT INTO storage.buckets (id, name, public) VALUES ('lpti', 'lpti', true) ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('templates', 'templates', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('faces', 'faces', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('certificates', 'certificates', true) ON CONFLICT (id) DO NOTHING;
+
+-- 11. ROW LEVEL SECURITY (RLS) POLICIES & PERMISSIONS
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.qr_tokens ENABLE ROW LEVEL SECURITY;
+
+-- Kebijakan Akses Universal (Read/Write via API Backend / Service Role / Anon)
+DO $$
+BEGIN
+  -- Certificates
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'certificates' AND policyname = 'Allow public read certificates') THEN
+    CREATE POLICY "Allow public read certificates" ON public.certificates FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'certificates' AND policyname = 'Allow all certificates') THEN
+    CREATE POLICY "Allow all certificates" ON public.certificates FOR ALL USING (true);
+  END IF;
+
+  -- Attendances
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'attendances' AND policyname = 'Allow public read attendances') THEN
+    CREATE POLICY "Allow public read attendances" ON public.attendances FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'attendances' AND policyname = 'Allow all attendances') THEN
+    CREATE POLICY "Allow all attendances" ON public.attendances FOR ALL USING (true);
+  END IF;
+
+  -- QR Tokens
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'qr_tokens' AND policyname = 'Allow public read qr_tokens') THEN
+    CREATE POLICY "Allow public read qr_tokens" ON public.qr_tokens FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'qr_tokens' AND policyname = 'Allow all qr_tokens') THEN
+    CREATE POLICY "Allow all qr_tokens" ON public.qr_tokens FOR ALL USING (true);
+  END IF;
+END $$;
 

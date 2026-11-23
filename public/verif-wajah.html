@@ -518,13 +518,24 @@
           stopCamera();
           // Simpan persistensi lokal mandiri di HP / browser
           localStorage.setItem(`bpmp_face_registered_${currentAuthUser.nip}`, 'true');
-          if (capturedPhotoBase64) {
-            localStorage.setItem(`bpmp_face_photo_${currentAuthUser.nip}`, capturedPhotoBase64);
+          const photoToSave = (data.employee && data.employee.facePhotoUrl) ? data.employee.facePhotoUrl : capturedPhotoBase64;
+          if (photoToSave) {
+            localStorage.setItem(`bpmp_face_photo_${currentAuthUser.nip}`, photoToSave);
           }
-          BPMPComponents.showToast('Wajah master Anda berhasil didaftarkan secara resmi!', 'success');
+          if (data.employee) {
+            currentAuthUser = {
+              ...currentAuthUser,
+              ...data.employee,
+              faceRegistered: true,
+              facePhotoUrl: photoToSave
+            };
+            localStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
+            sessionStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
+          }
+          BPMPComponents.showToast('Wajah master Anda berhasil didaftarkan secara resmi di Supabase!', 'success');
           setTimeout(() => {
             goToPortal();
-          }, 1000);
+          }, 800);
         } else {
           BPMPComponents.showToast(data.message || 'Gagal menyimpan biometrik wajah.', 'danger');
           btn.disabled = false;

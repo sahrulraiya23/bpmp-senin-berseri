@@ -15,8 +15,8 @@ if (typeof process.loadEnvFile === 'function') {
   } catch (e) {}
 }
 
-const db = require('./supabase-adapter');
-const supabaseAdapter = db;
+const DB_DRIVER = process.env.DB_DRIVER || 'supabase';
+const db = DB_DRIVER === 'mysql' ? require('./mysql-adapter') : require('./supabase-adapter');
 const sqliteDb = db;
 
 const app = express();
@@ -58,6 +58,23 @@ if (IS_VERCEL) {
   app.use('/uploads/templates', express.static(path.join(BASE_DIR, 'uploads', 'templates')));
   app.use('/uploads/faces', express.static(path.join(BASE_DIR, 'uploads', 'faces')));
 }
+
+// Melayani file yang disimpan langsung di database (MySQL / Cloud Database)
+app.get('/api/files/:bucket/:filename', async (req, res) => {
+  try {
+    if (typeof db.getFile === 'function') {
+      const file = await db.getFile(req.params.bucket, req.params.filename);
+      if (file && file.fileBuffer) {
+        res.setHeader('Content-Type', file.contentType || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.send(file.fileBuffer);
+      }
+    }
+    return res.status(404).send('Berkas tidak ditemukan.');
+  } catch (e) {
+    return res.status(500).send('Gagal membaca berkas: ' + e.message);
+  }
+});
 
 // Admin session store (Stateless HMAC-signed token + fallback memory map)
 const JWT_SECRET = process.env.SESSION_SECRET || 'bpmp-senin-berseri-secret-key-2026';
@@ -239,6 +256,16 @@ app.get('/api/qr/current', async (req, res) => {
     }
 
     const qrState = getCurrentQrState(targetEvent.id);
+
+    // Simpan token QR aktif ke database (tabel qr_tokens & events)
+    if (typeof db.saveQrToken === 'function') {
+      try {
+        await db.saveQrToken(targetEvent.id, qrState.token, qrState.validUntil);
+      } catch (errSaveQr) {
+        console.warn('Gagal menyimpan token QR ke DB:', errSaveQr.message);
+      }
+    }
+
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
     const scanUrl = `${protocol}://${host}/pegawai?token=${qrState.token}&event=${targetEvent.id}&action=presensi`;
@@ -357,11 +384,16 @@ app.post('/api/auth/login', async (req, res) => {
 
     const activeEvent = await db.getActiveEvent();
     const { password: _, ...safeEmployee } = employee;
+    const needsFaceRegistration = !Boolean(employee.faceRegistered || employee.facePhotoUrl);
 
     return res.json({
       success: true,
       message: `Login berhasil! Selamat datang, ${employee.name}.`,
-      employee: safeEmployee,
+      employee: {
+        ...safeEmployee,
+        needsFaceRegistration: needsFaceRegistration
+      },
+      redirectUrl: needsFaceRegistration ? '/verif-wajah' : '/pegawai',
       event: activeEvent
     });
   } catch (err) {
@@ -406,7 +438,12 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
     if (!cleanToken.startsWith('LPTI-') && cleanToken.length === 6) {
       cleanToken = 'LPTI-' + cleanToken;
     }
-    const isValid = (cleanToken === qrState.token || cleanToken === qrState.previousToken);
+    let isValid = (cleanToken === qrState.token || cleanToken === qrState.previousToken);
+    if (!isValid && typeof db.isQrTokenValid === 'function') {
+      try {
+        isValid = await db.isQrTokenValid(activeEvent.id, cleanToken);
+      } catch (errCheckQr) {}
+    }
 
     if (!isValid) {
       return res.status(400).json({
@@ -481,7 +518,8 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       activeEvent.id,
       activeEvent.title,
       activeEvent.jp || 32,
-      attendancePhotoUrl
+      attendancePhotoUrl,
+      cleanToken
     );
 
     return res.json({
@@ -500,56 +538,94 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
 // BIOMETRIK WAJAH ASN: PENDAFTARAN & RESET
 // ========================================================
 app.post('/api/employees/:id/register-face', async (req, res) => {
-  const { facePhoto, faceDescriptor } = req.body;
-  const employee = await db.getEmployeeByIdOrNip(req.params.id);
-  if (!employee) {
-    return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
-  }
+  try {
+    const { facePhoto, faceDescriptor } = req.body || {};
+    const employee = await db.getEmployeeByIdOrNip(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
+    }
 
-  let facePhotoUrl = employee.facePhotoUrl || null;
-  if (facePhoto && typeof facePhoto === 'string' && facePhoto.startsWith('data:image')) {
+    if (!facePhoto || typeof facePhoto !== 'string' || !facePhoto.startsWith('data:image')) {
+      return res.status(400).json({ success: false, message: 'Foto wajah master wajib berupa format data:image (base64).' });
+    }
+
+    const base64Data = facePhoto.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+    const filename = `MASTER-FACE-${employee.nip || employee.id}-${Date.now()}.jpg`;
+
+    let facePhotoUrl = null;
+
+    // Simpan buffer lokal hanya untuk caching non-kritis jika sistem berkas mengizinkan
     try {
-      const base64Data = facePhoto.replace(/^data:image\/\w+;base64,/, '');
-      const buffer = Buffer.from(base64Data, 'base64');
-      const filename = `MASTER-FACE-${employee.nip || employee.id}-${Date.now()}.jpg`;
       const localFilePath = path.join(FACES_DIR, filename);
       fs.writeFileSync(localFilePath, buffer);
       facePhotoUrl = `/uploads/faces/${filename}`;
+    } catch (fsErr) {
+      // Non-fatal di lingkungan serverless ber-filesystem read-only
+    }
 
-      // Upload ke Supabase Storage bucket 'faces' jika tersedia
+    // Wajib upload ke Supabase Storage bucket 'faces' di Supabase atau lingkungan Vercel/Produksi
+    const isCloudRequired = db.isSupabaseAvailable() || IS_VERCEL || process.env.NODE_ENV === 'production';
+    if (isCloudRequired) {
       try {
         const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
-        if (cloudUrl) facePhotoUrl = cloudUrl;
-      } catch (storageErr) {}
-    } catch (photoErr) {
-      console.warn('Gagal menyimpan master facePhoto:', photoErr.message);
+        if (!cloudUrl) {
+          throw new Error('Supabase Storage tidak mengembalikan URL publik yang valid.');
+        }
+        facePhotoUrl = cloudUrl;
+      } catch (storageErr) {
+        console.error('[Storage Error in register-face]:', storageErr.message);
+        return res.status(502).json({
+          success: false,
+          message: `Gagal mengunggah foto wajah ke Supabase Storage: ${storageErr.message}. Pastikan bucket 'faces' tersedia.`
+        });
+      }
     }
+
+    try {
+      const updated = await db.registerEmployeeFace(employee.id, {
+        faceDescriptor: faceDescriptor || null,
+        facePhotoUrl: facePhotoUrl
+      });
+
+      return res.json({
+        success: true,
+        message: `Data biometrik wajah pegawai ${employee.name} berhasil didaftarkan secara permanen di Supabase!`,
+        employee: updated
+      });
+    } catch (dbErr) {
+      console.error('[Database Error in register-face]:', dbErr.message);
+      return res.status(500).json({
+        success: false,
+        message: `Gagal menyimpan biometrik wajah ke database: ${dbErr.message}`
+      });
+    }
+  } catch (err) {
+    console.error('Unhandled error in /api/employees/:id/register-face:', err);
+    return res.status(500).json({
+      success: false,
+      message: `Terjadi kesalahan sistem: ${err.message}`
+    });
   }
-
-  const updated = await db.registerEmployeeFace(employee.id, {
-    faceDescriptor: faceDescriptor || null,
-    facePhotoUrl: facePhotoUrl
-  });
-
-  return res.json({
-    success: true,
-    message: `Data biometrik wajah pegawai ${employee.name} berhasil didaftarkan secara mandiri!`,
-    employee: updated
-  });
 });
 
 app.post('/api/employees/:id/reset-face', async (req, res) => {
-  const employee = await db.getEmployeeByIdOrNip(req.params.id);
-  if (!employee) {
-    return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
-  }
+  try {
+    const employee = await db.getEmployeeByIdOrNip(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
+    }
 
-  const updated = await db.resetEmployeeFace(employee.id);
-  return res.json({
-    success: true,
-    message: `Data biometrik wajah ${employee.name} berhasil di-reset. Pegawai dapat mendaftarkan ulang wajahnya.`,
-    employee: updated
-  });
+    const updated = await db.resetEmployeeFace(employee.id);
+    return res.json({
+      success: true,
+      message: `Data biometrik wajah ${employee.name} berhasil di-reset. Pegawai dapat mendaftarkan ulang wajahnya.`,
+      employee: updated
+    });
+  } catch (err) {
+    console.error('Error in /api/employees/:id/reset-face:', err);
+    return res.status(500).json({ success: false, message: `Gagal mereset biometrik wajah: ${err.message}` });
+  }
 });
 
 // ========================================================
@@ -863,6 +939,13 @@ app.get('/api/event/sample-certificate.pdf', async (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Content-Length', pdfBuffer.length);
+    // Simpan berkas PDF sertifikat ke database (tabel files)
+    if (typeof db.uploadToStorage === 'function') {
+      try {
+        db.uploadToStorage('certificates', filename, Buffer.from(pdfBuffer), 'application/pdf').catch(() => {});
+      } catch (e) {}
+    }
+
     res.send(Buffer.from(pdfBuffer));
   } catch (error) {
     console.error('Error sample cert PDF:', error);
@@ -980,9 +1063,39 @@ app.post('/api/employees/:id/verify-lpti', async (req, res) => {
   const updatedEmployee = await db.verifyEmployeeLpti(employee.id, action, revisionNote, event.jp || 32);
 
   if (action === 'approve') {
+    if (typeof db.saveCertificate === 'function' && updatedEmployee.certificate) {
+      try {
+        const certCrypto = signCertificate({
+          certNumber: updatedEmployee.certificate.number,
+          employeeNip: updatedEmployee.nip,
+          employeeName: updatedEmployee.name,
+          eventTitle: event.title || 'Pelatihan Transformasi Digital ASN BPMP Sultra',
+          eventJp: event.jp || 32,
+          issuedAt: updatedEmployee.certificate.issuedAt
+        });
+        await db.saveCertificate({
+          id: certCrypto.certId,
+          number: updatedEmployee.certificate.number,
+          employeeId: updatedEmployee.id,
+          nip: updatedEmployee.nip,
+          name: updatedEmployee.name,
+          eventId: event.id || 'EVT-001',
+          eventTitle: event.title || 'Pelatihan ASN',
+          issuedAt: updatedEmployee.certificate.issuedAt,
+          verifier: updatedEmployee.certificate.verifier,
+          verifierTitle: updatedEmployee.certificate.verifierTitle,
+          cryptoHash: certCrypto.sha256Digest,
+          cryptoSignature: certCrypto.signatureHex,
+          pdfUrl: `/api/employees/${updatedEmployee.nip || updatedEmployee.id}/certificate.pdf`
+        });
+      } catch (errSaveCert) {
+        console.warn('Gagal menyimpan metadata sertifikat ke DB:', errSaveCert.message);
+      }
+    }
+
     return res.json({
       success: true,
-      message: `Berkas LPTI ${employee.name} berhasil DISETUJUI! E-Sertifikat resmi nomor ${updatedEmployee.certificate.number} telah diterbitkan.`,
+      message: `Berkas LPTI ${employee.name} berhasil DISETUJUI! E-Sertifikat resmi nomor ${updatedEmployee.certificate.number} telah diterbitkan dan tersimpan di database.`,
       employee: updatedEmployee
     });
   } else {
@@ -1120,6 +1233,13 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Content-Length', pdfBuffer.length);
+    // Simpan berkas PDF sertifikat ke database (tabel files)
+    if (typeof db.uploadToStorage === 'function') {
+      try {
+        db.uploadToStorage('certificates', filename, Buffer.from(pdfBuffer), 'application/pdf').catch(() => {});
+      } catch (e) {}
+    }
+
     res.send(Buffer.from(pdfBuffer));
   } catch (error) {
     console.error('Error cert PDF:', error);
@@ -1135,13 +1255,63 @@ app.get('/api/verify-certificate-data/:query', async (req, res) => {
     const rawQuery = decodeURIComponent(req.params.query || '').trim();
     const upperQuery = rawQuery.toUpperCase();
 
+    // 1. CARI LANGSUNG KE TABEL DATABASE 'certificates'
+    let dbCert = null;
+    if (typeof db.getCertificateByIdOrNumber === 'function') {
+      try {
+        dbCert = await db.getCertificateByIdOrNumber(rawQuery);
+      } catch (e) {}
+    }
+
+    if (dbCert) {
+      const emp = await db.getEmployeeByIdOrNip(dbCert.nip || dbCert.employee_id);
+      const allEvents = await db.getAllEvents();
+      const event = allEvents.find(ev => ev.id === dbCert.event_id) || (await db.getActiveEvent()) || {};
+      
+      const certCrypto = signCertificate({
+        certNumber: dbCert.certificate_number,
+        employeeNip: dbCert.nip,
+        employeeName: dbCert.name || (emp ? emp.name : 'Pegawai BPMP Sultra'),
+        eventTitle: dbCert.event_title || event.title || 'Pelatihan Kepegawaian ASN',
+        eventJp: event.jp || 32,
+        issuedAt: dbCert.issued_at
+      });
+
+      return res.json({
+        success: true,
+        verified: true,
+        certificate: {
+          certId: dbCert.id || certCrypto.certId,
+          number: dbCert.certificate_number,
+          employeeName: dbCert.name || (emp ? emp.name : 'Pegawai BPMP Sultra'),
+          employeeNip: dbCert.nip,
+          employeeJabatan: emp ? emp.jabatan : '',
+          employeeInstansi: emp ? emp.instansi : 'BPMP Provinsi Sulawesi Tenggara',
+          employeePhotoUrl: (emp ? (emp.facePhotoUrl || emp.attendancePhotoUrl) : null),
+          eventTitle: dbCert.event_title || event.title || 'Pelatihan Kepegawaian ASN',
+          eventJp: event.jp || 32,
+          eventCategory: event.category || 'Teknis & Manajerial Kepegawaian',
+          eventSchedule: event.schedule || 'Jadwal Ditentukan',
+          eventLocation: event.location || 'Auditorium BPMP Sultra',
+          issuedAt: dbCert.issued_at,
+          verifier: dbCert.verifier || 'Junaiddin Pagala, S.T., M.T.',
+          verifierTitle: dbCert.verifier_title || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+          verifierNip: '197606122002121004',
+          cryptoHash: dbCert.crypto_hash || certCrypto.sha256Digest,
+          cryptoSignature: dbCert.crypto_signature || certCrypto.signatureHex,
+          cryptoAlgorithm: 'SHA-256 with ECDSA (secp256k1)',
+          pdfUrl: dbCert.pdf_url || `/api/employees/${dbCert.nip}/certificate.pdf`
+        }
+      });
+    }
+
     const employees = await db.getAllEmployees();
     const allEvents = await db.getAllEvents();
 
     let matchedEmployee = null;
     let matchedEvent = null;
 
-    // 1. Cari berdasarkan ID Kriptografis, Nomor Surat, atau NIP Pegawai
+    // 2. Fallback: Cari di profil tabel employees
     for (const emp of employees) {
       if (!emp.certificate || !emp.certificate.number) continue;
 
@@ -1284,6 +1454,93 @@ function requireAdminMiddleware(req, res, next) {
   req.admin = admin;
   next();
 }
+
+// 0. Endpoint Diagnostik Khusus Admin (Mode Penyimpanan, Env Status, Status Wajah Pegawai)
+app.get(['/api/admin/diagnostik', '/api/diagnostik'], requireAdminMiddleware, async (req, res) => {
+  try {
+    const isDbActive = typeof db.isDatabaseAvailable === 'function' ? db.isDatabaseAvailable() : db.isSupabaseAvailable();
+    const isVercel = Boolean(process.env.VERCEL);
+    const nodeEnv = process.env.NODE_ENV || 'development';
+
+    const envStatus = {
+      DATABASE_URL: Boolean(process.env.DATABASE_URL || process.env.MYSQL_URL),
+      MYSQL_HOST: Boolean(process.env.MYSQL_HOST),
+      SUPABASE_URL: Boolean(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
+      SUPABASE_KEY: Boolean(process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+      SESSION_SECRET: Boolean(process.env.SESSION_SECRET),
+      ADMIN_PASSWORD: Boolean(process.env.ADMIN_PASSWORD),
+      SUPERADMIN_PASSWORD: Boolean(process.env.SUPERADMIN_PASSWORD)
+    };
+
+    let storageBucketStatus = 'ready';
+    let storageBucketError = null;
+
+    if (DB_DRIVER === 'supabase') {
+      try {
+        const client = typeof db.getClient === 'function' ? db.getClient() : null;
+        if (client) {
+          const { data, error } = await client.storage.from('faces').list('', { limit: 1 });
+          if (error) {
+            storageBucketStatus = 'error';
+            storageBucketError = error.message;
+          } else {
+            storageBucketStatus = 'ready';
+          }
+        } else {
+          storageBucketStatus = isVercel ? 'disabled' : 'local_disk';
+        }
+      } catch (e) {
+        storageBucketStatus = 'exception';
+        storageBucketError = e.message;
+      }
+    } else {
+      // Driver MySQL: Berkas disimpan langsung di MySQL (tabel files / column longblob)
+      storageBucketStatus = isDbActive ? 'mysql_database_blob' : (isVercel ? 'disabled' : 'local_disk');
+    }
+
+    let targetEmployeeStatus = null;
+    const nipQuery = req.query.nip || req.query.id;
+    if (nipQuery) {
+      const emp = await db.getEmployeeByIdOrNip(String(nipQuery).trim());
+      if (emp) {
+        targetEmployeeStatus = {
+          found: true,
+          id: emp.id,
+          nip: emp.nip,
+          name: emp.name,
+          attended: Boolean(emp.attended),
+          attendedAt: emp.attendedAt || null,
+          faceRegistered: Boolean(emp.faceRegistered || emp.facePhotoUrl),
+          facePhotoUrl: emp.facePhotoUrl || null,
+          faceRegisteredAt: emp.faceRegisteredAt || null
+        };
+      } else {
+        targetEmployeeStatus = { found: false, nip: nipQuery };
+      }
+    }
+
+    return res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      environment: {
+        isVercel,
+        nodeEnv,
+        driver: DB_DRIVER,
+        storageMode: isDbActive ? DB_DRIVER : 'in-memory'
+      },
+      envStatus,
+      storageBucket: {
+        bucket: 'faces',
+        status: storageBucketStatus,
+        error: storageBucketError
+      },
+      employeeStatus: targetEmployeeStatus
+    });
+  } catch (err) {
+    console.error('Error in /api/admin/diagnostik:', err);
+    return res.status(500).json({ success: false, message: 'Gagal menjalankan diagnostik: ' + err.message });
+  }
+});
 
 // 1. Ringkasan Statistik untuk SB Admin 2 Dashboard
 app.get('/api/superadmin/summary', requireSuperAdminMiddleware, async (req, res) => {

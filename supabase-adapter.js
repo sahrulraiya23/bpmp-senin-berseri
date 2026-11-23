@@ -17,6 +17,14 @@ if (typeof process.loadEnvFile === 'function') {
   }
 }
 
+function isVercel() {
+  return Boolean(process.env.VERCEL);
+}
+
+function isProd() {
+  return isVercel() || process.env.NODE_ENV === 'production';
+}
+
 let _supabaseInstance = null;
 let _isConfigured = false;
 
@@ -173,6 +181,11 @@ function getClient() {
     }
   }
   return _supabaseInstance;
+}
+
+function setSupabaseInstance(instance) {
+  _supabaseInstance = instance;
+  _isConfigured = Boolean(instance);
 }
 
 function isSupabaseAvailable() {
@@ -410,9 +423,14 @@ async function getAllEmployees() {
       return data.map(formatSupabaseEmployee);
     }
     console.error('Supabase getAllEmployees error:', error?.message);
+    if (isProd()) {
+      throw new Error(`Gagal mengambil data seluruh pegawai dari Supabase: ${error?.message || 'Database error'}`);
+    }
+  } else if (isProd()) {
+    throw new Error('Supabase Cloud Database tidak terkonfigurasi di lingkungan Vercel/Produksi. Failover in-memory dinonaktifkan.');
   }
 
-  // Memory fallback
+  // Memory fallback HANYA untuk development offline non-Vercel
   const mem = getMemoryStore();
   return (mem.employees || []).map(emp => {
     const isAttended = Boolean(emp.attended);
@@ -435,7 +453,29 @@ async function getEmployeeByIdOrNip(idOrNip) {
   const clean = String(idOrNip).trim();
   const lower = clean.toLowerCase();
 
-  // 1. Cek Cepat Test Users (sahrul, rafli, user) atau ID/NIP/Username di Memory
+  const client = getClient();
+  if (client) {
+    // 1. Query Supabase Cloud Database terlebih dahulu (Prioritas Utama)
+    const { data, error } = await client
+      .from('employees')
+      .select('*')
+      .or(`id.eq.${clean},nip.eq.${clean}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[Supabase Error] getEmployeeByIdOrNip(${clean}):`, error.message);
+      if (isProd()) {
+        throw new Error(`Gagal memuat profil pegawai dari Supabase: ${error.message}`);
+      }
+    } else if (data) {
+      return formatSupabaseEmployee(data);
+    }
+  } else if (isProd()) {
+    throw new Error(`Supabase Cloud Database tidak terkonfigurasi di lingkungan Vercel/Produksi. Gagal memuat data pegawai ${clean}.`);
+  }
+
+  // 2. Memory fallback HANYA jika Supabase tidak terkonfigurasi pada lingkungan dev lokal offline
   const mem = getMemoryStore();
   const foundMem = (mem.employees || []).find(e => 
     (e.id && e.id.toLowerCase() === lower) || 
@@ -456,20 +496,6 @@ async function getEmployeeByIdOrNip(idOrNip) {
         method: 'qr'
       }
     };
-  }
-
-  const client = getClient();
-  if (client) {
-    const { data, error } = await client
-      .from('employees')
-      .select('*')
-      .or(`id.eq."${clean}",nip.eq."${clean}"`)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data) {
-      return formatSupabaseEmployee(data);
-    }
   }
 
   return null;
@@ -500,10 +526,9 @@ async function ensureEmployeeJp(id, eventJp = 32) {
   return emp;
 }
 
-async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, attendancePhotoUrl = null) {
+async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, attendancePhotoUrl = null, qrToken = null) {
   const now = new Date().toISOString();
   const clean = String(id).trim();
-  const lower = clean.toLowerCase();
   const jpToAdd = parseInt(eventJp, 10) || 32;
 
   const existing = await getEmployeeByIdOrNip(clean);
@@ -511,10 +536,60 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
 
   const currentJp = Number(existing.accumulatedJp) || 0;
   const newJp = currentJp > 0 ? currentJp + jpToAdd : jpToAdd;
+
+  const client = getClient();
+  if (client) {
+    const updatePayload = {
+      attended: true,
+      attended_at: now,
+      event_id: eventId || null,
+      event_title: eventTitle || null,
+      accumulated_jp: newJp,
+      updated_at: now
+    };
+    if (attendancePhotoUrl) {
+      updatePayload.attendance_photo_url = attendancePhotoUrl;
+    }
+
+    const { data, error } = await client
+      .from('employees')
+      .update(updatePayload)
+      .eq('id', existing.id)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[Supabase Error] markEmployeeAttended(${existing.id}):`, error.message);
+      throw new Error(`Gagal mencatat presensi pegawai ke Supabase: ${error.message}`);
+    }
+
+    // Rekam jejak presensi ke tabel attendances di database Supabase
+    try {
+      await client.from('attendances').insert({
+        employee_id: existing.id,
+        nip: existing.nip,
+        name: existing.name,
+        event_id: eventId || null,
+        event_title: eventTitle || null,
+        qr_token: qrToken || null,
+        attendance_photo_url: attendancePhotoUrl || null,
+        attended_at: now
+      });
+    } catch (attErr) {}
+
+    if (data) {
+      return formatSupabaseEmployee(data);
+    }
+  }
+
+  if (isProd()) {
+    throw new Error('Supabase Cloud Database tidak terkonfigurasi di lingkungan Vercel/Produksi. Presensi tidak dapat disimpan.');
+  }
+
+  // Memory fallback HANYA untuk development offline non-Vercel
+  const lower = clean.toLowerCase();
   const targetId = existing.id;
   const targetNip = existing.nip;
-
-  // 1. Selalu perbarui memory store agar konsisten seketika
   const mem = getMemoryStore();
   const rawEmp = (mem.employees || []).find(e => 
     (e.id && e.id.toLowerCase() === lower) || 
@@ -540,14 +615,6 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
     };
   }
 
-  // 2. Simpan juga ke file db.json lokal jika tersedia
-  try {
-    const jsonPath = path.join(__dirname, 'db.json');
-    if (fs.existsSync(jsonPath)) {
-      fs.writeFileSync(jsonPath, JSON.stringify(mem, null, 2), 'utf8');
-    }
-  } catch(e) {}
-
   existing.attended = true;
   existing.attendedAt = now;
   existing.eventId = eventId || null;
@@ -559,37 +626,6 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
     attendedAt: now,
     time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
   };
-
-  // 3. Sinkronisasi ke Supabase
-  const client = getClient();
-  if (client) {
-    const updatePayload = {
-      attended: true,
-      attended_at: now,
-      event_id: eventId || null,
-      event_title: eventTitle || null,
-      accumulated_jp: newJp,
-      updated_at: now
-    };
-    if (attendancePhotoUrl) {
-      updatePayload.attendance_photo_url = attendancePhotoUrl;
-    }
-
-    try {
-      const { data, error } = await client
-        .from('employees')
-        .update(updatePayload)
-        .or(`id.eq."${targetId}",nip.eq."${targetNip}"`)
-        .select()
-        .maybeSingle();
-
-      if (!error && data) {
-        return formatSupabaseEmployee(data);
-      }
-    } catch(errClient) {
-      console.warn('Supabase markEmployeeAttended client error:', errClient.message);
-    }
-  }
 
   return existing;
 }
@@ -620,14 +656,20 @@ async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = 
       .single();
 
     if (error) {
-      console.warn('Supabase registerEmployeeFace note:', error.message);
-      console.log('💡 Jalankan script supabase_face_verification.sql di Supabase SQL Editor untuk mengaktifkan kolom biometrik di PostgreSQL.');
-    } else if (data) {
+      console.error(`[Supabase Error] registerEmployeeFace(${existing.id}):`, error.message);
+      throw new Error(`Gagal menyimpan data biometrik wajah ke Supabase: ${error.message}`);
+    }
+
+    if (data) {
       return formatSupabaseEmployee(data);
     }
   }
 
-  // Memory fallback & Cache Update
+  if (isProd()) {
+    throw new Error('Supabase Cloud Database tidak terkonfigurasi di lingkungan Vercel/Produksi. Perekaman wajah tidak dapat disimpan.');
+  }
+
+  // Memory fallback HANYA untuk development offline non-Vercel
   const mem = getMemoryStore();
   const lowerClean = clean.toLowerCase();
   const rawEmp = (mem.employees || []).find(e => 
@@ -685,13 +727,19 @@ async function resetEmployeeFace(id) {
       .single();
 
     if (error) {
-      console.warn('Supabase resetEmployeeFace note:', error.message);
-    } else if (data) {
+      console.error(`[Supabase Error] resetEmployeeFace(${existing.id}):`, error.message);
+      throw new Error(`Gagal mereset biometrik wajah di Supabase: ${error.message}`);
+    }
+    if (data) {
       return formatSupabaseEmployee(data);
     }
   }
 
-  // Memory fallback
+  if (isProd()) {
+    throw new Error('Supabase Cloud Database tidak terkonfigurasi di lingkungan Vercel/Produksi. Gagal mereset biometrik wajah.');
+  }
+
+  // Memory fallback HANYA untuk development offline non-Vercel
   const mem = getMemoryStore();
   const rawEmp = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
   if (rawEmp) {
@@ -1317,7 +1365,12 @@ async function getSystemSettings() {
 // ==============================================================
 async function uploadToStorage(bucketName, fileName, fileBuffer, contentType) {
   const client = getClient();
-  if (!client) return null;
+  if (!client) {
+    if (isProd()) {
+      throw new Error(`Supabase Storage tidak dapat diakses di lingkungan produksi Vercel (SUPABASE_URL atau SUPABASE_KEY belum terkonfigurasi).`);
+    }
+    return null;
+  }
 
   try {
     const { data, error } = await client.storage
@@ -1328,18 +1381,22 @@ async function uploadToStorage(bucketName, fileName, fileBuffer, contentType) {
       });
 
     if (error) {
-      console.warn(`Supabase Storage upload (${bucketName}) error:`, error.message);
-      return null;
+      console.error(`[Supabase Storage Error] bucket '${bucketName}' upload '${fileName}':`, error.message);
+      throw new Error(`Gagal mengunggah berkas ke Supabase Storage (bucket: ${bucketName}): ${error.message}`);
     }
 
     const { data: pubData } = client.storage
       .from(bucketName)
       .getPublicUrl(fileName);
 
-    return pubData?.publicUrl || null;
+    if (!pubData?.publicUrl) {
+      throw new Error(`Supabase Storage tidak mengembalikan URL publik untuk berkas '${fileName}' di bucket '${bucketName}'.`);
+    }
+
+    return pubData.publicUrl;
   } catch (err) {
-    console.warn(`Supabase Storage upload exception (${bucketName}):`, err.message);
-    return null;
+    console.error(`[Supabase Storage Exception] (${bucketName}/${fileName}):`, err.message);
+    throw err;
   }
 }
 
@@ -1666,7 +1723,174 @@ async function deleteAdmin(idOrUsername) {
   return false;
 }
 
+// ==============================================================
+// PERSISTENSI SERTIFIKAT, ATTENDANCES & QR KE SUPABASE DATABASE
+// ==============================================================
+async function saveCertificate(certData) {
+  const client = getClient();
+  const now = certData.issuedAt ? new Date(certData.issuedAt).toISOString() : new Date().toISOString();
+  const certId = certData.id || certData.certId;
+  const certNumber = certData.number || certData.certificateNumber;
+
+  const payload = {
+    id: certId,
+    certificate_number: certNumber,
+    employee_id: certData.employeeId || certData.id,
+    nip: certData.nip,
+    name: certData.name || '',
+    event_id: certData.eventId || null,
+    event_title: certData.eventTitle || null,
+    issued_at: now,
+    verifier: certData.verifier || 'Junaiddin Pagala, ST, M.T.',
+    verifier_title: certData.verifierTitle || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+    pdf_url: certData.pdfUrl || null,
+    crypto_hash: certData.cryptoHash || null,
+    crypto_signature: certData.cryptoSignature || null,
+    updated_at: now
+  };
+
+  if (client) {
+    try {
+      const { error } = await client
+        .from('certificates')
+        .upsert(payload, { onConflict: 'id' });
+
+      if (error) {
+        console.warn('[Supabase Warning] saveCertificate error:', error.message);
+      }
+    } catch (e) {
+      console.warn('[Supabase Exception] saveCertificate:', e.message);
+    }
+  }
+
+  // Simpan ke in-memory jika client offline
+  const mem = getMemoryStore();
+  if (!mem.certificates) mem.certificates = [];
+  const existingIdx = mem.certificates.findIndex(c => c.id === certId || c.certificate_number === certNumber);
+  if (existingIdx >= 0) {
+    mem.certificates[existingIdx] = { ...mem.certificates[existingIdx], ...payload };
+  } else {
+    mem.certificates.push(payload);
+  }
+
+  return true;
+}
+
+async function getCertificateByIdOrNumber(query) {
+  const clean = String(query || '').trim();
+  const client = getClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('certificates')
+        .select('*')
+        .or(`id.eq.${clean},certificate_number.eq.${clean},nip.eq.${clean}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) return data;
+    } catch (err) {}
+  }
+
+  const mem = getMemoryStore();
+  const found = (mem.certificates || []).find(c => 
+    c.id === clean || 
+    c.certificate_number === clean || 
+    c.certificateNumber === clean || 
+    c.nip === clean
+  );
+  return found || null;
+}
+
+async function getAllCertificates() {
+  const client = getClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('certificates')
+        .select('*')
+        .order('issued_at', { ascending: false });
+
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  const mem = getMemoryStore();
+  return mem.certificates || [];
+}
+
+async function saveQrToken(eventId, token, validUntil) {
+  const client = getClient();
+  const validDate = validUntil ? new Date(validUntil).toISOString() : new Date(Date.now() + 30000).toISOString();
+  if (client) {
+    try {
+      // 1. In-place update ke tabel events
+      if (eventId) {
+        await client.from('events').update({
+          current_qr_token: token,
+          qr_valid_until: validDate,
+          updated_at: new Date().toISOString()
+        }).eq('id', eventId);
+      }
+      // 2. Simpan ke qr_tokens
+      await client.from('qr_tokens').insert({
+        event_id: eventId || 'EVT-001',
+        token: token,
+        valid_until: validDate
+      });
+      // 3. Auto-prune token usang
+      await client.from('qr_tokens').delete().lt('valid_until', new Date(Date.now() - 2 * 60 * 1000).toISOString());
+      return true;
+    } catch (e) {}
+  }
+  return true;
+}
+
+async function isQrTokenValid(eventId, token) {
+  const client = getClient();
+  if (client) {
+    try {
+      if (eventId) {
+        const { data: evt } = await client
+          .from('events')
+          .select('current_qr_token, previous_qr_token')
+          .eq('id', eventId)
+          .maybeSingle();
+
+        if (evt && (evt.current_qr_token === token || evt.previous_qr_token === token)) {
+          return true;
+        }
+      }
+
+      const { data: qr } = await client
+        .from('qr_tokens')
+        .select('id')
+        .eq('token', token)
+        .gte('valid_until', new Date(Date.now() - 60 * 1000).toISOString())
+        .limit(1)
+        .maybeSingle();
+
+      if (qr) return true;
+    } catch (e) {}
+  }
+  return false;
+}
+
+async function getAttendanceLogs(eventId = null) {
+  const client = getClient();
+  if (client) {
+    try {
+      let query = client.from('attendances').select('*').order('attended_at', { ascending: false });
+      if (eventId) query = query.eq('event_id', eventId);
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  return [];
+}
+
 module.exports = {
+  getClient,
+  setSupabaseInstance,
   isSupabaseAvailable,
   initDb,
   getAllEmployees,
@@ -1701,5 +1925,12 @@ module.exports = {
   uploadToStorage,
   registerEmployeeFace,
   resetEmployeeFace,
-  resetTestingData
+  resetTestingData,
+  isDatabaseAvailable: isSupabaseAvailable,
+  saveCertificate,
+  getCertificateByIdOrNumber,
+  getAllCertificates,
+  saveQrToken,
+  isQrTokenValid,
+  getAttendanceLogs
 };
