@@ -496,6 +496,70 @@
       pill.innerHTML = `<i class="ti ti-video me-1"></i> Kamera Depan Aktif • Posisikan wajah di lingkaran`;
     }
 
+    function getCanvasFaceDescriptor(canvas) {
+      if (!canvas || !canvas.getContext) return null;
+      try {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const x0 = Math.floor(w * 0.2);
+        const y0 = Math.floor(h * 0.15);
+        const rw = Math.floor(w * 0.6);
+        const rh = Math.floor(h * 0.7);
+        const imgData = ctx.getImageData(x0, y0, rw, rh);
+        const pixels = imgData.data;
+
+        const gridW = 8, gridH = 10;
+        const cellW = rw / gridW, cellH = rh / gridH;
+        const spatialLuma = new Array(gridW * gridH).fill(0);
+        const cellCounts = new Array(gridW * gridH).fill(0);
+        const chromProfile = new Array(24).fill(0);
+        const gradProfile = new Array(24).fill(0);
+        const totalPixels = rw * rh;
+
+        for (let y = 0; y < rh; y++) {
+          for (let x = 0; x < rw; x++) {
+            const idx = (y * rw + x) * 4;
+            const r = pixels[idx], g = pixels[idx + 1], b = pixels[idx + 2];
+            const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            const gx = Math.min(gridW - 1, Math.floor(x / cellW));
+            const gy = Math.min(gridH - 1, Math.floor(y / cellH));
+            const cIdx = gy * gridW + gx;
+            spatialLuma[cIdx] += lum;
+            cellCounts[cIdx]++;
+
+            const zone = Math.min(3, Math.floor(y / (rh / 4)));
+            const rgRatio = (r - g + 128) / 256;
+            const rbRatio = (r - b + 128) / 256;
+            chromProfile[zone * 6 + Math.min(5, Math.floor(rgRatio * 6))]++;
+            chromProfile[12 + zone * 3 + Math.min(2, Math.floor(rbRatio * 3))]++;
+
+            if (x > 0 && x < rw - 1) {
+              const leftLum = (pixels[idx - 4] * 0.299 + pixels[idx - 3] * 0.587 + pixels[idx - 2] * 0.114) / 255;
+              const diff = Math.abs(lum - leftLum);
+              const bIdx = Math.min(23, Math.floor(diff * 24));
+              gradProfile[bIdx]++;
+            }
+          }
+        }
+
+        for (let i = 0; i < spatialLuma.length; i++) {
+          spatialLuma[i] = cellCounts[i] ? spatialLuma[i] / cellCounts[i] : 0;
+        }
+        for (let i = 0; i < chromProfile.length; i++) chromProfile[i] /= totalPixels;
+        for (let i = 0; i < gradProfile.length; i++) gradProfile[i] /= totalPixels;
+
+        const rawVec = [...spatialLuma, ...chromProfile, ...gradProfile];
+        const mean = rawVec.reduce((s, v) => s + v, 0) / rawVec.length;
+        const centered = rawVec.map(v => v - mean);
+        const norm = Math.sqrt(centered.reduce((s, v) => s + v * v, 0)) || 1;
+        return centered.map(v => +(v / norm).toFixed(6));
+      } catch (err) {
+        console.warn('getCanvasFaceDescriptor error:', err);
+        return null;
+      }
+    }
+
     // 5. Simpan & Daftarkan Master Wajah
     async function submitFaceRegistration() {
       if (!capturedPhotoBase64 || !currentAuthUser) return;
@@ -507,8 +571,8 @@
       try {
         let descriptor = null;
         const canvas = document.getElementById('faceCanvas');
-        if (canvas && window.BPMPComponents && typeof window.BPMPComponents.extractFaceDescriptor === 'function') {
-          descriptor = window.BPMPComponents.extractFaceDescriptor(canvas).descriptor;
+        if (canvas) {
+          descriptor = getCanvasFaceDescriptor(canvas);
         }
 
         const res = await fetch(`/api/employees/${currentAuthUser.nip}/register-face`, {

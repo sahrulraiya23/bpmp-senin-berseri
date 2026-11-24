@@ -489,25 +489,27 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       try { masterDescriptor = JSON.parse(masterDescriptor); } catch (e) {}
     }
 
+    // Jika pegawai sudah memiliki data master biometrik dan live descriptor tersedia, lakukan pencocokan biometrik ketat
     if (Array.isArray(masterDescriptor) && masterDescriptor.length > 0 && Array.isArray(liveDescriptor) && liveDescriptor.length > 0) {
-      // Hitung Cosine Similarity antar dua vektor biometrik
-      let dot = 0, normA = 0, normB = 0;
-      for (let i = 0; i < masterDescriptor.length; i++) {
-        dot += masterDescriptor[i] * liveDescriptor[i];
-        normA += masterDescriptor[i] * masterDescriptor[i];
-        normB += liveDescriptor[i] * liveDescriptor[i];
+
+      // Hitung Pearson Correlation (Cosine Similarity dari Mean-Centered Unit Vector)
+      let similarity = 0;
+      const len = Math.min(masterDescriptor.length, liveDescriptor.length);
+      for (let i = 0; i < len; i++) {
+        similarity += masterDescriptor[i] * liveDescriptor[i];
       }
-      const similarity = (normA > 0 && normB > 0) ? (dot / (Math.sqrt(normA) * Math.sqrt(normB))) : 0;
       const similarityPercent = Math.round(similarity * 100);
       const MATCH_THRESHOLD = 0.60; // Minimal 60% kemiripan
+
+      console.log(`[Biometric Verify] ${employee.name} (${employee.nip}) Kemiripan: ${similarityPercent}% (Threshold: 60%)`);
 
       if (similarity < MATCH_THRESHOLD) {
         console.warn(`[Biometric Reject] Face mismatch for ${employee.name} (${employee.nip}). Similarity: ${similarityPercent}% < 60%`);
         return res.status(403).json({
           success: false,
           faceMismatch: true,
-          similarity: similarityPercent,
-          message: `Presensi Ditolak! Wajah yang terdeteksi tidak cocok dengan data master pegawai (${employee.name}). Tingkat kemiripan hanya ${similarityPercent}% (minimal 60%). Dilarang menitipkan presensi!`
+          similarity: Math.max(0, similarityPercent),
+          message: `Presensi Ditolak! Wajah yang terdeteksi di kamera TIDAK COCOK dengan data master pegawai (${employee.name}). Tingkat kemiripan hanya ${Math.max(0, similarityPercent)}% (minimal 60%). Dilarang menitipkan presensi kepada orang lain!`
         });
       }
     }
