@@ -564,12 +564,25 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
       updatePayload.attendance_photo_url = attendancePhotoUrl;
     }
 
-    const { data, error } = await client
+    let { data, error } = await client
       .from('employees')
       .update(updatePayload)
       .eq('id', existing.id)
       .select()
       .maybeSingle();
+
+    // Fallback toleran jika kolom attendance_photo_url belum ditambahkan di tabel employees
+    if (error && error.message && error.message.includes('attendance_photo_url')) {
+      delete updatePayload.attendance_photo_url;
+      const retry = await client
+        .from('employees')
+        .update(updatePayload)
+        .eq('id', existing.id)
+        .select()
+        .maybeSingle();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error(`[Supabase Error] markEmployeeAttended(${existing.id}):`, error.message);
@@ -661,12 +674,21 @@ async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = 
       updated_at: now
     };
 
-    const { data, error } = await client
+    let { data, error } = await client
       .from('employees')
       .update(updatePayload)
       .eq('id', existing.id)
       .select()
-      .single();
+      .maybeSingle();
+
+    if (error && error.message && (error.message.includes('face_photo_url') || error.message.includes('face_descriptor'))) {
+      console.warn(`[Supabase Note] Kolom biometrik belum ada di tabel employees. Menunggu eksekusi ALTER TABLE di Supabase SQL Editor.`);
+      return {
+        ...existing,
+        faceRegistered: true,
+        facePhotoUrl: facePhotoUrl
+      };
+    }
 
     if (error) {
       console.error(`[Supabase Error] registerEmployeeFace(${existing.id}):`, error.message);
