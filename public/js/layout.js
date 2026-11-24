@@ -17,7 +17,6 @@ const BPMPLayout = {
       { id: 'home', label: 'Beranda', href: '/', icon: 'ti-home' },
       { id: 'dashboard', label: 'Portal ASN', href: '/login', icon: 'ti-id-badge' },
       { id: 'sertifikat', label: 'Cek Sertifikat', href: '/sertifikat', icon: 'ti-certificate' },
-      { id: 'verif-wajah', label: 'Registrasi Wajah', href: '/verif-wajah', icon: 'ti-scan' },
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' }
     ],
     admin: [
@@ -111,7 +110,6 @@ const BPMPLayout = {
               <div class="mt-1">${roleBadge}</div>
             </div>
             <div class="dropdown-divider"></div>
-            ${role === 'pegawai' ? '<a class="dropdown-item" href="/verif-wajah"><i class="ti ti-scan me-2"></i> Pengaturan Wajah</a>' : ''}
             ${role === 'superadmin' ? '<a class="dropdown-item" href="/superadmin"><i class="ti ti-shield-lock me-2"></i> Konsol Superadmin</a>' : ''}
             ${role === 'superadmin' || role === 'admin' ? '<a class="dropdown-item" href="/admin"><i class="ti ti-dashboard me-2"></i> Dashboard Kepegawaian</a>' : ''}
             <a class="dropdown-item" href="/proyektor" target="_blank"><i class="ti ti-device-projector me-2"></i> Layar Proyektor Aula</a>
