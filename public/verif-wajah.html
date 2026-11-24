@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Registrasi Biometrik Wajah ASN — BPMP Provinsi Sulawesi Tenggara</title>
+  <script>
+    // Fitur verifikasi wajah dinonaktifkan: alihkan langsung ke portal pegawai
+    window.location.replace('/pegawai' + window.location.search);
+  </script>
+  <title>Portal ASN — BPMP Provinsi Sulawesi Tenggara</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="/manifest.json">
@@ -288,15 +292,15 @@
         if (data.success && data.employee) {
           currentAuthUser = data.employee;
           
-          // Cek Biometrik Wajah dari Data Server (Database sebagai Single Source of Truth)
+          // Cek Biometrik Wajah dari Data Server & Penyimpanan Perangkat
+          const localHasFace = localStorage.getItem(`bpmp_face_registered_${currentAuthUser.nip}`) === 'true';
+          const localPhoto = localStorage.getItem(`bpmp_face_photo_${currentAuthUser.nip}`);
           const isRegisteredOnServer = Boolean(data.employee.faceRegistered || data.employee.facePhotoUrl);
-          if (!isRegisteredOnServer) {
-            localStorage.removeItem(`bpmp_face_registered_${currentAuthUser.nip}`);
-            localStorage.removeItem(`bpmp_face_photo_${currentAuthUser.nip}`);
-            currentAuthUser.faceRegistered = false;
-            currentAuthUser.facePhotoUrl = null;
-          } else {
+          if (isRegisteredOnServer || localHasFace) {
             currentAuthUser.faceRegistered = true;
+            if (!currentAuthUser.facePhotoUrl && localPhoto) {
+              currentAuthUser.facePhotoUrl = localPhoto;
+            }
           }
 
           BPMPLayout.init({

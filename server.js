@@ -384,16 +384,15 @@ app.post('/api/auth/login', async (req, res) => {
 
     const activeEvent = await db.getActiveEvent();
     const { password: _, ...safeEmployee } = employee;
-    const needsFaceRegistration = !Boolean(employee.faceRegistered || employee.facePhotoUrl);
 
     return res.json({
       success: true,
       message: `Login berhasil! Selamat datang, ${employee.name}.`,
       employee: {
         ...safeEmployee,
-        needsFaceRegistration: needsFaceRegistration
+        needsFaceRegistration: false
       },
-      redirectUrl: needsFaceRegistration ? '/verif-wajah' : '/pegawai',
+      redirectUrl: '/pegawai',
       event: activeEvent
     });
   } catch (err) {
@@ -482,48 +481,6 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       }
     }
 
-    // Verifikasi Biometrik Wajah Ketat (Strict Face Matching): Tolak jika beda orang
-    const liveDescriptor = req.body.faceDescriptor;
-    let masterDescriptor = employee.faceDescriptor || employee.face_descriptor;
-    if (typeof masterDescriptor === 'string') {
-      try { masterDescriptor = JSON.parse(masterDescriptor); } catch (e) {}
-    }
-
-    // Jika pegawai sudah memiliki data master biometrik dan live descriptor tersedia, lakukan pencocokan biometrik ketat
-    if (Array.isArray(masterDescriptor) && masterDescriptor.length > 0 && Array.isArray(liveDescriptor) && liveDescriptor.length > 0) {
-
-      // Hitung Pearson Correlation (Cosine Similarity dari Mean-Centered Unit Vector)
-      let similarity = 0;
-      const len = Math.min(masterDescriptor.length, liveDescriptor.length);
-      for (let i = 0; i < len; i++) {
-        similarity += masterDescriptor[i] * liveDescriptor[i];
-      }
-      const similarityPercent = Math.round(similarity * 100);
-      const MATCH_THRESHOLD = 0.60; // Minimal 60% kemiripan
-
-      console.log(`[Biometric Verify] ${employee.name} (${employee.nip}) Kemiripan: ${similarityPercent}% (Threshold: 60%)`);
-
-      if (similarity < MATCH_THRESHOLD) {
-        console.warn(`[Biometric Reject] Face mismatch for ${employee.name} (${employee.nip}). Similarity: ${similarityPercent}% < 60%`);
-        return res.status(403).json({
-          success: false,
-          faceMismatch: true,
-          similarity: Math.max(0, similarityPercent),
-          message: `Presensi Ditolak! Wajah yang terdeteksi di kamera TIDAK COCOK dengan data master pegawai (${employee.name}). Tingkat kemiripan hanya ${Math.max(0, similarityPercent)}% (minimal 60%). Dilarang menitipkan presensi kepada orang lain!`
-        });
-      }
-    }
-
-    // Pastikan pegawai sudah memiliki data master biometrik resmi (Mencegah joki merekam wajah orang lain saat presensi aula)
-    const hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl || employee.faceDescriptor);
-    if (!hasFace) {
-      return res.status(403).json({
-        success: false,
-        needsFaceRegistration: true,
-        message: `Presensi Ditolak! Pegawai ${employee.name} belum memiliki data Master Wajah resmi. Silakan buka menu Perekaman Wajah (/verif-wajah) untuk mendaftarkan wajah asli Anda terlebih dahulu.`
-      });
-    }
-
     // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini
     const isAlreadyAttendedThisEvent = Boolean(employee.attended && employee.eventId === activeEvent.id);
     if (isAlreadyAttendedThisEvent) {
@@ -551,14 +508,10 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       cleanToken
     );
 
-    const hasMaster = Boolean(employee.faceRegistered || employee.facePhotoUrl);
-    const successMsg = hasMaster
-      ? `Presensi aula dan verifikasi biometrik wajah berhasil dicocokkan dengan data master! Selamat mengikuti kegiatan "${activeEvent.title}".`
-      : `Presensi aula berhasil dicatat! Selamat mengikuti kegiatan "${activeEvent.title}".`;
+    const successMsg = `Presensi aula berhasil dicatat! Selamat mengikuti kegiatan "${activeEvent.title}".`;
 
     return res.json({
       success: true,
-      faceMatched: hasMaster,
       message: successMsg,
       employee: updatedEmployee || employee,
       event: activeEvent
@@ -1738,11 +1691,11 @@ app.get('/pegawai', (req, res) => {
 });
 
 app.get('/verif-wajah', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'verif-wajah.html'));
+  res.redirect('/pegawai');
 });
 
 app.get('/verifikasi-wajah', (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'verif-wajah.html'));
+  res.redirect('/pegawai');
 });
 
 app.get('/admin/login', (req, res) => {

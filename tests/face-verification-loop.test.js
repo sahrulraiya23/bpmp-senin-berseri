@@ -313,8 +313,8 @@ test('SUITE: Perbaikan Bug Verifikasi Wajah, Presensi Supabase, & Pencegahan Loo
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
     assert.equal(res.body.employee.nip, '199508232024011001');
-    assert.equal(res.body.employee.faceRegistered, false, 'Awalnya belum merekam wajah');
-    assert.equal(res.body.employee.needsFaceRegistration, true, 'Wajib diarahkan rekam wajah');
+    assert.equal(res.body.employee.needsFaceRegistration, false, 'Fitur verifikasi wajah dinonaktifkan');
+    assert.equal(res.body.redirectUrl, '/pegawai', 'Langsung ke portal pegawai');
   });
 
   await t.test('2. Registrasi Master Wajah berhasil mengunggah ke Supabase Storage dan memperbarui PostgreSQL', async () => {

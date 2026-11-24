@@ -725,13 +725,6 @@
       }
 
       if (currentAuthUser && (currentAuthUser.nip || currentAuthUser.id)) {
-        // Jika data biometrik master belum terdaftar, wajib arahkan ke halaman rekam wajah dulu
-        const hasFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
-        if (!hasFace) {
-          window.location.href = '/verif-wajah';
-          return;
-        }
-
         if (localStorage.getItem('bpmp_attended_' + currentAuthUser.nip) === 'true') {
           currentAuthUser.attended = true;
           currentAuthUser.attendedAt = localStorage.getItem('bpmp_attended_time_' + currentAuthUser.nip) || currentAuthUser.attendedAt;
@@ -832,22 +825,6 @@
           localStorage.setItem('bpmp_auth_nip', currentAuthUser.nip);
           localStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
           sessionStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
-
-          // Validasi Biometrik Wajah Master Pegawai (Wajib rekam wajah jika belum ada data biometrik)
-          const hasMasterFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
-          if (!hasMasterFace || data.redirectUrl === '/verif-wajah' || data.employee.needsFaceRegistration) {
-            localStorage.removeItem('bpmp_face_registered_' + currentAuthUser.nip);
-            localStorage.removeItem('bpmp_face_photo_' + currentAuthUser.nip);
-            currentAuthUser.faceRegistered = false;
-            currentAuthUser.facePhotoUrl = null;
-
-            showToast('Login berhasil! Anda belum merekam wajah master. Wajib melakukan perekaman wajah terlebih dahulu...', 'warning');
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Mengarahkan ke Rekam Wajah...';
-            setTimeout(() => {
-              window.location.href = '/verif-wajah' + (pendingScannedToken ? `?token=${encodeURIComponent(pendingScannedToken)}` : '');
-            }, 600);
-            return;
-          }
 
           showToast('Selamat datang, ' + currentAuthUser.name + '!', 'success');
           activateDashboardView(true);
@@ -954,21 +931,13 @@
       document.getElementById('empPanggol').textContent = emp.rank || emp.panggol || '-';
       document.getElementById('empInstansi').textContent = emp.institution || emp.instansi || 'BPMP Provinsi Sulawesi Tenggara';
 
-      // Status Biometrik Wajah
+      // Status Pegawai
       const faceCell = document.getElementById('empFaceStatusCell');
       const facePrompt = document.getElementById('faceEnrollmentPrompt');
-      const isFaceOk = Boolean(emp.faceRegistered || emp.facePhotoUrl);
-      if (isFaceOk) {
-        if (faceCell) {
-          faceCell.innerHTML = '<span class="badge bg-green text-white px-2 py-1"><i class="ti ti-check me-1"></i> Biometrik Wajah Cocok</span>';
-        }
-        if (facePrompt) facePrompt.classList.add('d-none');
-      } else {
-        if (faceCell) {
-          faceCell.innerHTML = '<a href="/verif-wajah" class="btn btn-warning btn-sm"><i class="ti ti-camera me-1"></i> Rekam Wajah</a>';
-        }
-        if (facePrompt) facePrompt.classList.remove('d-none');
+      if (faceCell) {
+        faceCell.innerHTML = '<span class="badge bg-success-lt px-2 py-1"><i class="ti ti-user-check me-1"></i> Terverifikasi</span>';
       }
+      if (facePrompt) facePrompt.classList.add('d-none');
 
       // Cek Kehadiran pada Event Aktif (Supabase sebagai Single Source of Truth)
       const isAttendedThisEvent = Boolean(
@@ -1814,19 +1783,6 @@
           const data = await res.json();
           if (data.success && data.employee) {
             currentAuthUser = { ...currentAuthUser, ...data.employee };
-            
-            // Validasi Biometrik Wajah: jika belum rekam wajah, wajib arahkan ke /verif-wajah
-            const hasMasterFace = Boolean(currentAuthUser.faceRegistered || currentAuthUser.facePhotoUrl);
-            if (!hasMasterFace) {
-              localStorage.removeItem('bpmp_face_registered_' + currentAuthUser.nip);
-              localStorage.removeItem('bpmp_face_photo_' + currentAuthUser.nip);
-              showToast('Anda belum merekam data wajah master. Mengalihkan ke halaman Perekaman Wajah...', 'warning');
-              setTimeout(() => {
-                window.location.href = '/verif-wajah' + (tokenParam ? `?token=${encodeURIComponent(tokenParam)}` : '');
-              }, 600);
-              return;
-            }
-
             if (localStorage.getItem('bpmp_attended_' + currentAuthUser.nip) === 'true') {
               currentAuthUser.attended = true;
             }

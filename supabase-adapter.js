@@ -39,20 +39,68 @@ let _supabaseInstance = null;
 let _isConfigured = false;
 let _explicitNull = false;
 
-// Cache Persisten Biometrik Wajah Lokal (Fail-safe jika ALTER TABLE Supabase belum dieksekusi)
+// Cache Persisten Biometrik Wajah Lokal & Supabase Storage Cloud
 const FACES_CACHE_PATH = path.join(__dirname, 'uploads', 'faces', 'descriptors_cache.json');
+const _faceMemCache = new Map();
 
 function getFaceCache(nip) {
+  if (!nip) return null;
+  const cleanNip = String(nip).trim();
+  if (_faceMemCache.has(cleanNip)) {
+    return _faceMemCache.get(cleanNip);
+  }
+  if (process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test') {
+    return null;
+  }
   try {
     if (fs.existsSync(FACES_CACHE_PATH)) {
       const data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8'));
-      return data[String(nip).trim()] || null;
+      if (data && data[cleanNip]) {
+        _faceMemCache.set(cleanNip, data[cleanNip]);
+        return data[cleanNip];
+      }
     }
   } catch (e) {}
   return null;
 }
 
+async function ensureFaceCacheFromCloud(nip) {
+  if (!nip) return null;
+  const cleanNip = String(nip).trim();
+  const cached = getFaceCache(cleanNip);
+  if (cached) return cached;
+
+  const client = getClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client.storage.from('faces').download(`meta-${cleanNip}.json`);
+    if (!error && data) {
+      const text = await data.text();
+      const meta = JSON.parse(text);
+      if (meta && (meta.facePhotoUrl || meta.faceDescriptor)) {
+        _faceMemCache.set(cleanNip, meta);
+        try {
+          const dir = path.dirname(FACES_CACHE_PATH);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          let localData = {};
+          if (fs.existsSync(FACES_CACHE_PATH)) {
+            try { localData = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8')); } catch(e){}
+          }
+          localData[cleanNip] = meta;
+          fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(localData, null, 2), 'utf8');
+        } catch (fsErr) {}
+        return meta;
+      }
+    }
+  } catch (err) {}
+  return null;
+}
+
 function saveFaceCache(nip, obj) {
+  if (!nip || !obj) return;
+  const cleanNip = String(nip).trim();
+  _faceMemCache.set(cleanNip, obj);
   // Jangan menimpa data produksi saat test runner berjalan
   if (process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test') return;
   try {
@@ -62,16 +110,19 @@ function saveFaceCache(nip, obj) {
     if (fs.existsSync(FACES_CACHE_PATH)) {
       try { data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8')); } catch(e){}
     }
-    data[String(nip).trim()] = obj;
+    data[cleanNip] = obj;
     fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(data, null, 2), 'utf8');
   } catch (e) {}
 }
 
 function deleteFaceCache(nip) {
+  if (!nip) return;
+  const cleanNip = String(nip).trim();
+  _faceMemCache.delete(cleanNip);
   try {
     if (fs.existsSync(FACES_CACHE_PATH)) {
       let data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8'));
-      delete data[String(nip).trim()];
+      delete data[cleanNip];
       fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(data, null, 2), 'utf8');
     }
   } catch (e) {}
@@ -237,6 +288,7 @@ function setSupabaseInstance(instance) {
   _supabaseInstance = instance;
   _isConfigured = Boolean(instance);
   _explicitNull = (instance === null);
+  _faceMemCache.clear();
 }
 
 function isSupabaseAvailable() {
@@ -522,6 +574,9 @@ async function getEmployeeByIdOrNip(idOrNip) {
         throw new Error(`Gagal memuat profil pegawai dari Supabase: ${error.message}`);
       }
     } else if (data) {
+      if (!data.face_photo_url && !data.face_descriptor) {
+        await ensureFaceCacheFromCloud(data.nip);
+      }
       return formatSupabaseEmployee(data);
     }
   } else if (isProd()) {
@@ -707,6 +762,23 @@ async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = 
 
     saveFaceCache(existing.nip, { faceDescriptor, facePhotoUrl, faceRegisteredAt: now });
 
+    // Simpan metadata biometrik ke Supabase Storage bucket 'faces' agar persisten lintas serverless instance
+    try {
+      const metaBuf = Buffer.from(JSON.stringify({
+        nip: existing.nip,
+        faceRegistered: true,
+        facePhotoUrl,
+        faceDescriptor,
+        faceRegisteredAt: now
+      }, null, 2), 'utf8');
+      await client.storage.from('faces').upload(`meta-${existing.nip}.json`, metaBuf, {
+        contentType: 'application/json',
+        upsert: true
+      });
+    } catch (storageMetaErr) {
+      console.warn('[Supabase Storage Note] Failed to upload meta json:', storageMetaErr.message);
+    }
+
     if (error && error.message && (error.message.includes('face_photo_url') || error.message.includes('face_descriptor'))) {
       console.warn(`[Supabase Note] Kolom biometrik belum ada di tabel employees. Menunggu eksekusi ALTER TABLE di Supabase SQL Editor.`);
       return {
@@ -778,6 +850,10 @@ async function resetEmployeeFace(id) {
 
   const client = getClient();
   if (client) {
+    try {
+      await client.storage.from('faces').remove([`meta-${existing.nip}.json`]);
+    } catch (rmStorageErr) {}
+
     const resetPayload = { updated_at: now };
     let { data, error } = await client
       .from('employees')
@@ -1480,6 +1556,7 @@ async function uploadToStorage(bucketName, fileName, fileBuffer, contentType) {
 // ==============================================================
 async function resetTestingData() {
   const now = new Date().toISOString();
+  _faceMemCache.clear();
   const client = getClient();
 
   if (client) {
