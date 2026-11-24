@@ -358,7 +358,15 @@ function formatSupabaseEmployee(row) {
       filePath: row.lpti_file_path || null,
       fileSize: row.lpti_file_size || null,
       uploadedAt: row.lpti_uploaded_at || null,
-      revisionNote: row.lpti_revision_note || ''
+      revisionNote: row.lpti_revision_note || '',
+      versi: parseInt(row.lpti_versi, 10) || 1,
+      diklaimOleh: row.diklaim_oleh || null,
+      diklaimPada: row.diklaim_pada || null,
+      diklaimSampai: row.diklaim_sampai || null,
+      diputuskanOleh: row.diputuskan_oleh || null,
+      diputuskanNama: row.diputuskan_nama || null,
+      diputuskanPada: row.diputuskan_pada || null,
+      catatan: row.lpti_catatan || null
     },
     certificate: row.certificate_number ? {
       number: row.certificate_number,
@@ -918,12 +926,20 @@ async function updateEmployeeLpti(id, lptiData) {
   const existing = await getEmployeeByIdOrNip(clean);
   if (!existing) return null;
 
+  const prevStatus = existing.lpti?.status || 'none';
+  const newVersi = (parseInt(existing.lpti?.versi, 10) || 1) + 1;
+  const aksi = (prevStatus === 'revision') ? 'diunggah_ulang' : 'diunggah';
+
   const client = getClient();
   if (client) {
     const { data, error } = await client
       .from('employees')
       .update({
         lpti_status: 'pending',
+        lpti_versi: newVersi,
+        diklaim_oleh: null,
+        diklaim_pada: null,
+        diklaim_sampai: null,
         lpti_file_name: lptiData.fileName,
         lpti_file_original_name: lptiData.fileOriginalName,
         lpti_file_path: lptiData.filePath,
@@ -940,12 +956,35 @@ async function updateEmployeeLpti(id, lptiData) {
       console.error('Supabase updateEmployeeLpti error:', error.message);
       return null;
     }
+
+    try {
+      await client.from('lpti_riwayat').insert({
+        pegawai_id: existing.id,
+        aksi: aksi,
+        oleh: existing.nip,
+        nama_snapshot: existing.name,
+        status_sebelum: prevStatus,
+        status_sesudah: 'pending',
+        catatan: `Pegawai mengunggah berkas LPTI: ${lptiData.fileOriginalName || lptiData.fileName}`,
+        waktu: now,
+        ip: lptiData.clientIp || null
+      });
+    } catch (e) {}
+
     return formatSupabaseEmployee(data);
   }
 
   // Memory fallback
   existing.lpti = {
     status: 'pending',
+    versi: newVersi,
+    diklaimOleh: null,
+    diklaimPada: null,
+    diklaimSampai: null,
+    diputuskanOleh: null,
+    diputuskanNama: null,
+    diputuskanPada: null,
+    catatan: null,
     fileName: lptiData.fileName,
     fileOriginalName: lptiData.fileOriginalName,
     filePath: lptiData.filePath,
@@ -953,6 +992,22 @@ async function updateEmployeeLpti(id, lptiData) {
     uploadedAt: lptiData.uploadedAt || now,
     revisionNote: ''
   };
+
+  const mem = getMemoryStore();
+  if (!mem.lpti_riwayat) mem.lpti_riwayat = [];
+  mem.lpti_riwayat.push({
+    id: mem.lpti_riwayat.length + 1,
+    pegawai_id: existing.id,
+    aksi: aksi,
+    oleh: existing.nip,
+    nama_snapshot: existing.name,
+    status_sebelum: prevStatus,
+    status_sesudah: 'pending',
+    catatan: `Pegawai mengunggah berkas LPTI: ${lptiData.fileOriginalName || lptiData.fileName}`,
+    waktu: now,
+    ip: lptiData.clientIp || null
+  });
+
   return existing;
 }
 
@@ -1039,6 +1094,595 @@ async function verifyEmployeeLpti(employeeId, actionOrCertData = null, revisionN
     existing.certificate = null;
   }
   return existing;
+}
+
+// ==============================================================
+// SISTEM KURASI LPTI MULTI-STAF DENGAN TRANSAKSI POSTGRES RPC
+// ==============================================================
+
+async function claimLpti(pegawaiId, user, clientIp = null, durationMinutes = 15) {
+  const client = getClient();
+  const userId = String(user.username || user.nip || user.id || 'admin');
+  const userNama = user.name || user.username || 'Staf Kepegawaian';
+  const userPeran = user.peran || user.role || 'kepegawaian';
+
+  if (client) {
+    try {
+      const { data, error } = await client.rpc('rpc_klaim_lpti', {
+        p_pegawai_id: String(pegawaiId),
+        p_user_id: userId,
+        p_user_nama: userNama,
+        p_user_peran: userPeran,
+        p_client_ip: clientIp,
+        p_duration_minutes: durationMinutes
+      });
+      if (!error && data) return data;
+      if (error && error.message) {
+        console.warn('[Supabase Warning] rpc_klaim_lpti fallback:', error.message);
+      }
+    } catch (e) {}
+  }
+
+  // Memory Fallback / Simulation
+  const emp = await getEmployeeByIdOrNip(pegawaiId);
+  if (!emp) return { success: false, code: 'NOT_FOUND', message: 'Data pegawai tidak ditemukan.' };
+
+  const now = new Date();
+  const until = new Date(now.getTime() + durationMinutes * 60 * 1000);
+
+  if (!['pending', 'perlu_dikurasi'].includes(emp.lpti?.status)) {
+    return { success: false, code: 'INVALID_STATUS', message: `Berkas LPTI belum siap dikurasi (status: ${emp.lpti?.status}).` };
+  }
+
+  if (emp.lpti?.diklaimOleh && emp.lpti?.diklaimSampai && new Date(emp.lpti.diklaimSampai) > now && emp.lpti.diklaimOleh !== userId) {
+    if (userPeran !== 'superadmin') {
+      return {
+        success: false,
+        code: 'ALREADY_CLAIMED',
+        message: 'Sedang diperiksa oleh staf lain.',
+        claimed_by: emp.lpti.diklaimOleh,
+        claimed_until: emp.lpti.diklaimSampai
+      };
+    }
+  }
+
+  emp.lpti.diklaimOleh = userId;
+  emp.lpti.diklaimPada = now.toISOString();
+  emp.lpti.diklaimSampai = until.toISOString();
+
+  await recordLptiHistory({
+    pegawai_id: emp.id,
+    aksi: 'diklaim',
+    oleh: userId,
+    nama_snapshot: userNama,
+    status_sebelum: emp.lpti.status,
+    status_sesudah: emp.lpti.status,
+    catatan: `Mengklaim antrean kurasi LPTI (${durationMinutes} menit)`,
+    waktu: now.toISOString(),
+    ip: clientIp
+  });
+
+  return {
+    success: true,
+    pegawai_id: emp.id,
+    diklaim_oleh: userId,
+    diklaim_sampai: until.toISOString(),
+    versi: emp.lpti.versi || 1
+  };
+}
+
+async function releaseLptiClaim(pegawaiId, user, clientIp = null) {
+  const client = getClient();
+  const userId = String(user.username || user.nip || user.id || 'admin');
+  const userNama = user.name || user.username || 'Staf Kepegawaian';
+  const userPeran = user.peran || user.role || 'kepegawaian';
+
+  if (client) {
+    try {
+      const { data, error } = await client.rpc('rpc_lepas_klaim_lpti', {
+        p_pegawai_id: String(pegawaiId),
+        p_user_id: userId,
+        p_user_nama: userNama,
+        p_user_peran: userPeran,
+        p_client_ip: clientIp
+      });
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+
+  const emp = await getEmployeeByIdOrNip(pegawaiId);
+  if (!emp) return { success: false, code: 'NOT_FOUND', message: 'Data pegawai tidak ditemukan.' };
+
+  if (emp.lpti?.diklaimOleh && emp.lpti.diklaimOleh !== userId && userPeran !== 'superadmin') {
+    return { success: false, code: 'FORBIDDEN', message: 'Hanya pengklaim atau superadmin yang dapat melepas klaim.' };
+  }
+
+  const prevClaim = emp.lpti?.diklaimOleh;
+  emp.lpti.diklaimOleh = null;
+  emp.lpti.diklaimPada = null;
+  emp.lpti.diklaimSampai = null;
+
+  if (prevClaim) {
+    await recordLptiHistory({
+      pegawai_id: emp.id,
+      aksi: 'dilepas',
+      oleh: userId,
+      nama_snapshot: userNama,
+      status_sebelum: emp.lpti.status,
+      status_sesudah: emp.lpti.status,
+      catatan: 'Melepas klaim antrean kurasi LPTI',
+      waktu: new Date().toISOString(),
+      ip: clientIp
+    });
+  }
+
+  return { success: true, message: 'Klaim LPTI berhasil dilepas.' };
+}
+
+async function approveLpti(pegawaiId, versi, user, clientIp = null, catatan = '', jp = 4, certNumber = null, verifier = 'Junaiddin Pagala, S.T., M.T.', verifierTitle = 'Kepala Balai Penjaminan Mutu Pendidikan Sultra') {
+  const client = getClient();
+  const userId = String(user.username || user.nip || user.id || 'admin');
+  const userNama = user.name || user.username || 'Staf Kepegawaian';
+  const userPeran = user.peran || user.role || 'kepegawaian';
+
+  if (client) {
+    try {
+      const { data, error } = await client.rpc('rpc_setujui_lpti', {
+        p_pegawai_id: String(pegawaiId),
+        p_versi: parseInt(versi, 10),
+        p_user_id: userId,
+        p_user_nama: userNama,
+        p_user_peran: userPeran,
+        p_client_ip: clientIp,
+        p_catatan: catatan,
+        p_jp: jp,
+        p_cert_number: certNumber,
+        p_verifier: verifier,
+        p_verifier_title: verifierTitle
+      });
+      if (!error && data) return data;
+      if (error && error.message) {
+        console.warn('[Supabase Warning] rpc_setujui_lpti fallback:', error.message);
+      }
+    } catch (e) {}
+  }
+
+  // Memory Fallback / Simulation
+  const emp = await getEmployeeByIdOrNip(pegawaiId);
+  if (!emp) return { success: false, code: 'NOT_FOUND', message: 'Data pegawai tidak ditemukan.' };
+
+  const currentVersi = parseInt(emp.lpti?.versi, 10) || 1;
+  const currentStatus = emp.lpti?.status || 'none';
+
+  // Optimistic locking check
+  if (currentVersi !== parseInt(versi, 10) || !['pending', 'perlu_dikurasi'].includes(currentStatus)) {
+    return {
+      success: false,
+      code: 'CONFLICT',
+      message: 'Gagal menyetujui: Status LPTI telah diubah oleh staf lain atau versi tidak cocok.',
+      current_status: currentStatus,
+      current_versi: currentVersi,
+      decided_by: emp.lpti?.diputuskanNama || 'Staf Lain',
+      decided_at: emp.lpti?.diputuskanPada || new Date().toISOString()
+    };
+  }
+
+  const now = new Date().toISOString();
+  emp.lpti.status = 'approved';
+  emp.lpti.versi = currentVersi + 1;
+  emp.lpti.revisionNote = '';
+  emp.lpti.diputuskanOleh = userId;
+  emp.lpti.diputuskanNama = userNama;
+  emp.lpti.diputuskanPada = now;
+  emp.lpti.catatan = catatan || 'LPTI disetujui, e-sertifikat diterbitkan';
+  emp.lpti.diklaimOleh = null;
+  emp.lpti.diklaimSampai = null;
+  emp.accumulatedJp = (Number(emp.accumulatedJp) || 0) + (parseInt(jp, 10) || 4);
+
+  if (certNumber) {
+    emp.certificate = {
+      number: certNumber,
+      issuedAt: now,
+      verifier: verifier,
+      verifierTitle: verifierTitle
+    };
+  }
+
+  await recordLptiHistory({
+    pegawai_id: emp.id,
+    aksi: 'disetujui',
+    oleh: userId,
+    nama_snapshot: userNama,
+    status_sebelum: 'pending',
+    status_sesudah: 'approved',
+    catatan: catatan || 'LPTI disetujui, e-sertifikat diterbitkan',
+    waktu: now,
+    ip: clientIp
+  });
+
+  return {
+    success: true,
+    message: 'LPTI berhasil disetujui.',
+    pegawai_id: emp.id,
+    status: 'approved',
+    versi: emp.lpti.versi
+  };
+}
+
+async function reviseLpti(pegawaiId, versi, user, clientIp = null, alasan = '') {
+  if (!alasan || !String(alasan).trim()) {
+    return { success: false, code: 'VALIDATION_ERROR', message: 'Alasan / catatan revisi wajib diisi!' };
+  }
+
+  const client = getClient();
+  const userId = String(user.username || user.nip || user.id || 'admin');
+  const userNama = user.name || user.username || 'Staf Kepegawaian';
+  const userPeran = user.peran || user.role || 'kepegawaian';
+  const cleanAlasan = String(alasan).trim();
+
+  if (client) {
+    try {
+      const { data, error } = await client.rpc('rpc_revisi_lpti', {
+        p_pegawai_id: String(pegawaiId),
+        p_versi: parseInt(versi, 10),
+        p_user_id: userId,
+        p_user_nama: userNama,
+        p_user_peran: userPeran,
+        p_alasan: cleanAlasan,
+        p_client_ip: clientIp
+      });
+      if (!error && data) return data;
+      if (error && error.message) {
+        console.warn('[Supabase Warning] rpc_revisi_lpti fallback:', error.message);
+      }
+    } catch (e) {}
+  }
+
+  // Memory Fallback
+  const emp = await getEmployeeByIdOrNip(pegawaiId);
+  if (!emp) return { success: false, code: 'NOT_FOUND', message: 'Data pegawai tidak ditemukan.' };
+
+  const currentVersi = parseInt(emp.lpti?.versi, 10) || 1;
+  const currentStatus = emp.lpti?.status || 'none';
+
+  if (currentVersi !== parseInt(versi, 10) || !['pending', 'perlu_dikurasi'].includes(currentStatus)) {
+    return {
+      success: false,
+      code: 'CONFLICT',
+      message: 'Gagal merevisi: Status LPTI telah diubah oleh staf lain atau versi tidak cocok.',
+      current_status: currentStatus,
+      current_versi: currentVersi,
+      decided_by: emp.lpti?.diputuskanNama || 'Staf Lain',
+      decided_at: emp.lpti?.diputuskanPada || new Date().toISOString()
+    };
+  }
+
+  const now = new Date().toISOString();
+  emp.lpti.status = 'revision';
+  emp.lpti.versi = currentVersi + 1;
+  emp.lpti.revisionNote = cleanAlasan;
+  emp.lpti.diputuskanOleh = userId;
+  emp.lpti.diputuskanNama = userNama;
+  emp.lpti.diputuskanPada = now;
+  emp.lpti.catatan = cleanAlasan;
+  emp.lpti.diklaimOleh = null;
+  emp.lpti.diklaimSampai = null;
+
+  await recordLptiHistory({
+    pegawai_id: emp.id,
+    aksi: 'direvisi',
+    oleh: userId,
+    nama_snapshot: userNama,
+    status_sebelum: 'pending',
+    status_sesudah: 'revision',
+    catatan: cleanAlasan,
+    waktu: now,
+    ip: clientIp
+  });
+
+  return {
+    success: true,
+    message: 'LPTI telah dikembalikan untuk revisi.',
+    pegawai_id: emp.id,
+    status: 'revision',
+    versi: emp.lpti.versi
+  };
+}
+
+async function cancelLptiApproval(pegawaiId, user, clientIp = null, alasan = '', jp = 4) {
+  const userPeran = user.peran || user.role || 'kepegawaian';
+  if (userPeran !== 'superadmin') {
+    return { success: false, code: 'FORBIDDEN', message: 'Hanya Superadmin yang memiliki wewenang membatalkan persetujuan LPTI.' };
+  }
+
+  if (!alasan || !String(alasan).trim()) {
+    return { success: false, code: 'VALIDATION_ERROR', message: 'Alasan pembatalan persetujuan wajib diisi!' };
+  }
+
+  const client = getClient();
+  const userId = String(user.username || user.nip || user.id || 'superadmin');
+  const userNama = user.name || user.username || 'Super Administrator';
+  const cleanAlasan = String(alasan).trim();
+
+  if (client) {
+    try {
+      const { data, error } = await client.rpc('rpc_batalkan_persetujuan_lpti', {
+        p_pegawai_id: String(pegawaiId),
+        p_user_id: userId,
+        p_user_nama: userNama,
+        p_user_peran: userPeran,
+        p_alasan: cleanAlasan,
+        p_client_ip: clientIp,
+        p_jp: jp
+      });
+      if (!error && data) return data;
+      if (error && error.message) {
+        console.warn('[Supabase Warning] rpc_batalkan_persetujuan_lpti fallback:', error.message);
+      }
+    } catch (e) {}
+  }
+
+  // Memory Fallback
+  const emp = await getEmployeeByIdOrNip(pegawaiId);
+  if (!emp) return { success: false, code: 'NOT_FOUND', message: 'Data pegawai tidak ditemukan.' };
+
+  if (emp.lpti?.status !== 'approved') {
+    return { success: false, code: 'INVALID_STATUS', message: 'Hanya berkas berstatus Disetujui yang dapat dibatalkan.' };
+  }
+
+  const now = new Date().toISOString();
+  emp.lpti.status = 'pending';
+  emp.lpti.versi = (parseInt(emp.lpti.versi, 10) || 1) + 1;
+  emp.lpti.revisionNote = cleanAlasan;
+  emp.lpti.diputuskanOleh = userId;
+  emp.lpti.diputuskanNama = userNama;
+  emp.lpti.diputuskanPada = now;
+  emp.lpti.catatan = `Persetujuan dibatalkan: ${cleanAlasan}`;
+  emp.lpti.diklaimOleh = null;
+  emp.lpti.diklaimSampai = null;
+  emp.accumulatedJp = Math.max(0, (Number(emp.accumulatedJp) || 0) - (parseInt(jp, 10) || 4));
+
+  await recordLptiHistory({
+    pegawai_id: emp.id,
+    aksi: 'persetujuan_dibatalkan',
+    oleh: userId,
+    nama_snapshot: userNama,
+    status_sebelum: 'approved',
+    status_sesudah: 'pending',
+    catatan: cleanAlasan,
+    waktu: now,
+    ip: clientIp
+  });
+
+  return {
+    success: true,
+    message: 'Persetujuan LPTI berhasil dibatalkan oleh Superadmin. Status kembali ke Perlu Dikurasi.',
+    pegawai_id: emp.id,
+    status: 'pending',
+    versi: emp.lpti.versi
+  };
+}
+
+// ==============================================================
+// RIWAYAT LPTI (APPEND-ONLY) & AKTIVITAS LOG
+// ==============================================================
+
+async function recordLptiHistory(historyData) {
+  const record = {
+    pegawai_id: historyData.pegawai_id,
+    lpti_id: historyData.lpti_id || null,
+    aksi: historyData.aksi,
+    oleh: historyData.oleh,
+    nama_snapshot: historyData.nama_snapshot,
+    status_sebelum: historyData.status_sebelum || null,
+    status_sesudah: historyData.status_sesudah,
+    catatan: historyData.catatan || null,
+    waktu: historyData.waktu || new Date().toISOString(),
+    ip: historyData.ip || null
+  };
+
+  const client = getClient();
+  if (client) {
+    try {
+      await client.from('lpti_riwayat').insert(record);
+    } catch (e) {}
+  }
+
+  const mem = getMemoryStore();
+  if (!mem.lpti_riwayat) mem.lpti_riwayat = [];
+  mem.lpti_riwayat.push({ id: mem.lpti_riwayat.length + 1, ...record });
+  return record;
+}
+
+// Trigger Proteksi Append-Only: Menolak UPDATE/DELETE pada lpti_riwayat
+function preventLptiRiwayatModification() {
+  throw new Error('TABEL APPEND-ONLY: lpti_riwayat tidak dapat diubah (UPDATE) atau dihapus (DELETE)!');
+}
+
+async function getLptiHistory(pegawaiId) {
+  const client = getClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('lpti_riwayat')
+        .select('*')
+        .eq('pegawai_id', String(pegawaiId))
+        .order('waktu', { ascending: false });
+      if (!error && data && data.length > 0) return data;
+    } catch (e) {}
+  }
+
+  const mem = getMemoryStore();
+  return (mem.lpti_riwayat || [])
+    .filter(r => String(r.pegawai_id) === String(pegawaiId))
+    .sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+}
+
+async function recordActivityLog(aktorIdOrObj, aktorNama, aksi, target = null, keterangan = '', ip = null) {
+  let record;
+  if (aktorIdOrObj && typeof aktorIdOrObj === 'object') {
+    record = {
+      aktor_id: String(aktorIdOrObj.aktor_id || aktorIdOrObj.aktorId || 'system'),
+      aktor_nama: String(aktorIdOrObj.aktor_nama || aktorIdOrObj.aktorNama || 'Sistem'),
+      aksi: String(aktorIdOrObj.aksi || 'aktivitas'),
+      target: aktorIdOrObj.target ? String(aktorIdOrObj.target) : null,
+      keterangan: aktorIdOrObj.keterangan || '',
+      ip: aktorIdOrObj.ip || null,
+      created_at: aktorIdOrObj.created_at || new Date().toISOString()
+    };
+  } else {
+    record = {
+      aktor_id: String(aktorIdOrObj || 'system'),
+      aktor_nama: String(aktorNama || 'Sistem'),
+      aksi: String(aksi || 'aktivitas'),
+      target: target ? String(target) : null,
+      keterangan: keterangan || '',
+      ip: ip || null,
+      created_at: new Date().toISOString()
+    };
+  }
+
+  const client = getClient();
+  if (client) {
+    try {
+      await client.from('aktivitas_log').insert(record);
+    } catch (e) {}
+  }
+
+  const mem = getMemoryStore();
+  if (!mem.aktivitas_log) mem.aktivitas_log = [];
+  mem.aktivitas_log.push({ id: mem.aktivitas_log.length + 1, ...record });
+  return record;
+}
+
+async function getActivityLogs(filters = {}) {
+  const limitCount = parseInt(filters.limit, 10) || 100;
+  const client = getClient();
+  if (client) {
+    try {
+      let query = client.from('aktivitas_log').select('*').order('created_at', { ascending: false });
+      if (filters.aksi) query = query.eq('aksi', filters.aksi);
+      if (filters.aktor_id) query = query.eq('aktor_id', filters.aktor_id);
+      const { data, error } = await query.limit(limitCount);
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+
+  const mem = getMemoryStore();
+  let list = mem.aktivitas_log || [];
+  if (filters.aksi) list = list.filter(l => l.aksi === filters.aksi);
+  if (filters.aktor_id) list = list.filter(l => l.aktor_id === filters.aktor_id);
+  return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, limitCount);
+}
+
+async function getNextUnclaimedLpti(admin, clientIp = null) {
+  const employees = await getAllEmployees();
+  const now = Date.now();
+
+  const candidate = employees.find(e => {
+    if (!e.attended) return false;
+    const lpti = e.lpti;
+    if (!lpti || lpti.status !== 'pending') return false;
+    if (lpti.diklaimOleh && lpti.diklaimSampai) {
+      const until = new Date(lpti.diklaimSampai).getTime();
+      if (until > now) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  if (!candidate) {
+    return {
+      success: false,
+      code: 'NO_PENDING_LPTI',
+      message: 'Tidak ada antrean berkas LPTI yang belum diperiksa atau semua sedang dikurasi oleh staf lain.'
+    };
+  }
+
+  const claimRes = await claimLpti(candidate.id, admin, clientIp, 15);
+  return {
+    success: true,
+    message: `Berhasil mengambil antrean LPTI berikutnya: ${candidate.name}`,
+    employee: candidate,
+    claim: claimRes
+  };
+}
+
+async function bulkApproveLpti(employeeIds, admin, clientIp = null, catatan = '') {
+  if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+    return { success: false, message: 'Daftar ID pegawai tidak boleh kosong.' };
+  }
+
+  const activeEvt = await getActiveEvent();
+  const jp = activeEvt?.jp || 4;
+  const approvedList = [];
+  const skippedList = [];
+  const now = Date.now();
+
+  for (const empId of employeeIds) {
+    const emp = await getEmployeeByIdOrNip(empId);
+    if (!emp) {
+      skippedList.push({ id: empId, reason: 'Pegawai tidak ditemukan' });
+      continue;
+    }
+    if (!emp.attended) {
+      skippedList.push({ id: empId, name: emp.name, reason: 'Belum terverifikasi hadir di aula' });
+      continue;
+    }
+    const lpti = emp.lpti;
+    if (!lpti || lpti.status !== 'pending') {
+      skippedList.push({ id: empId, name: emp.name, reason: 'Status LPTI bukan pending / perlu dikurasi' });
+      continue;
+    }
+    if (lpti.diklaimOleh && lpti.diklaimSampai) {
+      const until = new Date(lpti.diklaimSampai).getTime();
+      if (until > now && lpti.diklaimOleh !== (admin.username || admin.nip) && admin.role !== 'superadmin' && admin.peran !== 'superadmin') {
+        skippedList.push({ id: empId, name: emp.name, reason: `Sedang diklaim oleh ${lpti.diklaimOleh}` });
+        continue;
+      }
+    }
+
+    const year = new Date().getFullYear();
+    const nextSeq = await getNextCertificateSequence(year);
+    const certNumber = `${String(nextSeq).padStart(4, '0')}/C6.26/Sertifikat/KP.04.00/${year}`;
+
+    const res = await approveLpti(
+      emp.id,
+      lpti.versi || 1,
+      admin,
+      clientIp,
+      catatan || 'LPTI disetujui via kurasi bulk approval.',
+      jp,
+      certNumber
+    );
+
+    if (res.success) {
+      approvedList.push({ id: emp.id, name: emp.name, certNumber });
+    } else {
+      skippedList.push({ id: emp.id, name: emp.name, reason: res.message || 'Gagal disetujui' });
+    }
+  }
+
+  if (approvedList.length > 0) {
+    await recordActivityLog({
+      aktor_id: admin.username || admin.nip || 'admin',
+      aktor_nama: admin.name || 'Petugas Kepegawaian',
+      aksi: 'bulk_approve_lpti',
+      target: `${approvedList.length} berkas`,
+      keterangan: `Menyetujui secara massal ${approvedList.length} berkas LPTI pegawai.`,
+      ip: clientIp
+    });
+  }
+
+  return {
+    success: true,
+    totalRequested: employeeIds.length,
+    approvedCount: approvedList.length,
+    skippedCount: skippedList.length,
+    approvedList,
+    skippedList
+  };
 }
 
 // ==============================================================
@@ -1432,11 +2076,28 @@ async function verifyAdminCredentials(username, password) {
       .maybeSingle();
 
     if (!error && data) {
+      if (data.aktif === false) {
+        return {
+          error: 'INACTIVE',
+          message: 'Akun administrator Anda telah dinonaktifkan. Silakan hubungi Super Administrator.'
+        };
+      }
+
+      // Update terakhir_login
+      const now = new Date().toISOString();
+      try {
+        await client.from('admins').update({ terakhir_login: now }).eq('id', data.id);
+      } catch (e) {}
+
       return {
         id: data.id,
         username: data.username,
         name: data.name,
-        role: data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian')
+        role: data.peran || data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+        peran: data.peran || data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+        aktif: true,
+        wajib_ganti_password: Boolean(data.wajib_ganti_password),
+        terakhir_login: now
       };
     }
   }
@@ -1449,11 +2110,24 @@ async function verifyAdminCredentials(username, password) {
     (a.password === cleanP || cleanP === 'bpmp123' || cleanP === 'Bpmp2026!')
   );
   if (found) {
+    if (found.aktif === false) {
+      return {
+        error: 'INACTIVE',
+        message: 'Akun administrator Anda telah dinonaktifkan. Silakan hubungi Super Administrator.'
+      };
+    }
+
+    const now = new Date().toISOString();
+    found.terakhir_login = now;
     return {
       id: found.id,
       username: found.username,
       name: found.name,
-      role: found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian')
+      role: found.peran || found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+      peran: found.peran || found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+      aktif: true,
+      wajib_ganti_password: Boolean(found.wajib_ganti_password),
+      terakhir_login: now
     };
   }
 
@@ -1709,6 +2383,7 @@ async function updateEmployee(idOrNip, empData) {
     target.accumulatedJp = parseInt(empData.accumulatedJp || empData.accumulated_jp || 0, 10);
   }
   if (empData.password) target.password = String(empData.password).trim();
+  if (empData.lpti) target.lpti = { ...(target.lpti || {}), ...empData.lpti };
   target.updatedAt = now;
 
   return formatSupabaseEmployee(target);
@@ -1745,38 +2420,83 @@ async function resetEmployeePassword(idOrNip, newPassword = 'Bpmp2026!') {
 // ==============================================================
 // CRUD ADMIN & PENGGUNA SISTEM (KHUSUS SUPERADMIN)
 // ==============================================================
-async function getAllAdmins() {
+async function getAllAdmins(filterStatus = 'all') {
   const client = getClient();
   if (client) {
-    const { data, error } = await client
+    let query = client
       .from('admins')
-      .select('id, username, name, role, created_at, updated_at')
+      .select('id, username, name, role, peran, aktif, terakhir_login, wajib_ganti_password, created_at, updated_at')
       .order('id', { ascending: true });
+    
+    if (filterStatus === 'active') {
+      query = query.neq('aktif', false);
+    } else if (filterStatus === 'inactive') {
+      query = query.eq('aktif', false);
+    }
+
+    const { data, error } = await query;
     if (!error && data) {
-      return data;
+      return data.map(adm => ({
+        id: adm.id,
+        username: adm.username,
+        name: adm.name || adm.username,
+        peran: adm.peran || adm.role || 'kepegawaian',
+        role: adm.peran || adm.role || 'kepegawaian',
+        aktif: adm.aktif !== false,
+        terakhir_login: adm.terakhir_login || null,
+        wajib_ganti_password: Boolean(adm.wajib_ganti_password),
+        created_at: adm.created_at || null,
+        updated_at: adm.updated_at || null
+      }));
     }
   }
 
   const mem = getMemoryStore();
-  return (mem.admins || []).map(a => ({
+  let list = (mem.admins || []).map(a => ({
     id: a.id,
     username: a.username,
-    name: a.name,
-    role: a.role,
-    created_at: a.createdAt || null
+    name: a.name || a.username,
+    peran: a.peran || a.role || 'kepegawaian',
+    role: a.peran || a.role || 'kepegawaian',
+    aktif: a.aktif !== false,
+    terakhir_login: a.terakhir_login || a.terakhirLogin || null,
+    wajib_ganti_password: Boolean(a.wajib_ganti_password || a.wajibGantiPassword),
+    created_at: a.createdAt || a.created_at || null,
+    updated_at: a.updatedAt || a.updated_at || null
   }));
+
+  if (filterStatus === 'active') {
+    list = list.filter(a => a.aktif);
+  } else if (filterStatus === 'inactive') {
+    list = list.filter(a => !a.aktif);
+  }
+
+  return list;
+}
+
+async function countActiveSuperadmins() {
+  const admins = await getAllAdmins('active');
+  return admins.filter(a => (a.peran === 'superadmin' || a.role === 'superadmin') && a.aktif !== false).length;
 }
 
 async function createAdmin(adminData) {
   const username = String(adminData.username || '').trim().toLowerCase();
-  if (!username) throw new Error('Username wajib diisi!');
-  if (!adminData.password) throw new Error('Password wajib diisi!');
+  if (!username) throw new Error('NIP / Username admin wajib diisi!');
+  
+  // Jika password tidak diberikan, buat password acak 8 karakter sekali pakai
+  const password = String(adminData.password || `Bpmp${Math.floor(1000 + Math.random() * 9000)}!`).trim();
+  const peran = (adminData.peran === 'superadmin' || adminData.role === 'superadmin') ? 'superadmin' : (adminData.peran || adminData.role || 'kepegawaian');
+  const wajibGanti = adminData.wajib_ganti_password !== undefined ? Boolean(adminData.wajib_ganti_password) : true;
+  const aktif = adminData.aktif !== undefined ? Boolean(adminData.aktif) : true;
 
   const record = {
     username: username,
-    password: String(adminData.password).trim(),
+    password: password,
     name: (adminData.name || 'Petugas Kepegawaian').trim(),
-    role: adminData.role === 'superadmin' ? 'superadmin' : 'kepegawaian'
+    role: peran,
+    peran: peran,
+    aktif: aktif,
+    wajib_ganti_password: wajibGanti
   };
 
   const client = getClient();
@@ -1784,17 +2504,17 @@ async function createAdmin(adminData) {
     const { data, error } = await client
       .from('admins')
       .insert(record)
-      .select('id, username, name, role, created_at')
+      .select('id, username, name, role, peran, aktif, wajib_ganti_password, created_at')
       .single();
     if (error) {
       console.error('Supabase createAdmin error:', error.message);
       throw new Error(error.message);
     }
-    return data;
+    return { ...data, initialPassword: password };
   }
 
   const mem = getMemoryStore();
-  const exists = (mem.admins || []).some(a => a.username === username);
+  const exists = (mem.admins || []).some(a => a.username.toLowerCase() === username);
   if (exists) throw new Error(`Admin dengan username "${username}" sudah ada.`);
 
   const newAdmin = {
@@ -1803,19 +2523,53 @@ async function createAdmin(adminData) {
     createdAt: new Date().toISOString()
   };
   mem.admins.push(newAdmin);
-  return { id: newAdmin.id, username: newAdmin.username, name: newAdmin.name, role: newAdmin.role };
+  return {
+    id: newAdmin.id,
+    username: newAdmin.username,
+    name: newAdmin.name,
+    role: newAdmin.role,
+    peran: newAdmin.peran,
+    aktif: newAdmin.aktif,
+    wajib_ganti_password: newAdmin.wajib_ganti_password,
+    initialPassword: password
+  };
 }
 
 async function updateAdmin(idOrUsername, adminData) {
   const clean = String(idOrUsername).trim();
   const now = new Date().toISOString();
 
+  // Validasi pencegahan: Cegah menonaktifkan atau mengubah peran superadmin aktif terakhir!
+  const allAdmins = await getAllAdmins('all');
+  const target = allAdmins.find(a => String(a.id) === clean || a.username.toLowerCase() === clean.toLowerCase());
+  if (!target) throw new Error('Admin tidak ditemukan.');
+
+  const isCurrentSuper = target.peran === 'superadmin' || target.role === 'superadmin';
+  const willBeInactive = adminData.aktif === false;
+  const willChangeRole = adminData.peran && adminData.peran !== 'superadmin';
+
+  if (isCurrentSuper && target.aktif && (willBeInactive || willChangeRole)) {
+    const activeSuperCount = await countActiveSuperadmins();
+    if (activeSuperCount <= 1) {
+      throw new Error('Tidak dapat menonaktifkan atau menurunkan peran Super Administrator aktif terakhir!');
+    }
+  }
+
   const client = getClient();
   if (client) {
     const updatePayload = { updated_at: now };
-    if (adminData.name) updatePayload.name = adminData.name.trim();
-    if (adminData.role) updatePayload.role = adminData.role;
-    if (adminData.password) updatePayload.password = String(adminData.password).trim();
+    if (adminData.name !== undefined) updatePayload.name = adminData.name.trim();
+    if (adminData.peran !== undefined) {
+      updatePayload.peran = adminData.peran;
+      updatePayload.role = adminData.peran;
+    } else if (adminData.role !== undefined) {
+      updatePayload.peran = adminData.role;
+      updatePayload.role = adminData.role;
+    }
+    if (adminData.password !== undefined) updatePayload.password = String(adminData.password).trim();
+    if (adminData.aktif !== undefined) updatePayload.aktif = Boolean(adminData.aktif);
+    if (adminData.wajib_ganti_password !== undefined) updatePayload.wajib_ganti_password = Boolean(adminData.wajib_ganti_password);
+    if (adminData.terakhir_login !== undefined) updatePayload.terakhir_login = adminData.terakhir_login;
 
     const isNum = !isNaN(parseInt(clean, 10));
     let query = client.from('admins').update(updatePayload);
@@ -1824,7 +2578,9 @@ async function updateAdmin(idOrUsername, adminData) {
     } else {
       query = query.eq('username', clean);
     }
-    const { data, error } = await query.select('id, username, name, role, updated_at').single();
+    const { data, error } = await query
+      .select('id, username, name, role, peran, aktif, wajib_ganti_password, terakhir_login, updated_at')
+      .single();
     if (error) {
       console.error('Supabase updateAdmin error:', error.message);
       throw new Error(error.message);
@@ -1833,14 +2589,52 @@ async function updateAdmin(idOrUsername, adminData) {
   }
 
   const mem = getMemoryStore();
-  const target = (mem.admins || []).find(a => String(a.id) === clean || a.username === clean);
-  if (!target) throw new Error('Admin tidak ditemukan.');
+  const memTarget = (mem.admins || []).find(a => String(a.id) === clean || a.username.toLowerCase() === clean.toLowerCase());
+  if (!memTarget) throw new Error('Admin tidak ditemukan.');
 
-  if (adminData.name) target.name = adminData.name.trim();
-  if (adminData.role) target.role = adminData.role;
-  if (adminData.password) target.password = String(adminData.password).trim();
-  target.updatedAt = now;
-  return { id: target.id, username: target.username, name: target.name, role: target.role };
+  if (adminData.name !== undefined) memTarget.name = adminData.name.trim();
+  if (adminData.peran !== undefined) {
+    memTarget.peran = adminData.peran;
+    memTarget.role = adminData.peran;
+  } else if (adminData.role !== undefined) {
+    memTarget.peran = adminData.role;
+    memTarget.role = adminData.role;
+  }
+  if (adminData.password !== undefined) memTarget.password = String(adminData.password).trim();
+  if (adminData.aktif !== undefined) memTarget.aktif = Boolean(adminData.aktif);
+  if (adminData.wajib_ganti_password !== undefined) memTarget.wajib_ganti_password = Boolean(adminData.wajib_ganti_password);
+  if (adminData.terakhir_login !== undefined) memTarget.terakhir_login = adminData.terakhir_login;
+  memTarget.updatedAt = now;
+
+  return {
+    id: memTarget.id,
+    username: memTarget.username,
+    name: memTarget.name,
+    role: memTarget.role,
+    peran: memTarget.peran,
+    aktif: memTarget.aktif,
+    wajib_ganti_password: memTarget.wajib_ganti_password,
+    terakhir_login: memTarget.terakhir_login
+  };
+}
+
+async function toggleAdminActive(idOrUsername, targetState = null) {
+  const all = await getAllAdmins('all');
+  const clean = String(idOrUsername).trim();
+  const found = all.find(a => String(a.id) === clean || a.username.toLowerCase() === clean.toLowerCase());
+  if (!found) throw new Error('Admin tidak ditemukan.');
+
+  const nextState = targetState !== null ? Boolean(targetState) : !found.aktif;
+  return updateAdmin(clean, { aktif: nextState });
+}
+
+async function resetAdminPassword(idOrUsername, tempPassword = null) {
+  const newPwd = tempPassword || `Bpmp${Math.floor(1000 + Math.random() * 9000)}!`;
+  const updated = await updateAdmin(idOrUsername, {
+    password: newPwd,
+    wajib_ganti_password: true
+  });
+  return { ...updated, tempPassword: newPwd };
 }
 
 async function deleteAdmin(idOrUsername) {
@@ -2293,6 +3087,11 @@ module.exports = {
   createAdmin,
   updateAdmin,
   deleteAdmin,
+  countActiveSuperadmins,
+  toggleAdminActive,
+  resetAdminPassword,
+  getNextUnclaimedLpti,
+  bulkApproveLpti,
   getSystemSettings,
   uploadToStorage,
   registerEmployeeFace,
@@ -2312,5 +3111,15 @@ module.exports = {
   getNextCertificateSequence,
   saveQrToken,
   isQrTokenValid,
-  getAttendanceLogs
+  getAttendanceLogs,
+  claimLpti,
+  releaseLptiClaim,
+  approveLpti,
+  reviseLpti,
+  cancelLptiApproval,
+  getLptiHistory,
+  recordLptiHistory,
+  preventLptiRiwayatModification,
+  recordActivityLog,
+  getActivityLogs
 };

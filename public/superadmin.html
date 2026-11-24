@@ -366,11 +366,23 @@
                   <span>Manajemen Administrator &amp; Panitia</span>
                 </h2>
               </div>
-              <div class="col-auto ms-auto">
-                <button onclick="openAddAdminModal()" class="btn btn-primary d-inline-flex align-items-center gap-1">
-                  <i class="ti ti-plus"></i> <span>Tambah Admin Baru</span>
+              <div class="col-auto ms-auto d-flex align-items-center gap-2">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Filter Status Akun">
+                  <button type="button" class="btn btn-outline-primary active" id="superFilterAll" onclick="filterSuperAdmins('all')">Semua</button>
+                  <button type="button" class="btn btn-outline-success" id="superFilterActive" onclick="filterSuperAdmins('active')">Aktif</button>
+                  <button type="button" class="btn btn-outline-danger" id="superFilterInactive" onclick="filterSuperAdmins('inactive')">Nonaktif</button>
+                </div>
+                <button onclick="openAddAdminModal()" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+                  <i class="ti ti-plus"></i> <span>Tambah Staf Baru</span>
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div id="superadminWarningBanner" class="alert alert-warning d-none py-2 px-3 mb-3" role="alert">
+            <div class="d-flex align-items-center gap-2">
+              <i class="ti ti-alert-triangle font-18 text-warning flex-shrink-0"></i>
+              <div class="small fw-semibold" id="superadminWarningText">Peringatan: Hanya ada 1 akun Super Administrator aktif. Sistem memerlukan minimal satu Super Administrator!</div>
             </div>
           </div>
 
@@ -379,16 +391,17 @@
               <table class="table table-vcenter table-hover card-table text-nowrap">
                 <thead>
                   <tr>
-                    <th class="w-1">ID</th>
-                    <th>Username</th>
+                    <th class="w-1 text-center">ID</th>
+                    <th>NIP / Username</th>
                     <th>Nama Administrator</th>
-                    <th>Peran / Otoritas</th>
-                    <th>Cakupan Hak Akses</th>
-                    <th class="text-center w-1">Aksi</th>
+                    <th>Peran</th>
+                    <th>Terakhir Login</th>
+                    <th>Status</th>
+                    <th class="text-end w-1">Aksi Otoritas</th>
                   </tr>
                 </thead>
                 <tbody id="adminTableBody">
-                  <tr><td colspan="6" class="text-center py-4 text-muted">Memuat akun admin...</td></tr>
+                  <tr><td colspan="7" class="text-center py-4 text-muted">Memuat akun admin...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1194,53 +1207,87 @@
     // ========================================================
     // ADMINS CRUD
     // ========================================================
-    async function loadAdmins() {
+    let currentSuperAdminFilter = 'all';
+
+    function filterSuperAdmins(filter) {
+      currentSuperAdminFilter = filter;
+      document.querySelectorAll('#superFilterAll, #superFilterActive, #superFilterInactive').forEach(b => b.classList.remove('active'));
+      if (filter === 'all') document.getElementById('superFilterAll')?.classList.add('active');
+      else if (filter === 'active') document.getElementById('superFilterActive')?.classList.add('active');
+      else if (filter === 'inactive') document.getElementById('superFilterInactive')?.classList.add('active');
+      loadAdmins(filter);
+    }
+
+    async function loadAdmins(filter = currentSuperAdminFilter) {
       const tbody = document.getElementById('adminTableBody');
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat administrator...</td></tr>`;
+      const warningBanner = document.getElementById('superadminWarningBanner');
+      const warningText = document.getElementById('superadminWarningText');
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat administrator...</td></tr>`;
 
       try {
-        const res = await fetch('/api/admins', {
+        const res = await fetch(`/api/admins?status=${filter}`, {
           headers: getAuthHeaders()
         });
         const json = await res.json();
         const admins = json.admins || [];
         appState.admins = admins;
 
+        if (json.warning) {
+          warningBanner.classList.remove('d-none');
+          warningText.textContent = json.warning;
+        } else {
+          warningBanner.classList.add('d-none');
+        }
+
         if (admins.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada akun admin.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada akun admin pada filter ini.</td></tr>`;
           return;
         }
 
         let html = '';
         admins.forEach(adm => {
-          const isSuper = adm.role === 'superadmin' || adm.username === 'superadmin';
+          const isSuper = (adm.peran || adm.role) === 'superadmin' || adm.username === 'superadmin';
+          const isActive = adm.aktif !== false;
+          const lastLogin = adm.terakhir_login 
+            ? new Date(adm.terakhir_login).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+            : '<span class="text-muted fst-italic">Belum pernah</span>';
+
+          const roleBadge = isSuper
+            ? `<span class="badge bg-yellow text-yellow-fg fw-bold"><i class="ti ti-crown me-1"></i> SUPERADMIN</span>`
+            : `<span class="badge bg-primary text-white"><i class="ti ti-briefcase me-1"></i> Kepegawaian</span>`;
+
+          const statusBadge = isActive
+            ? `<span class="badge bg-success-lt text-success fw-bold"><i class="ti ti-check me-1"></i> Aktif</span>`
+            : `<span class="badge bg-danger-lt text-danger fw-bold"><i class="ti ti-ban me-1"></i> Nonaktif</span>`;
+
+          const rowClass = !isActive ? 'table-light opacity-75' : '';
+
           html += `
-            <tr>
-              <td>${adm.id}</td>
+            <tr class="${rowClass}">
+              <td class="text-center text-muted">${adm.id}</td>
               <td class="fw-bold font-monospace text-dark">${adm.username}</td>
-              <td>${adm.name || 'Petugas'}</td>
               <td>
-                ${isSuper 
-                  ? `<span class="badge bg-yellow text-yellow-fg fw-bold"><i class="ti ti-crown me-1"></i> SUPERADMIN</span>` 
-                  : `<span class="badge bg-primary text-white"><i class="ti ti-briefcase me-1"></i> Bagian Kepegawaian</span>`}
+                <div class="fw-semibold">${adm.name || 'Petugas'}</div>
+                ${adm.wajib_ganti_password ? '<span class="badge bg-warning-lt text-warning" style="font-size: 0.65rem;">Wajib ganti sandi</span>' : ''}
               </td>
-              <td class="small text-muted">
-                ${isSuper 
-                  ? 'Akses Penuh Master + Reset Basis Data' 
-                  : 'Operasional Harian Pelatihan, LPTI & Presensi'}
-              </td>
-              <td class="text-center">
-                <div class="btn-list flex-nowrap justify-content-center">
+              <td>${roleBadge}</td>
+              <td class="small font-monospace">${lastLogin}</td>
+              <td>${statusBadge}</td>
+              <td class="text-end">
+                <div class="btn-list flex-nowrap justify-content-end">
                   <button class="btn btn-outline-primary btn-sm btn-icon" title="Sunting Akun" onclick="openEditAdminModal('${adm.id}')">
                     <i class="ti ti-edit"></i>
                   </button>
-                  ${!isSuper ? `
-                    <button class="btn btn-outline-danger btn-sm btn-icon" title="Hapus Akun" onclick="handleDeleteAdmin('${adm.id}', '${adm.username}')">
-                      <i class="ti ti-trash"></i>
+                  <button class="btn btn-outline-warning btn-sm btn-icon" title="Reset Sandi Sekali Pakai" onclick="handleSuperResetPassword('${adm.id}', '${adm.username}')">
+                    <i class="ti ti-key"></i>
+                  </button>
+                  ${isActive ? `
+                    <button class="btn btn-outline-danger btn-sm btn-icon" title="Nonaktifkan Akun" onclick="handleSuperToggleActive('${adm.id}', '${adm.username}', false)">
+                      <i class="ti ti-ban"></i>
                     </button>
                   ` : `
-                    <button class="btn btn-light btn-sm btn-icon text-muted" disabled title="Superadmin utama tidak dapat dihapus">
-                      <i class="ti ti-lock"></i>
+                    <button class="btn btn-outline-success btn-sm btn-icon" title="Aktifkan Kembali" onclick="handleSuperToggleActive('${adm.id}', '${adm.username}', true)">
+                      <i class="ti ti-check"></i>
                     </button>
                   `}
                 </div>
@@ -1250,7 +1297,49 @@
         });
         tbody.innerHTML = html;
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Gagal memuat: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Gagal memuat: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function handleSuperToggleActive(id, username, nextState) {
+      const aksiText = nextState ? 'mengaktifkan kembali' : 'menonaktifkan';
+      if (!confirm(`Apakah Anda yakin ingin ${aksiText} akun administrator "${username}"?`)) return;
+
+      try {
+        const res = await fetch(`/api/admins/${id}/toggle-active`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ aktif: nextState })
+        });
+        const data = await res.json();
+        if (data.success) {
+          BPMPComponents.showToast(data.message, 'success');
+          loadAdmins();
+        } else {
+          BPMPComponents.showToast(data.message || 'Gagal mengubah status akun.', 'danger');
+        }
+      } catch (err) {
+        BPMPComponents.showToast(err.message, 'danger');
+      }
+    }
+
+    async function handleSuperResetPassword(id, username) {
+      if (!confirm(`Reset kata sandi akun "${username}" ke sandi acak sekali pakai?`)) return;
+
+      try {
+        const res = await fetch(`/api/admins/${id}/reset-password`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Sandi sekali pakai baru untuk "${username}":\n\n${data.tempPassword}\n\nSilakan salin dan serahkan kepada staf bersangkutan.`);
+          loadAdmins();
+        } else {
+          BPMPComponents.showToast(data.message || 'Gagal mereset sandi.', 'danger');
+        }
+      } catch (err) {
+        BPMPComponents.showToast(err.message, 'danger');
       }
     }
 
@@ -1261,7 +1350,8 @@
       document.getElementById('admUsername').readOnly = false;
       document.getElementById('admName').value = '';
       document.getElementById('admRole').value = 'kepegawaian';
-      document.getElementById('admPassword').value = 'Bpmp2026!';
+      document.getElementById('admPassword').value = '';
+      document.getElementById('admPassword').placeholder = 'Kosongkan untuk otomatis sandi acak sekali pakai';
       new bootstrap.Modal(document.getElementById('modalAdmin')).show();
     }
 
@@ -1274,7 +1364,7 @@
       document.getElementById('admUsername').value = adm.username;
       document.getElementById('admUsername').readOnly = true;
       document.getElementById('admName').value = adm.name || '';
-      document.getElementById('admRole').value = adm.role || 'kepegawaian';
+      document.getElementById('admRole').value = adm.peran || adm.role || 'kepegawaian';
       document.getElementById('admPassword').value = '';
       document.getElementById('admPassword').placeholder = 'Kosongkan jika tidak mengganti sandi';
       new bootstrap.Modal(document.getElementById('modalAdmin')).show();
@@ -1291,7 +1381,7 @@
       const btn = document.getElementById('btnSubmitAdmin');
       btn.disabled = true;
 
-      const payload = { username, name, role };
+      const payload = { username, name, role, peran: role };
       if (password) payload.password = password;
 
       try {
@@ -1308,7 +1398,11 @@
 
         if (data.success) {
           bootstrap.Modal.getInstance(document.getElementById('modalAdmin')).hide();
-          BPMPComponents.showToast(data.message, 'success');
+          if (data.tempPassword) {
+            alert(`Akun "${username}" berhasil dibuat!\n\nSandi sementara: ${data.tempPassword}\n\nStaf wajib mengganti sandi pada login pertama.`);
+          } else {
+            BPMPComponents.showToast(data.message, 'success');
+          }
           loadAdmins();
         } else {
           BPMPComponents.showToast(data.message || 'Gagal menyimpan.', 'danger');

@@ -82,11 +82,15 @@ const JWT_SECRET = process.env.SESSION_SECRET || 'bpmp-senin-berseri-secret-key-
 const adminSessions = new Map();
 
 function createAdminToken(admin) {
-  const isSuper = admin.role === 'superadmin' || admin.username === 'superadmin';
+  const peran = admin.peran || admin.role || (admin.username === 'superadmin' ? 'superadmin' : 'kepegawaian');
+  const isSuper = peran === 'superadmin' || admin.username === 'superadmin';
   const payload = {
+    id: admin.id,
     u: admin.username,
     r: isSuper ? 'superadmin' : 'kepegawaian',
-    n: admin.name || (isSuper ? 'Super Administrator BPMP Sultra' : 'Bagian Kepegawaian BPMP Sultra'),
+    peran: isSuper ? 'superadmin' : 'kepegawaian',
+    n: admin.name || (isSuper ? 'Super Administrator BPMP Sultra' : 'Petugas Kepegawaian'),
+    wajib_ganti_password: Boolean(admin.wajib_ganti_password),
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 hari persisten
   };
@@ -111,11 +115,14 @@ function verifyAdminToken(token) {
         try {
           const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
           if (!payload.exp || payload.exp > Math.floor(Date.now() / 1000)) {
-            const isSuper = payload.r === 'superadmin' || payload.u === 'superadmin';
+            const isSuper = payload.r === 'superadmin' || payload.peran === 'superadmin' || payload.u === 'superadmin';
             return {
+              id: payload.id,
               username: payload.u || (isSuper ? 'superadmin' : 'admin'),
               role: isSuper ? 'superadmin' : 'kepegawaian',
-              name: payload.n || (isSuper ? 'Super Administrator BPMP Sultra' : 'Bagian Kepegawaian BPMP Sultra')
+              peran: isSuper ? 'superadmin' : 'kepegawaian',
+              name: payload.n || (isSuper ? 'Super Administrator BPMP Sultra' : 'Petugas Kepegawaian'),
+              wajib_ganti_password: Boolean(payload.wajib_ganti_password)
             };
           }
         } catch (e) {}
@@ -337,7 +344,15 @@ app.post('/api/auth/admin-login', async (req, res) => {
   if (!admin) {
     return res.status(401).json({
       success: false,
-      message: 'Username atau Password salah! (Superadmin: superadmin | Kepegawaian: admin | Sandi: Bpmp2026!)'
+      message: 'Username atau Password salah!'
+    });
+  }
+
+  if (admin.error === 'INACTIVE' || admin.aktif === false) {
+    return res.status(403).json({
+      success: false,
+      inactive: true,
+      message: 'Akun administrator Anda telah dinonaktifkan. Silakan hubungi Super Administrator.'
     });
   }
 
@@ -1710,8 +1725,82 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
   });
 });
 
+// ==============================================================
+// FITUR KURASI LPTI MULTI-STAF: KLAIM, RELEASE, HEARTBEAT, DECISION
+// ==============================================================
+
+// 1. Klaim Berkas LPTI (15 Menit Lock)
+app.post('/api/admin/lpti/:id/claim', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const peran = admin.peran || admin.role || 'kepegawaian';
+  if (!['superadmin', 'kepegawaian'].includes(peran)) {
+    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk mengklaim LPTI.' });
+  }
+
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const result = await db.claimLpti(req.params.id, admin, clientIp, 15);
+
+  if (!result.success) {
+    if (result.code === 'ALREADY_CLAIMED') {
+      return res.status(409).json(result);
+    }
+    return res.status(400).json(result);
+  }
+
+  res.json({
+    success: true,
+    message: `Berkas LPTI berhasil diklaim untuk diperiksa selama 15 menit.`,
+    ...result
+  });
+});
+
+// 2. Perpanjang Klaim LPTI (Heartbeat)
+app.post('/api/admin/lpti/:id/heartbeat', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const result = await db.claimLpti(req.params.id, admin, clientIp, 15);
+
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  res.json({
+    success: true,
+    message: 'Durasi klaim berhasil diperpanjang 15 menit.',
+    claimed_until: result.diklaim_sampai
+  });
+});
+
+// 3. Lepas Klaim LPTI
+app.post('/api/admin/lpti/:id/release', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const result = await db.releaseLptiClaim(req.params.id, admin, clientIp);
+
+  if (!result.success) {
+    return res.status(403).json(result);
+  }
+
+  res.json({ success: true, message: 'Klaim LPTI berhasil dilepas.' });
+});
+
+// 4. Verifikasi LPTI (Setujui / Revisi dengan Optimistic Locking)
 app.post('/api/employees/:id/verify-lpti', async (req, res) => {
-  const { action, revisionNote } = req.body;
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const peran = admin.peran || admin.role || 'kepegawaian';
+  if (!['superadmin', 'kepegawaian'].includes(peran)) {
+    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk kurasi LPTI.' });
+  }
+
+  const { action, revisionNote, catatan, versi } = req.body;
   if (!action || !['approve', 'revise'].includes(action)) {
     return res.status(400).json({ success: false, message: 'Aksi verifikasi harus "approve" atau "revise".' });
   }
@@ -1721,54 +1810,224 @@ app.post('/api/employees/:id/verify-lpti', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
   }
 
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const targetVersi = parseInt(versi !== undefined ? versi : employee.lpti?.versi || 1, 10);
   const empEvtId = employee.eventId;
   const event = (empEvtId ? await db.getEventById(empEvtId) : await db.getActiveEvent()) || {};
 
-  const updatedEmployee = await db.verifyEmployeeLpti(employee.id, action, revisionNote, event.jp || 32);
-
   if (action === 'approve') {
-    if (typeof db.saveCertificate === 'function' && updatedEmployee.certificate) {
-      try {
-        const certCrypto = signCertificate({
-          certNumber: updatedEmployee.certificate.number,
-          employeeNip: updatedEmployee.nip,
-          employeeName: updatedEmployee.name,
-          eventTitle: event.title || 'Pelatihan Transformasi Digital ASN BPMP Sultra',
-          eventJp: event.jp || 32,
-          issuedAt: updatedEmployee.certificate.issuedAt
-        });
-        await db.saveCertificate({
-          id: certCrypto.certId,
-          number: updatedEmployee.certificate.number,
-          employeeId: updatedEmployee.id,
-          nip: updatedEmployee.nip,
-          name: updatedEmployee.name,
-          eventId: event.id || 'EVT-001',
-          eventTitle: event.title || 'Pelatihan ASN',
-          issuedAt: updatedEmployee.certificate.issuedAt,
-          verifier: updatedEmployee.certificate.verifier,
-          verifierTitle: updatedEmployee.certificate.verifierTitle,
-          cryptoHash: certCrypto.sha256Digest,
-          cryptoSignature: certCrypto.signatureHex,
-          pdfUrl: `/api/employees/${updatedEmployee.nip || updatedEmployee.id}/certificate.pdf`
-        });
-      } catch (errSaveCert) {
-        console.warn('Gagal menyimpan metadata sertifikat ke DB:', errSaveCert.message);
-      }
+    // Generate nomor sertifikat jika belum ada
+    let certNumber = employee.certificate?.number;
+    if (!certNumber) {
+      const year = new Date().getFullYear();
+      const nextSeq = await db.getNextCertificateSequence(year);
+      certNumber = `${String(nextSeq).padStart(4, '0')}/C6.26/Sertifikat/KP.04.00/${year}`;
     }
 
+    const result = await db.approveLpti(
+      employee.id,
+      targetVersi,
+      admin,
+      clientIp,
+      catatan || 'Berkas LPTI disetujui.',
+      event.jp || 4,
+      certNumber,
+      'Junaiddin Pagala, S.T., M.T.',
+      'Kepala Balai Penjaminan Mutu Pendidikan Sultra'
+    );
+
+    if (!result.success) {
+      if (result.code === 'CONFLICT') {
+        return res.status(409).json(result);
+      }
+      return res.status(400).json(result);
+    }
+
+    const updatedEmployee = await db.getEmployeeByIdOrNip(employee.id);
     return res.json({
       success: true,
-      message: `Berkas LPTI ${employee.name} berhasil DISETUJUI! E-Sertifikat resmi nomor ${updatedEmployee.certificate.number} telah diterbitkan dan tersimpan di database.`,
+      message: `Berkas LPTI ${employee.name} berhasil DISETUJUI oleh ${admin.name || admin.username}! E-Sertifikat nomor ${certNumber} diterbitkan.`,
       employee: updatedEmployee
     });
   } else {
+    // Aksi: Revise (Alasan wajib diisi)
+    const reasonText = (revisionNote || catatan || '').trim();
+    if (!reasonText) {
+      return res.status(400).json({ success: false, message: 'Catatan / alasan revisi wajib diisi agar pegawai mengetahui perbaikan yang diperlukan!' });
+    }
+
+    const result = await db.reviseLpti(
+      employee.id,
+      targetVersi,
+      admin,
+      clientIp,
+      reasonText
+    );
+
+    if (!result.success) {
+      if (result.code === 'CONFLICT') {
+        return res.status(409).json(result);
+      }
+      return res.status(400).json(result);
+    }
+
+    const updatedEmployee = await db.getEmployeeByIdOrNip(employee.id);
     return res.json({
       success: true,
-      message: `Catatan revisi untuk ${employee.name} telah dikirim ke portal pegawai. Akses sertifikat tetap terkunci.`,
+      message: `Catatan revisi untuk ${employee.name} berhasil dikirim ke portal pegawai. Akses sertifikat tetap terkunci.`,
       employee: updatedEmployee
     });
   }
+});
+
+// 5. Pembatalan Persetujuan LPTI (Khusus Superadmin dengan Alasan Wajib)
+app.post('/api/admin/lpti/:id/cancel-approval', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const peran = admin.peran || admin.role || 'kepegawaian';
+  if (peran !== 'superadmin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Hanya Super Administrator yang berwenang membatalkan persetujuan LPTI.'
+    });
+  }
+
+  const { reason } = req.body;
+  if (!reason || !String(reason).trim() || String(reason).trim().length < 5) {
+    return res.status(400).json({
+      success: false,
+      message: 'Alasan pembatalan persetujuan wajib diisi secara jelas (minimal 5 karakter)!'
+    });
+  }
+
+  const employee = await db.getEmployeeByIdOrNip(req.params.id);
+  if (!employee) return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
+
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const empEvtId = employee.eventId;
+  const event = (empEvtId ? await db.getEventById(empEvtId) : await db.getActiveEvent()) || {};
+
+  const result = await db.cancelLptiApproval(employee.id, admin, clientIp, String(reason).trim(), event.jp || 4);
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  // Catat aksi superadmin di aktivitas_log
+  await db.recordActivityLog(
+    admin.username || admin.id,
+    admin.name || admin.username,
+    'BATALKAN_PERSETUJUAN_LPTI',
+    employee.nip,
+    `Membatalkan persetujuan LPTI pegawai ${employee.name}. Alasan: ${String(reason).trim()}`,
+    clientIp
+  );
+
+  const updatedEmployee = await db.getEmployeeByIdOrNip(employee.id);
+  res.json({
+    success: true,
+    message: `Persetujuan LPTI untuk ${employee.name} berhasil dibatalkan. Status dikembalikan ke "Perlu Dikurasi".`,
+    employee: updatedEmployee
+  });
+});
+
+// 6. Riwayat Timeline Kurasi LPTI (Append-Only)
+app.get('/api/employees/:id/lpti-history', async (req, res) => {
+  try {
+    const employee = await db.getEmployeeByIdOrNip(req.params.id);
+    if (!employee) return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
+
+    const history = await db.getLptiHistory(employee.id);
+    res.json({
+      success: true,
+      pegawai_id: employee.id,
+      name: employee.name,
+      nip: employee.nip,
+      history: history || []
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memuat riwayat LPTI: ' + err.message });
+  }
+});
+
+// 7. Ambil LPTI Berikutnya (Queue Next Unclaimed)
+app.post('/api/admin/lpti/next-unclaimed', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const peran = admin.peran || admin.role || 'kepegawaian';
+  if (!['superadmin', 'kepegawaian'].includes(peran)) {
+    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk kurasi LPTI.' });
+  }
+
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const result = await db.getNextUnclaimedLpti(admin, clientIp);
+  if (!result.success) {
+    return res.status(result.code === 'NO_PENDING_LPTI' ? 404 : 400).json(result);
+  }
+
+  res.json(result);
+});
+
+// 8. Bulk Approve LPTI
+app.post('/api/admin/lpti/bulk-approve', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const peran = admin.peran || admin.role || 'kepegawaian';
+  if (!['superadmin', 'kepegawaian'].includes(peran)) {
+    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk kurasi LPTI.' });
+  }
+
+  const { employeeIds, catatan } = req.body;
+  if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+    return res.status(400).json({ success: false, message: 'Pilih minimal satu pegawai untuk disetujui berkas LPTI-nya.' });
+  }
+
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const result = await db.bulkApproveLpti(employeeIds, admin, clientIp, catatan);
+  res.json(result);
+});
+
+// 9. Log Aktivitas (Audit Trail)
+app.get('/api/admin/activity-logs', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+
+  const filters = {
+    aksi: req.query.aksi || null,
+    aktor_id: req.query.staf || null,
+    limit: parseInt(req.query.limit, 10) || 100
+  };
+
+  const logs = await db.getActivityLogs(filters);
+  res.json({ success: true, logs });
+});
+
+// 10. Ekspor Log Aktivitas (CSV)
+app.get('/api/admin/activity-logs/export', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) return res.status(401).send('Autentikasi admin diperlukan.');
+
+  const logs = await db.getActivityLogs({ limit: 1000 });
+  const headers = ['ID', 'Waktu (ISO)', 'Aktor ID', 'Nama Staf', 'Aksi', 'Target', 'Keterangan', 'IP'];
+  const rows = logs.map(l => [
+    l.id || '',
+    l.created_at || '',
+    `"${(l.aktor_id || '').replace(/"/g, '""')}"`,
+    `"${(l.aktor_nama || '').replace(/"/g, '""')}"`,
+    `"${(l.aksi || '').replace(/"/g, '""')}"`,
+    `"${(l.target || '').replace(/"/g, '""')}"`,
+    `"${(l.keterangan || '').replace(/"/g, '""')}"`,
+    `"${(l.ip || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const filename = `LOG_AKTIVITAS_SENIN_BERSERI_${new Date().toISOString().slice(0, 10)}.csv`;
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send('\uFEFF' + csv);
 });
 
 // Metadata E-Sertifikat
@@ -2111,7 +2370,8 @@ app.post('/api/reset-data', async (req, res) => {
 // ========================================================
 function requireSuperAdminMiddleware(req, res, next) {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
-  if (!admin || admin.role !== 'superadmin') {
+  const isSuper = admin && ((admin.peran || admin.role) === 'superadmin' || admin.username === 'superadmin');
+  if (!isSuper) {
     return res.status(403).json({
       success: false,
       message: 'Akses ditolak: Operasi ini hanya diizinkan untuk Super Administrator.'
@@ -2297,8 +2557,15 @@ app.post('/api/employees/:id/reset-password', requireSuperAdminMiddleware, async
 // 3. CRUD Administrator & Petugas Kepegawaian (Kelola Admin)
 app.get('/api/admins', requireSuperAdminMiddleware, async (req, res) => {
   try {
-    const admins = await db.getAllAdmins();
-    res.json({ success: true, admins });
+    const statusFilter = req.query.status || 'all';
+    const admins = await db.getAllAdmins(statusFilter);
+    const activeSuperCount = await db.countActiveSuperadmins();
+    res.json({
+      success: true,
+      admins,
+      activeSuperadminCount: activeSuperCount,
+      warning: activeSuperCount <= 1 ? 'Peringatan: Hanya ada 1 akun Super Administrator aktif. Sistem memerlukan minimal satu Super Administrator!' : null
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -2306,8 +2573,39 @@ app.get('/api/admins', requireSuperAdminMiddleware, async (req, res) => {
 
 app.post('/api/admins', requireSuperAdminMiddleware, async (req, res) => {
   try {
-    const created = await db.createAdmin(req.body);
-    res.status(201).json({ success: true, message: `Akun administrator "${created.username}" berhasil dibuat!`, admin: created });
+    const { username, name, peran, role, password } = req.body;
+    if (!username || !String(username).trim()) {
+      return res.status(400).json({ success: false, message: 'NIP / Username admin wajib diisi!' });
+    }
+    const cleanUser = String(username).trim();
+    const cleanName = String(name || cleanUser).trim();
+    const chosenPeran = peran || role || 'kepegawaian';
+
+    const created = await db.createAdmin({
+      username: cleanUser,
+      name: cleanName,
+      peran: chosenPeran,
+      role: chosenPeran,
+      password: password,
+      wajib_ganti_password: true
+    });
+
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    await db.recordActivityLog({
+      aktor_id: req.admin.username,
+      aktor_nama: req.admin.name,
+      aksi: 'tambah_admin',
+      target: created.username,
+      keterangan: `Membuat akun admin baru (${created.peran}): ${created.name} (${created.username})`,
+      ip: clientIp
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Akun administrator "${created.username}" berhasil dibuat!`,
+      admin: created,
+      tempPassword: created.initialPassword
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -2316,9 +2614,118 @@ app.post('/api/admins', requireSuperAdminMiddleware, async (req, res) => {
 app.put('/api/admins/:id', requireSuperAdminMiddleware, async (req, res) => {
   try {
     const updated = await db.updateAdmin(req.params.id, req.body);
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    await db.recordActivityLog({
+      aktor_id: req.admin.username,
+      aktor_nama: req.admin.name,
+      aksi: 'ubah_admin',
+      target: updated.username,
+      keterangan: `Memperbarui data akun admin: ${updated.name} (${updated.username}), peran: ${updated.peran}`,
+      ip: clientIp
+    });
+
     res.json({ success: true, message: `Akun admin "${updated.username}" berhasil diperbarui!`, admin: updated });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/admins/:id/toggle-active', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const targetState = req.body.aktif !== undefined ? Boolean(req.body.aktif) : null;
+    const updated = await db.toggleAdminActive(req.params.id, targetState);
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const aksiText = updated.aktif ? 'mengaktifkan' : 'menonaktifkan';
+
+    await db.recordActivityLog({
+      aktor_id: req.admin.username,
+      aktor_nama: req.admin.name,
+      aksi: updated.aktif ? 'aktifkan_admin' : 'nonaktifkan_admin',
+      target: updated.username,
+      keterangan: `Superadmin ${aksiText} akun admin: ${updated.name} (${updated.username})`,
+      ip: clientIp
+    });
+
+    res.json({
+      success: true,
+      message: `Akun admin "${updated.username}" berhasil ${updated.aktif ? 'diaktifkan' : 'dinonaktifkan'}!`,
+      admin: updated
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/admins/:id/reset-password', requireSuperAdminMiddleware, async (req, res) => {
+  try {
+    const tempPassword = req.body.newPassword || `Bpmp${Math.floor(1000 + Math.random() * 9000)}!`;
+    const result = await db.resetAdminPassword(req.params.id, tempPassword);
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+    await db.recordActivityLog({
+      aktor_id: req.admin.username,
+      aktor_nama: req.admin.name,
+      aksi: 'reset_password_admin',
+      target: result.username,
+      keterangan: `Mereset password akun admin: ${result.name} (${result.username}) dengan password sekali pakai`,
+      ip: clientIp
+    });
+
+    res.json({
+      success: true,
+      message: `Password akun "${result.username}" berhasil direset!`,
+      tempPassword: result.tempPassword,
+      admin: result
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/auth/admin-change-password', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) {
+    return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+  }
+
+  const { oldPassword, newPassword } = req.body;
+  if (!newPassword || String(newPassword).length < 8) {
+    return res.status(400).json({ success: false, message: 'Password baru minimal 8 karakter!' });
+  }
+
+  if (oldPassword) {
+    const verified = await db.verifyAdminCredentials(admin.username, oldPassword);
+    if (!verified || verified.error) {
+      return res.status(400).json({ success: false, message: 'Password lama tidak cocok!' });
+    }
+  }
+
+  try {
+    const updated = await db.updateAdmin(admin.username, {
+      password: String(newPassword).trim(),
+      wajib_ganti_password: false
+    });
+
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    await db.recordActivityLog({
+      aktor_id: admin.username,
+      aktor_nama: admin.name,
+      aksi: 'ganti_password_mandiri',
+      target: admin.username,
+      keterangan: `Admin ${admin.name} (${admin.username}) berhasil memperbarui password mandiri.`,
+      ip: clientIp
+    });
+
+    const newToken = createAdminToken({ ...updated, wajib_ganti_password: false });
+    res.setHeader('Set-Cookie', `admin_token=${newToken}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax`);
+
+    res.json({
+      success: true,
+      message: 'Password berhasil diperbarui! Silakan simpan password baru Anda.',
+      token: newToken
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

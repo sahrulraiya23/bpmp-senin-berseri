@@ -236,10 +236,20 @@
               <i class="ti ti-rotate-2 me-1"></i> Reset Data <span class="badge bg-danger-lt ms-1">DEV</span>
             </button>
 
-            <!-- Tombol Pengaturan Sistem (Di Produksi untuk membuka modal konfirmasi) -->
-            <button id="btnOpenSystemSettings" onclick="openSystemSettingsModal()" class="btn btn-outline-secondary btn-sm" title="Pengaturan Sistem & Data" aria-label="Pengaturan">
-              <i class="ti ti-settings me-1"></i> Pengaturan
-            </button>
+            <!-- Dropdown Menu Pengaturan -->
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="btnSettingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Pengaturan Sistem & Konfigurasi">
+                <i class="ti ti-settings me-1"></i> Pengaturan
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="btnSettingsDropdown">
+                <li><h6 class="dropdown-header text-uppercase font-monospace" style="font-size: 0.65rem;">Konfigurasi Sistem</h6></li>
+                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openTemplateManagerModal()"><i class="ti ti-palette me-2 text-primary"></i> Template E-Sertifikat</a></li>
+                <li id="menuItemAdminAccounts" class="d-none"><a class="dropdown-item" href="javascript:void(0)" onclick="openAdminAccountManagerModal()"><i class="ti ti-users me-2 text-warning"></i> Akun Admin (Superadmin)</a></li>
+                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openActivityLogModal()"><i class="ti ti-activity me-2 text-info"></i> Log Aktivitas (Audit Trail)</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openSystemSettingsModal()"><i class="ti ti-database-cog me-2"></i> Sistem & Reset Data</a></li>
+              </ul>
+            </div>
 
             <!-- Live Clock Badge WITA -->
             <div id="liveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Indonesia Tengah">
@@ -544,6 +554,9 @@
                     <button type="button" id="btnFilterDisetujui" class="btn btn-outline-teal" onclick="setFilter('disetujui', this)">Disetujui</button>
                     <button type="button" id="btnFilterRevisi" class="btn btn-outline-danger" onclick="setFilter('revisi', this)">Revisi</button>
                   </div>
+                  <button type="button" class="btn btn-primary btn-sm ms-2 fw-bold shadow-xs" onclick="handleClaimNextLpti()" title="Klaim dan buka berkas LPTI berikutnya secara otomatis">
+                    <i class="ti ti-player-track-next me-1"></i> Ambil LPTI Berikutnya
+                  </button>
                 </div>
 
                 <!-- Kolom Kanan: Filter Unit Kerja, Search, Ekspor -->
@@ -1205,6 +1218,173 @@
     </div>
   </div>
 
+  <!-- ============================================================== -->
+  <!-- MODAL 3B: PENGATURAN AKUN ADMINISTRATOR (KHUSUS SUPERADMIN)   -->
+  <!-- ============================================================== -->
+  <div class="modal modal-blur fade" id="adminAccountManagerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white py-2.5 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <span class="avatar avatar-sm bg-warning text-dark"><i class="ti ti-users"></i></span>
+            <div>
+              <h5 class="modal-title fw-bold mb-0">Pengaturan Akun Admin & Staf Kepegawaian</h5>
+              <div class="text-white-50 small">Kelola akun individu staf kurasi LPTI, otoritas peran, status aktif, dan reset sandi sekali pakai</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <!-- Superadmin Warning Banner if only 1 active -->
+          <div id="superadminWarningBanner" class="alert alert-warning d-none py-2 px-3 mb-3" role="alert">
+            <div class="d-flex align-items-center gap-2">
+              <i class="ti ti-alert-triangle font-18 text-warning flex-shrink-0"></i>
+              <div class="small fw-semibold" id="superadminWarningText">Peringatan: Hanya ada 1 akun Super Administrator aktif. Sistem memerlukan minimal satu Super Administrator!</div>
+            </div>
+          </div>
+
+          <!-- Controls: Add button + Filter -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Filter Status Akun">
+              <button type="button" class="btn btn-outline-primary active" id="filterAdmAll" onclick="filterAdminTable('all')">Semua Akun</button>
+              <button type="button" class="btn btn-outline-success" id="filterAdmActive" onclick="filterAdminTable('active')">Aktif</button>
+              <button type="button" class="btn btn-outline-danger" id="filterAdmInactive" onclick="filterAdminTable('inactive')">Nonaktif</button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-primary btn-sm" onclick="openAddAdminFormModal()">
+                <i class="ti ti-user-plus me-1"></i> Tambah Akun Staf Baru
+              </button>
+            </div>
+          </div>
+
+          <!-- Table of Admin Accounts -->
+          <div class="table-responsive border rounded">
+            <table class="table table-vcenter table-hover table-striped mb-0 text-nowrap">
+              <thead class="table-light">
+                <tr>
+                  <th class="w-1 text-center">No</th>
+                  <th>NIP / Username</th>
+                  <th>Nama Staf</th>
+                  <th>Peran</th>
+                  <th>Terakhir Login</th>
+                  <th>Status</th>
+                  <th class="text-end">Aksi Otoritas</th>
+                </tr>
+              </thead>
+              <tbody id="adminAccountsTableBody">
+                <tr><td colspan="7" class="text-center py-4 text-muted"><i class="ti ti-loader animate-spin me-1"></i> Memuat daftar akun admin...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FORM TAMBAH / UBAH AKUN ADMIN -->
+  <div class="modal modal-blur fade" id="adminFormModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2.5">
+          <h5 class="modal-title fw-bold" id="adminFormModalTitle"><i class="ti ti-user-plus me-1 text-primary"></i> Tambah Akun Administrator Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="adminFormElement" onsubmit="handleSaveAdminAccount(event)">
+          <input type="hidden" id="formAdminId">
+          <div class="modal-body p-3">
+            <div class="mb-3">
+              <label class="form-label small required fw-bold">NIP / Username Staf</label>
+              <input type="text" class="form-control form-control-sm font-monospace" id="formAdminUsername" required placeholder="Contoh: 198805122014022001 atau staf_kepeg">
+              <div class="form-text small text-muted">Digunakan sebagai kredensial login unik. Tidak boleh ada registrasi mandiri.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small required fw-bold">Nama Lengkap & Gelar</label>
+              <input type="text" class="form-control form-control-sm" id="formAdminName" required placeholder="Contoh: Andi Nurhaliza, S.Pd.">
+              <div class="form-text small text-muted">Akan ditampilkan pada header akun dan riwayat kurasi LPTI.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small required fw-bold">Peran Otoritas (Role)</label>
+              <select class="form-select form-select-sm" id="formAdminPeran" required>
+                <option value="kepegawaian">Kepegawaian (Kurasi LPTI & Presensi)</option>
+                <option value="superadmin">Superadmin (Akses Penuh Master)</option>
+              </select>
+            </div>
+            <div id="formAdminInitialPasswordBox" class="alert alert-info py-2 px-3 mb-0 small">
+              <i class="ti ti-info-circle me-1"></i> Sandi acak sekali pakai akan dibuatkan otomatis dan staf wajib mengganti kata sandi pada login pertama kali.
+            </div>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitAdminForm">
+              <i class="ti ti-check me-1"></i> Simpan Akun
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HASIL RESET / PEMBUATAN SANDI SEMENTARA -->
+  <div class="modal modal-blur fade" id="adminTempPasswordModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white py-2.5">
+          <h5 class="modal-title fw-bold"><i class="ti ti-key me-1"></i> Kata Sandi Sementara Dibuat</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 text-center">
+          <p class="small text-secondary mb-2" id="tempPasswordTargetInfo">Sandi acak sekali pakai telah dibuat:</p>
+          <div class="input-group mb-3">
+            <input type="text" id="tempPasswordDisplayInput" class="form-control form-control-lg text-center font-monospace fw-bold bg-light" readonly>
+            <button class="btn btn-outline-primary" type="button" onclick="copyTempPasswordToClipboard()">
+              <i class="ti ti-copy me-1"></i> Salin
+            </button>
+          </div>
+          <div class="alert alert-warning py-2 px-3 small text-start mb-0">
+            <i class="ti ti-shield-alert me-1"></i> Berikan kata sandi ini kepada staf yang bersangkutan. Staf akan diwajibkan mengganti kata sandi ini saat pertama kali masuk ke sistem.
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Selesai & Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: WAJIB GANTI PASSWORD PERTAMA KALI -->
+  <div class="modal modal-blur fade" id="adminForceChangePasswordModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content border-warning">
+        <div class="modal-header bg-warning text-dark py-2.5">
+          <h5 class="modal-title fw-bold"><i class="ti ti-shield-lock me-1"></i> Pembaruan Kata Sandi Wajib</h5>
+        </div>
+        <form id="adminForcePasswordForm" onsubmit="handleForceChangePassword(event)">
+          <div class="modal-body p-3">
+            <div class="alert alert-info py-2 px-3 small mb-3">
+              <i class="ti ti-info-circle me-1"></i> Anda masuk menggunakan kata sandi sementara atau pertama kali. Demi keamanan sistem BPMP Sultra, silakan buat kata sandi baru pribadi Anda (minimal 8 karakter).
+            </div>
+            <div class="mb-3">
+              <label class="form-label small required fw-bold">Kata Sandi Baru</label>
+              <input type="password" class="form-control form-control-sm" id="forceNewPassword" required minlength="8" placeholder="Minimal 8 karakter">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small required fw-bold">Ulangi Kata Sandi Baru</label>
+              <input type="password" class="form-control form-control-sm" id="forceConfirmPassword" required minlength="8" placeholder="Ketik ulang kata sandi baru">
+            </div>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold" id="btnSubmitForcePassword">
+              <i class="ti ti-check me-1"></i> Simpan Kata Sandi & Lanjutkan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 
   <!-- ============================================================== -->
   <!-- MODAL 4: CATATAN REVISI LPTI                                   -->
@@ -1257,6 +1437,199 @@
         </div>
         <div class="modal-footer py-1">
           <button type="button" class="btn btn-secondary btn-sm w-100" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: REVIEW LPTI MULTI-STAF DENGAN TIMELINE RIWAYAT         -->
+  <!-- ============================================================== -->
+  <div class="modal modal-blur fade" id="reviewLptiModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white py-2.5 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <span class="avatar avatar-sm bg-primary text-white"><i class="ti ti-file-certificate"></i></span>
+            <div>
+              <h5 class="modal-title fw-bold mb-0" id="reviewModalTitle">Kurasi Berkas LPTI</h5>
+              <div class="text-white-50 small" id="reviewModalSubtitle">Pemeriksaan substansi laporan pasca pelatihan</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="handleCloseReviewModal()"></button>
+        </div>
+
+        <!-- Claim Bar Notification -->
+        <div id="reviewClaimBar" class="alert alert-info d-flex justify-content-between align-items-center py-2 px-3 mb-0 rounded-0 border-0 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ti ti-lock text-primary font-18"></i>
+            <span class="small fw-semibold" id="reviewClaimStatusText">Sedang Anda periksa (Klaim aktif 15 menit)</span>
+          </div>
+          <button type="button" class="btn btn-outline-danger btn-xs" onclick="handleManualReleaseClaim()" id="btnReleaseReviewClaim">
+            <i class="ti ti-lock-open me-1"></i> Lepas Klaim
+          </button>
+        </div>
+
+        <div class="modal-body p-0">
+          <ul class="nav nav-tabs nav-fill px-3 pt-2 bg-light border-bottom" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active fw-bold" id="tabReviewDoc-tab" data-bs-toggle="tab" href="#tabReviewDoc" role="tab">
+                <i class="ti ti-file-text me-1 text-primary"></i> Berkas & Keputusan Kurasi
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link fw-bold" id="tabReviewHistory-tab" data-bs-toggle="tab" href="#tabReviewHistory" role="tab" onclick="loadEmployeeLptiTimeline()">
+                <i class="ti ti-history me-1 text-info"></i> Timeline Riwayat (<span id="timelineCountBadge">0</span>)
+              </a>
+            </li>
+          </ul>
+
+          <div class="tab-content p-3">
+            <!-- TAB 1: DOKUMEN & KEPUTUSAN -->
+            <div class="tab-pane fade show active" id="tabReviewDoc" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-12 col-lg-7">
+                  <div class="card h-100 border">
+                    <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                      <span class="small fw-bold text-dark"><i class="ti ti-file-pdf me-1 text-danger"></i> Pratinjau Dokumen PDF</span>
+                      <a id="btnOpenPdfExternal" href="#" target="_blank" class="btn btn-xs btn-outline-primary">
+                        <i class="ti ti-external-link me-1"></i> Buka Layar Penuh
+                      </a>
+                    </div>
+                    <div class="card-body p-0 bg-secondary-subtle d-flex align-items-center justify-content-center" style="min-height: 440px;">
+                      <iframe id="reviewPdfIframe" src="" style="width: 100%; height: 480px; border: 0;" title="Pratinjau LPTI"></iframe>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12 col-lg-5">
+                  <div class="card border h-100">
+                    <div class="card-header py-2 bg-light">
+                      <span class="small fw-bold text-dark"><i class="ti ti-clipboard-check me-1 text-success"></i> Formulir Keputusan Kurasi</span>
+                    </div>
+                    <div class="card-body p-3">
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold">Catatan Keputusan / Instruksi</label>
+                        <textarea id="reviewDecisionNotes" class="form-control form-control-sm" rows="3" placeholder="Tuliskan catatan kelayakan atau arahan untuk pegawai..."></textarea>
+                        <div class="form-text small text-muted">Wajib diisi jika Anda memutuskan untuk meminta revisi.</div>
+                      </div>
+
+                      <div class="alert alert-warning py-2 px-3 small d-none" id="reviewConflictAlert">
+                        <i class="ti ti-alert-triangle me-1"></i>
+                        <span id="reviewConflictMsg">Status LPTI telah diperbarui oleh staf lain. Silakan periksa timeline riwayat terbaru.</span>
+                      </div>
+
+                      <!-- Tombol Keputusan -->
+                      <div class="d-grid gap-2 mb-3">
+                        <button type="button" class="btn btn-success fw-bold" id="btnApproveInModal" onclick="submitDecisionFromModal('approve')">
+                          <i class="ti ti-check me-1"></i> Setujui LPTI & Terbitkan Sertifikat
+                        </button>
+                        <button type="button" class="btn btn-outline-danger fw-bold" id="btnReviseInModal" onclick="submitDecisionFromModal('revise')">
+                          <i class="ti ti-pencil me-1"></i> Minta Revisi Berkas
+                        </button>
+                      </div>
+
+                      <!-- Pembatalan Persetujuan (Superadmin Only) -->
+                      <div id="boxCancelApprovalSuperadmin" class="border-top pt-3 mt-2 d-none">
+                        <div class="small fw-bold text-danger mb-1"><i class="ti ti-shield-alert me-1"></i> Wewenang Superadmin: Pembatalan Persetujuan</div>
+                        <p class="text-secondary small mb-2">Jika dokumen salah disetujui, Superadmin dapat membatalkan persetujuan dan mengembalikan berkas ke antrean kurasi.</p>
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="handleSuperCancelApproval()">
+                          <i class="ti ti-x me-1"></i> Batalkan Persetujuan LPTI
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: TIMELINE RIWAYAT -->
+            <div class="tab-pane fade" id="tabReviewHistory" role="tabpanel">
+              <div class="card border">
+                <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                  <span class="small fw-bold text-dark"><i class="ti ti-timeline me-1 text-primary"></i> Jejak Audit Kurasi (Append-Only)</span>
+                  <button type="button" class="btn btn-xs btn-outline-secondary" onclick="loadEmployeeLptiTimeline()">
+                    <i class="ti ti-refresh me-1"></i> Segarkan
+                  </button>
+                </div>
+                <div class="card-body p-3">
+                  <ul class="timeline" id="lptiTimelineList">
+                    <li class="timeline-event"><div class="text-muted small">Memuat riwayat persetujuan...</div></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" onclick="handleCloseReviewModal()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: LOG AKTIVITAS SISTEM (AUDIT TRAIL)                      -->
+  <!-- ============================================================== -->
+  <div class="modal modal-blur fade" id="activityLogModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white py-2.5 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <span class="avatar avatar-sm bg-info text-white"><i class="ti ti-activity"></i></span>
+            <div>
+              <h5 class="modal-title fw-bold mb-0">Log Aktivitas Sistem (Audit Trail)</h5>
+              <div class="text-white-50 small">Rekam jejak seluruh aksi kurasi LPTI, manajemen akun admin, dan persetujuan sertifikat</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <select id="logFilterAksi" class="form-select form-select-sm" style="min-width: 180px;" onchange="loadActivityLogsData()">
+                <option value="">Semua Jenis Aksi</option>
+                <option value="disetujui">Kurasi: Disetujui</option>
+                <option value="direvisi">Kurasi: Minta Revisi</option>
+                <option value="BATALKAN_PERSETUJUAN_LPTI">Pembatalan Persetujuan</option>
+                <option value="bulk_approve_lpti">Bulk Approve LPTI</option>
+                <option value="tambah_admin">Manajemen: Tambah Admin</option>
+                <option value="ubah_admin">Manajemen: Ubah Admin</option>
+                <option value="nonaktifkan_admin">Manajemen: Nonaktifkan Admin</option>
+                <option value="aktifkan_admin">Manajemen: Aktifkan Admin</option>
+                <option value="reset_password_admin">Manajemen: Reset Password</option>
+              </select>
+              <input type="text" id="logSearchInput" class="form-control form-control-sm" placeholder="Cari staf atau target..." style="max-width: 220px;" oninput="filterLocalActivityLogs()">
+            </div>
+            <div>
+              <a href="/api/admin/activity-logs/export" target="_blank" class="btn btn-outline-success btn-sm">
+                <i class="ti ti-file-spreadsheet me-1"></i> Unduh Berkas CSV
+              </a>
+            </div>
+          </div>
+
+          <div class="table-responsive border rounded" style="max-height: 480px; overflow-y: auto;">
+            <table class="table table-vcenter table-hover table-striped mb-0 text-nowrap">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th class="w-1 text-center">No</th>
+                  <th>Waktu (WITA)</th>
+                  <th>Staf / Aktor</th>
+                  <th>Aksi</th>
+                  <th>Target</th>
+                  <th>Keterangan</th>
+                  <th>Alamat IP</th>
+                </tr>
+              </thead>
+              <tbody id="activityLogTableBody">
+                <tr><td colspan="7" class="text-center py-4 text-muted"><i class="ti ti-loader animate-spin me-1"></i> Memuat log aktivitas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
         </div>
       </div>
     </div>
@@ -1335,7 +1708,7 @@
 
         if (data.admin) {
           window.currentAdminUser = data.admin;
-          const isSuper = data.admin.role === 'superadmin' || data.admin.username === 'superadmin';
+          const isSuper = (data.admin.peran || data.admin.role) === 'superadmin' || data.admin.username === 'superadmin';
 
           const nameEl = document.getElementById('sideAdminName');
           const badgeEl = document.getElementById('sideAdminRoleBadge');
@@ -1344,8 +1717,9 @@
           const superActionEl = document.getElementById('superadminActionGroup');
           const avatarEl = document.getElementById('sideAdminAvatar');
           const btnGoSuper = document.getElementById('btnGoToSuperadmin');
+          const menuItemAdminAccounts = document.getElementById('menuItemAdminAccounts');
 
-          if (nameEl) nameEl.textContent = data.admin.username || (isSuper ? 'superadmin' : 'admin');
+          if (nameEl) nameEl.textContent = data.admin.name || data.admin.username || (isSuper ? 'superadmin' : 'admin');
           if (badgeEl) {
             badgeEl.textContent = isSuper ? 'Superadmin' : 'Kepegawaian';
             badgeEl.className = isSuper ? 'badge bg-warning text-dark ms-2 px-2 py-0.5 fw-bold' : 'badge bg-primary text-white ms-2 px-2 py-0.5 fw-bold';
@@ -1354,8 +1728,8 @@
             avatarEl.className = isSuper ? 'rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center me-2' : 'rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2';
             avatarEl.innerHTML = isSuper ? '<i class="ti ti-crown font-14"></i>' : '<i class="ti ti-shield-lock font-14"></i>';
           }
-          if (roleTextEl) roleTextEl.textContent = isSuper ? 'Super Administrator' : 'Bagian Kepegawaian';
-          if (subTitleEl) subTitleEl.textContent = isSuper ? 'Hak Akses Penuh Sistem (Master)' : 'Pengelola Harian Kepegawaian BPMP Sultra';
+          if (roleTextEl) roleTextEl.textContent = data.admin.name || (isSuper ? 'Super Administrator' : 'Petugas Kepegawaian');
+          if (subTitleEl) subTitleEl.textContent = isSuper ? 'Hak Akses Penuh Sistem (Master)' : `Petugas Kepegawaian (${data.admin.username})`;
           if (superActionEl) {
             if (isSuper) superActionEl.classList.remove('d-none');
             else superActionEl.classList.add('d-none');
@@ -1363,6 +1737,18 @@
           if (btnGoSuper) {
             if (isSuper) btnGoSuper.classList.remove('d-none');
             else btnGoSuper.classList.add('d-none');
+          }
+          if (menuItemAdminAccounts) {
+            if (isSuper) menuItemAdminAccounts.classList.remove('d-none');
+            else menuItemAdminAccounts.classList.add('d-none');
+          }
+
+          // Cek apakah akun wajib ganti sandi pada login pertama
+          if (data.admin.wajib_ganti_password) {
+            setTimeout(() => {
+              const modalEl = document.getElementById('adminForceChangePasswordModal');
+              if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }, 600);
           }
         }
         return true;
@@ -2766,47 +3152,63 @@
           faceCell = '<span class="status-empty">—</span>';
         }
 
-        // Berkas LPTI Cell (Seragamkan istilah: "Perlu Dikurasi" & "Belum Diunggah")
+        // Berkas LPTI Cell dengan Status Multi-Staf & Kunci Klaim
         const lpti = emp.lpti || {};
         const lptiStatus = lpti.status || 'none';
         const hasPdf = Boolean(lpti.filePath);
+        const nowTs = Date.now();
+        const isClaimed = lpti.diklaimOleh && lpti.diklaimSampai && new Date(lpti.diklaimSampai).getTime() > nowTs;
+        const currentU = window.currentAdminUser ? (window.currentAdminUser.username || window.currentAdminUser.nip) : '';
+        const isClaimedByMe = isClaimed && (currentU === lpti.diklaimOleh);
+        const isSuperadmin = window.currentAdminUser && ((window.currentAdminUser.peran || window.currentAdminUser.role) === 'superadmin');
 
         let lptiCell = '';
-        if (lptiStatus === 'pending') {
+        if (isClaimed) {
+          if (isClaimedByMe) {
+            lptiCell = `
+              <span class="badge bg-azure text-white fw-bold px-2 py-0.5" title="Sedang Anda periksa">
+                <i class="ti ti-lock-open me-0.5"></i> Anda Periksa
+              </span>
+            `;
+          } else {
+            lptiCell = `
+              <span class="badge bg-purple-lt text-purple fw-bold px-2 py-0.5" title="Sedang diperiksa oleh ${escapeHtml(lpti.diklaimOleh)}">
+                <i class="ti ti-lock me-0.5"></i> ${escapeHtml(lpti.diklaimOleh)}
+              </span>
+            `;
+          }
+        } else if (lptiStatus === 'pending') {
           lptiCell = `
             <span class="badge bg-warning-lt text-warning fw-bold px-2 py-0.5" title="Menunggu kurasi verifikasi dari admin kepegawaian">
               <i class="ti ti-clock me-0.5"></i> Perlu Dikurasi
             </span>
-            ${hasPdf ? `
-              <a href="${lpti.filePath}" target="_blank" class="btn btn-xs btn-outline-primary ms-1 py-0 px-1" title="Buka berkas LPTI PDF" aria-label="Lihat PDF">
-                <i class="ti ti-file-text"></i>
-              </a>
-            ` : ''}
           `;
         } else if (lptiStatus === 'approved') {
+          const decNama = lpti.diputuskanNama || 'Staf Kepegawaian';
           lptiCell = `
-            <span class="badge bg-teal-lt text-teal fw-bold px-2 py-0.5" title="Berkas LPTI telah disetujui">
+            <span class="badge bg-teal-lt text-teal fw-bold px-2 py-0.5" title="Disetujui oleh: ${escapeHtml(decNama)}">
               <i class="ti ti-circle-check me-0.5"></i> Disetujui
             </span>
-            ${hasPdf ? `
-              <a href="${lpti.filePath}" target="_blank" class="btn btn-xs btn-ghost-secondary ms-1 py-0 px-1" title="Buka berkas LPTI PDF" aria-label="Lihat PDF">
-                <i class="ti ti-file-text"></i>
-              </a>
-            ` : ''}
+            <div class="text-muted text-truncate" style="font-size: 0.68rem; max-width: 140px;" title="Disetujui oleh: ${escapeHtml(decNama)}">Oleh: ${escapeHtml(decNama)}</div>
           `;
         } else if (lptiStatus === 'revision') {
+          const decNama = lpti.diputuskanNama || 'Staf Kepegawaian';
           lptiCell = `
-            <span class="badge bg-danger-lt text-danger fw-bold px-2 py-0.5" title="Perlu perbaikan dari peserta">
+            <span class="badge bg-danger-lt text-danger fw-bold px-2 py-0.5" title="Revisi diminta oleh: ${escapeHtml(decNama)}">
               <i class="ti ti-alert-triangle me-0.5"></i> Revisi
             </span>
-            ${hasPdf ? `
-              <a href="${lpti.filePath}" target="_blank" class="btn btn-xs btn-outline-danger ms-1 py-0 px-1" title="Buka berkas LPTI PDF" aria-label="Lihat PDF">
-                <i class="ti ti-file-text"></i>
-              </a>
-            ` : ''}
+            <div class="text-danger-emphasis text-truncate" style="font-size: 0.68rem; max-width: 140px;" title="Catatan: ${escapeHtml(lpti.catatan || lpti.revisionNote || '')}">Oleh: ${escapeHtml(decNama)}</div>
           `;
         } else {
           lptiCell = '<span class="status-empty">—</span>';
+        }
+
+        if (hasPdf && lptiStatus !== 'none') {
+          lptiCell += `
+            <a href="${lpti.filePath}" target="_blank" class="btn btn-xs btn-ghost-secondary ms-1 py-0 px-1" title="Buka berkas LPTI PDF" aria-label="Lihat PDF">
+              <i class="ti ti-file-text"></i>
+            </a>
+          `;
         }
 
         // E-Sertifikat Cell
@@ -2831,34 +3233,37 @@
         // Aksi Admin Cell
         let actionCell = '';
         if (hasPdf && (lptiStatus === 'pending' || lptiStatus === 'revision')) {
-          actionCell = `
-            <div class="btn-group btn-group-sm">
-              <button onclick="approveLpti('${emp.id}')" class="btn btn-success btn-sm py-0.5 px-2 fw-bold" title="Setujui LPTI dan Terbitkan Piagam">
-                <i class="ti ti-check"></i> Setujui
+          if (isClaimed && !isClaimedByMe && !isSuperadmin) {
+            actionCell = `
+              <button class="btn btn-light btn-sm py-0.5 px-2 text-muted" disabled title="Sedang diperiksa oleh ${escapeHtml(lpti.diklaimOleh)}">
+                <i class="ti ti-lock me-1"></i> Terkunci
               </button>
-              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="btn btn-outline-danger btn-sm py-0.5 px-1.5" title="Minta Catatan Perbaikan">
-                <i class="ti ti-pencil"></i> Revisi
+            `;
+          } else {
+            actionCell = `
+              <button onclick="openLptiReviewModal('${emp.id}')" class="btn btn-primary btn-sm py-0.5 px-2 fw-bold" title="Periksa berkas LPTI">
+                <i class="ti ti-file-search me-1"></i> Periksa
               </button>
-            </div>
-          `;
+            `;
+          }
         } else if (lptiStatus === 'approved') {
           actionCell = `
-            <div class="d-inline-flex align-items-center gap-1">
-              <span class="badge bg-success-lt text-success fw-bold px-2 py-0.5">Tuntas</span>
-              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="btn btn-xs btn-link text-muted p-0" title="Koreksi ulang jika diperlukan" aria-label="Koreksi LPTI">
-                Koreksi
-              </button>
-            </div>
+            <button onclick="openLptiReviewModal('${emp.id}')" class="btn btn-outline-secondary btn-sm py-0.5 px-2" title="Lihat riwayat kurasi & keputusan">
+              <i class="ti ti-history me-1"></i> Riwayat
+            </button>
           `;
         } else {
           actionCell = '<span class="status-empty">—</span>';
         }
 
+        const canSelectBulk = emp.attended && lptiStatus === 'pending' && (!isClaimed || isClaimedByMe || isSuperadmin);
+
         return `
           <tr class="${isChecked ? 'table-active' : ''}">
             <!-- Col 1: Checkbox -->
             <td class="text-center" data-label="Pilih">
-              <input type="checkbox" class="form-check-input row-select-checkbox" data-id="${emp.id}" ${isChecked ? 'checked' : ''} onchange="toggleSelectRow('${emp.id}', this.checked)" aria-label="Pilih ${emp.name}">
+              <input type="checkbox" class="form-check-input row-select-checkbox" data-id="${emp.id}" ${isChecked ? 'checked' : ''} ${!canSelectBulk ? 'disabled title="Hanya pegawai hadir dengan LPTI pending & tidak terkunci yang dapat dipilih"' : ''} onchange="toggleSelectRow('${emp.id}', this.checked)" aria-label="Pilih ${emp.name}">
+            </td>
             </td>
             <!-- Col 2: No -->
             <td class="text-center font-monospace text-secondary" data-label="No">
@@ -2988,35 +3393,44 @@
 
     async function handleBulkApproveLpti() {
       const ids = Array.from(selectedEmployeeIds);
-      if (ids.length === 0) return;
-
-      // Filter yang benar-benar memiliki LPTI siap kurasi (pending atau revision)
-      const eligible = employeesData.filter(e => ids.includes(e.id) && e.lpti && e.lpti.filePath);
-      if (eligible.length === 0) {
-        showToast('Tidak ada pegawai terpilih yang memiliki berkas LPTI untuk disetujui.', 'info');
+      if (ids.length === 0) {
+        showToast('Pilih minimal satu pegawai untuk disetujui berkas LPTI-nya.', 'info');
         return;
       }
 
-      if (!confirm(`Konfirmasi Tindakan Masal:\nSetujui berkas LPTI untuk ${eligible.length} pegawai terpilih dan terbitkan hak sertifikat?`)) {
+      if (!confirm(`Konfirmasi Kurasi Massal:\nApakah Anda yakin ingin menyetujui berkas LPTI untuk ${ids.length} pegawai terpilih secara serentak?`)) {
         return;
       }
 
-      let successCount = 0;
-      for (const emp of eligible) {
-        try {
-          const res = await fetch(`/api/employees/${emp.id}/verify-lpti`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'approve' })
-          });
-          const d = await res.json();
-          if (d.success) successCount++;
-        } catch (e) {}
-      }
+      try {
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+        const res = await fetch('/api/admin/lpti/bulk-approve', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            employeeIds: ids,
+            catatan: 'Disetujui secara massal via dashboard kurasi admin.'
+          })
+        });
+        const result = await res.json();
 
-      showToast(`Berhasil menyetujui ${successCount} berkas LPTI secara masal!`, 'success');
-      clearBulkSelection();
-      loadEmployees(false);
+        if (result.success) {
+          let msg = `Berhasil menyetujui ${result.approvedCount} berkas LPTI!`;
+          if (result.skippedCount > 0) {
+            msg += ` (${result.skippedCount} dilewati: ${result.skippedList.map(s => s.reason).join(', ')})`;
+          }
+          showToast(msg, result.approvedCount > 0 ? 'success' : 'warning');
+          clearBulkSelection();
+          await loadEmployees(false);
+        } else {
+          showToast(result.message || 'Gagal memproses persetujuan massal.', 'error');
+        }
+      } catch (err) {
+        showToast('Kesalahan jaringan: ' + err.message, 'error');
+      }
     }
 
     async function handleBulkIssueCertificates() {
@@ -3118,74 +3532,737 @@
     // ==============================================================
     // KURASI LPTI & REVISI
     // ==============================================================
-    async function approveLpti(employeeId) {
-      try {
-        const res = await fetch(`/api/employees/${employeeId}/verify-lpti`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'approve' })
-        });
-        const result = await res.json();
-        if (result.success) {
-          showToast(result.message, 'success');
-          loadEmployees(false);
-        } else {
-          showToast(result.message, 'error');
-        }
-      } catch (err) {
-        showToast('Gagal memproses persetujuan: ' + err.message, 'error');
-      }
-    }
+    // ==============================================================
+    // KURASI LPTI MULTI-STAF, KLAIM, HEARTBEAT, & TIMELINE RIWAYAT
+    // ==============================================================
+    let currentReviewEmpId = null;
+    let reviewHeartbeatTimer = null;
+    let currentReviewEmpObj = null;
 
-    function openRevisionModal(employeeId, name, nip) {
-      targetEmployeeForRevision = employeeId;
-      document.getElementById('modalEmployeeName').textContent = name;
-      document.getElementById('modalEmployeeNip').textContent = `NIP: ${nip}`;
-      document.getElementById('revisionNotesInput').value = '';
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('revisionModal')).show();
-    }
-
-    function closeRevisionModal() {
-      targetEmployeeForRevision = null;
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('revisionModal')).hide();
-    }
-
-    async function submitRevision() {
-      if (!targetEmployeeForRevision) return;
-      const notes = document.getElementById('revisionNotesInput').value.trim();
-      if (!notes) {
-        showToast('Harap masukkan catatan perbaikan untuk pegawai!', 'error');
+    async function openLptiReviewModal(employeeId) {
+      const emp = employeesData.find(e => String(e.id) === String(employeeId));
+      if (!emp) {
+        showToast('Data pegawai tidak ditemukan.', 'error');
         return;
       }
 
-      const btn = document.getElementById('btnSubmitRevision');
-      btn.disabled = true;
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+      const isSuper = window.currentAdminUser && ((window.currentAdminUser.peran || window.currentAdminUser.role) === 'superadmin');
+
+      // Coba klaim antrean LPTI jika statusnya pending atau revision
+      const lptiStatus = emp.lpti?.status || 'none';
+      if (lptiStatus === 'pending' || lptiStatus === 'revision') {
+        try {
+          const claimRes = await fetch(`/api/admin/lpti/${emp.id}/claim`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const claimData = await claimRes.json();
+
+          if (claimRes.status === 409) {
+            if (!isSuper) {
+              showToast(`LPTI ${emp.name} sedang diperiksa oleh ${claimData.claimed_by || 'staf lain'}.`, 'warning');
+              return;
+            }
+            if (!confirm(`LPTI ini sedang diklaim oleh "${claimData.claimed_by}". Apakah Anda sebagai Superadmin ingin mengambil alih (take over) kurasi ini?`)) {
+              return;
+            }
+            // Superadmin paksa klaim ulang
+            await fetch(`/api/admin/lpti/${emp.id}/claim`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Gagal klaim LPTI:', e);
+        }
+      }
+
+      currentReviewEmpId = emp.id;
+      currentReviewEmpObj = emp;
+
+      // Start Heartbeat perpanjangan klaim tiap 4 menit
+      if (reviewHeartbeatTimer) clearInterval(reviewHeartbeatTimer);
+      reviewHeartbeatTimer = setInterval(async () => {
+        if (!currentReviewEmpId) return;
+        try {
+          await fetch(`/api/admin/lpti/${currentReviewEmpId}/heartbeat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        } catch (e) {}
+      }, 4 * 60 * 1000);
+
+      // Populate UI Modal
+      document.getElementById('reviewModalTitle').textContent = `Kurasi LPTI: ${emp.name}`;
+      document.getElementById('reviewModalSubtitle').textContent = `NIP. ${emp.nip} | Unit Kerja: ${emp.jabatan || 'BPMP Sultra'}`;
+
+      const pdfUrl = emp.lpti?.filePath || '';
+      document.getElementById('reviewPdfIframe').src = pdfUrl;
+      const btnExt = document.getElementById('btnOpenPdfExternal');
+      if (btnExt) btnExt.href = pdfUrl || '#';
+
+      document.getElementById('reviewDecisionNotes').value = emp.lpti?.catatan || emp.lpti?.revisionNote || '';
+      document.getElementById('reviewConflictAlert').classList.add('d-none');
+
+      // Tombol Superadmin Batalkan Persetujuan
+      const boxCancel = document.getElementById('boxCancelApprovalSuperadmin');
+      if (boxCancel) {
+        if (isSuper && emp.lpti?.status === 'approved') {
+          boxCancel.classList.remove('d-none');
+        } else {
+          boxCancel.classList.add('d-none');
+        }
+      }
+
+      // Claim Bar Notification
+      const claimBar = document.getElementById('reviewClaimBar');
+      const claimText = document.getElementById('reviewClaimStatusText');
+      if (claimBar && claimText) {
+        if (emp.lpti?.status === 'approved') {
+          claimBar.className = 'alert alert-success d-flex justify-content-between align-items-center py-2 px-3 mb-0 rounded-0 border-0 border-bottom';
+          claimText.textContent = `LPTI telah DISETUJUI oleh ${emp.lpti?.diputuskanNama || 'Staf'}`;
+          document.getElementById('btnReleaseReviewClaim').classList.add('d-none');
+        } else {
+          claimBar.className = 'alert alert-info d-flex justify-content-between align-items-center py-2 px-3 mb-0 rounded-0 border-0 border-bottom';
+          claimText.textContent = `Sedang Anda periksa (Klaim terkunci untuk Anda)`;
+          document.getElementById('btnReleaseReviewClaim').classList.remove('d-none');
+        }
+      }
+
+      // Aktifkan tab pertama
+      const tabFirst = document.getElementById('tabReviewDoc-tab');
+      if (tabFirst) bootstrap.Tab.getOrCreateInstance(tabFirst).show();
+
+      // Muat Timeline
+      await loadEmployeeLptiTimeline();
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('reviewLptiModal')).show();
+    }
+
+    async function handleCloseReviewModal() {
+      if (reviewHeartbeatTimer) {
+        clearInterval(reviewHeartbeatTimer);
+        reviewHeartbeatTimer = null;
+      }
+
+      if (currentReviewEmpId) {
+        const empId = currentReviewEmpId;
+        currentReviewEmpId = null;
+        currentReviewEmpObj = null;
+
+        // Lepas klaim agar staf lain bisa memeriksa
+        try {
+          const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+          await fetch(`/api/admin/lpti/${empId}/release`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        } catch (e) {}
+
+        await loadEmployees(false);
+      }
+    }
+
+    async function handleManualReleaseClaim() {
+      if (!currentReviewEmpId) return;
+      if (!confirm('Lepaskan klaim berkas LPTI ini agar staf kepegawaian lain dapat memeriksa?')) return;
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('reviewLptiModal')).hide();
+      await handleCloseReviewModal();
+      showToast('Klaim pemeriksaan berhasil dilepas.', 'info');
+    }
+
+    async function submitDecisionFromModal(action) {
+      if (!currentReviewEmpId || !currentReviewEmpObj) return;
+
+      const notes = document.getElementById('reviewDecisionNotes').value.trim();
+      if (action === 'revise' && !notes) {
+        showToast('Catatan / alasan revisi wajib diisi agar pegawai mengetahui bagian yang perlu diperbaiki!', 'error');
+        document.getElementById('reviewDecisionNotes').focus();
+        return;
+      }
+
+      const btnApprove = document.getElementById('btnApproveInModal');
+      const btnRevise = document.getElementById('btnReviseInModal');
+      btnApprove.disabled = true;
+      btnRevise.disabled = true;
+
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+      const targetVersi = currentReviewEmpObj.lpti?.versi || 1;
 
       try {
-        const res = await fetch(`/api/employees/${targetEmployeeForRevision}/verify-lpti`, {
+        const res = await fetch(`/api/employees/${currentReviewEmpId}/verify-lpti`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'revise', revisionNote: notes })
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            action: action,
+            versi: targetVersi,
+            catatan: notes,
+            revisionNote: notes
+          })
         });
         const result = await res.json();
+
+        if (res.status === 409) {
+          // Optimistic locking conflict!
+          const conflictBox = document.getElementById('reviewConflictAlert');
+          const conflictMsg = document.getElementById('reviewConflictMsg');
+          conflictBox.classList.remove('d-none');
+          conflictMsg.textContent = result.message || 'Status LPTI telah diperbarui lebih dulu oleh staf lain.';
+          showToast('Terjadi konflik versi! Status telah diputuskan oleh staf lain.', 'warning');
+          await loadEmployeeLptiTimeline();
+          return;
+        }
+
         if (result.success) {
           showToast(result.message, 'success');
-          closeRevisionModal();
-          loadEmployees(false);
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('reviewLptiModal')).hide();
+          if (reviewHeartbeatTimer) clearInterval(reviewHeartbeatTimer);
+          currentReviewEmpId = null;
+          currentReviewEmpObj = null;
+          await loadEmployees(false);
         } else {
-          showToast(result.message, 'error');
+          showToast(result.message || 'Gagal menyimpan keputusan.', 'error');
         }
       } catch (err) {
-        showToast('Gagal mengirim revisi: ' + err.message, 'error');
+        showToast('Kesalahan jaringan: ' + err.message, 'error');
       } finally {
-        btn.disabled = false;
+        btnApprove.disabled = false;
+        btnRevise.disabled = false;
       }
+    }
+
+    async function handleSuperCancelApproval() {
+      if (!currentReviewEmpId) return;
+      const reason = prompt('Masukkan alasan pembatalan persetujuan LPTI (wajib diisi):');
+      if (!reason || reason.trim().length < 5) {
+        showToast('Alasan pembatalan persetujuan wajib diisi minimal 5 karakter!', 'error');
+        return;
+      }
+
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+      try {
+        const res = await fetch(`/api/admin/lpti/${currentReviewEmpId}/cancel-approval`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ reason: reason.trim() })
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          showToast(result.message, 'success');
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('reviewLptiModal')).hide();
+          if (reviewHeartbeatTimer) clearInterval(reviewHeartbeatTimer);
+          currentReviewEmpId = null;
+          currentReviewEmpObj = null;
+          await loadEmployees(false);
+        } else {
+          showToast(result.message || 'Gagal membatalkan persetujuan.', 'error');
+        }
+      } catch (err) {
+        showToast('Kesalahan: ' + err.message, 'error');
+      }
+    }
+
+    async function loadEmployeeLptiTimeline() {
+      if (!currentReviewEmpId) return;
+      const timelineList = document.getElementById('lptiTimelineList');
+      const badgeCount = document.getElementById('timelineCountBadge');
+      timelineList.innerHTML = '<li class="timeline-event"><div class="text-muted small"><i class="ti ti-loader animate-spin me-1"></i> Memuat jejak riwayat...</div></li>';
+
+      try {
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+        const res = await fetch(`/api/employees/${currentReviewEmpId}/lpti-history`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const history = data.history || [];
+
+        if (badgeCount) badgeCount.textContent = history.length;
+
+        if (history.length === 0) {
+          timelineList.innerHTML = '<li class="timeline-event"><div class="text-muted small">Belum ada riwayat aktivitas pada berkas ini.</div></li>';
+          return;
+        }
+
+        timelineList.innerHTML = history.map(item => {
+          let iconClass = 'ti-circle';
+          let badgeColor = 'bg-secondary';
+          let aksiLabel = item.aksi;
+
+          if (item.aksi === 'diunggah' || item.aksi === 'diunggah_ulang') {
+            iconClass = 'ti-upload';
+            badgeColor = 'bg-primary text-white';
+            aksiLabel = item.aksi === 'diunggah_ulang' ? 'Diunggah Ulang oleh Peserta' : 'Diunggah oleh Peserta';
+          } else if (item.aksi === 'diklaim') {
+            iconClass = 'ti-lock';
+            badgeColor = 'bg-purple text-white';
+            aksiLabel = 'Diklaim untuk Diperiksa';
+          } else if (item.aksi === 'dilepas') {
+            iconClass = 'ti-lock-open';
+            badgeColor = 'bg-secondary text-white';
+            aksiLabel = 'Klaim Dilepas';
+          } else if (item.aksi === 'disetujui') {
+            iconClass = 'ti-check';
+            badgeColor = 'bg-success text-white';
+            aksiLabel = 'LPTI DISETUJUI';
+          } else if (item.aksi === 'direvisi') {
+            iconClass = 'ti-pencil';
+            badgeColor = 'bg-danger text-white';
+            aksiLabel = 'Diminta Perbaikan (Revisi)';
+          } else if (item.aksi === 'persetujuan_dibatalkan') {
+            iconClass = 'ti-x';
+            badgeColor = 'bg-danger text-white';
+            aksiLabel = 'Persetujuan Dibatalkan';
+          }
+
+          const dateFormatted = new Date(item.waktu).toLocaleString('id-ID', {
+            dateStyle: 'medium',
+            timeStyle: 'medium'
+          });
+
+          return `
+            <li class="timeline-event mb-3">
+              <div class="timeline-event-icon ${badgeColor}">
+                <i class="ti ${iconClass}"></i>
+              </div>
+              <div class="card card-sm border shadow-xs">
+                <div class="card-body p-2">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge ${badgeColor} fw-bold" style="font-size: 0.7rem;">${aksiLabel}</span>
+                    <span class="text-secondary font-monospace small" style="font-size: 0.72rem;">${dateFormatted} WITA</span>
+                  </div>
+                  <div class="small fw-semibold text-dark">
+                    Oleh: <span class="text-primary">${escapeHtml(item.nama_snapshot || item.oleh || 'Sistem')}</span>
+                  </div>
+                  ${item.catatan ? `
+                    <div class="bg-light rounded p-2 mt-1 small text-secondary border">
+                      <em>"${escapeHtml(item.catatan)}"</em>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </li>
+          `;
+        }).join('');
+      } catch (err) {
+        timelineList.innerHTML = `<li class="timeline-event text-danger small">Gagal memuat timeline: ${err.message}</li>`;
+      }
+    }
+
+    async function handleClaimNextLpti() {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+      try {
+        const res = await fetch('/api/admin/lpti/next-unclaimed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+
+        if (res.status === 404 || data.code === 'NO_PENDING_LPTI') {
+          showToast(data.message || 'Semua berkas LPTI telah diperiksa atau sedang diproses staf lain.', 'info');
+          return;
+        }
+
+        if (data.success && data.employee) {
+          showToast(`Membuka antrean kurasi: ${data.employee.name}`, 'success');
+          await openLptiReviewModal(data.employee.id);
+        } else {
+          showToast(data.message || 'Gagal mengambil antrean LPTI.', 'warning');
+        }
+      } catch (err) {
+        showToast('Kesalahan jaringan: ' + err.message, 'error');
+      }
+    }
+
+    // ==============================================================
+    // LOG AKTIVITAS (AUDIT TRAIL) MODAL
+    // ==============================================================
+    let allLoadedActivityLogs = [];
+
+    async function openActivityLogModal() {
+      await loadActivityLogsData();
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('activityLogModal')).show();
+    }
+
+    async function loadActivityLogsData() {
+      const tbody = document.getElementById('activityLogTableBody');
+      const aksiFilter = document.getElementById('logFilterAksi')?.value || '';
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="ti ti-loader animate-spin me-1"></i> Memuat log aktivitas...</td></tr>';
+
+      try {
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
+        let url = '/api/admin/activity-logs?limit=100';
+        if (aksiFilter) url += `&aksi=${encodeURIComponent(aksiFilter)}`;
+
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        allLoadedActivityLogs = data.logs || [];
+        renderActivityLogsTable(allLoadedActivityLogs);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Gagal memuat: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderActivityLogsTable(logs) {
+      const tbody = document.getElementById('activityLogTableBody');
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada catatan aktivitas pada filter ini.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = logs.map((log, idx) => {
+        const timeFormatted = new Date(log.created_at).toLocaleString('id-ID', {
+          dateStyle: 'short',
+          timeStyle: 'medium'
+        });
+
+        return `
+          <tr>
+            <td class="text-center text-muted small">${idx + 1}</td>
+            <td class="font-monospace small">${timeFormatted} WITA</td>
+            <td>
+              <div class="fw-semibold text-dark">${escapeHtml(log.aktor_nama || log.aktor_id)}</div>
+              <div class="text-muted font-monospace" style="font-size: 0.68rem;">ID: ${escapeHtml(log.aktor_id)}</div>
+            </td>
+            <td><span class="badge bg-secondary-lt text-secondary fw-bold">${escapeHtml(log.aksi)}</span></td>
+            <td class="font-monospace small text-primary">${escapeHtml(log.target || '—')}</td>
+            <td class="small text-secondary" style="max-width: 280px; white-space: normal;">${escapeHtml(log.keterangan || '—')}</td>
+            <td class="font-monospace small text-muted">${escapeHtml(log.ip || '—')}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterLocalActivityLogs() {
+      const q = document.getElementById('logSearchInput').value.trim().toLowerCase();
+      if (!q) {
+        renderActivityLogsTable(allLoadedActivityLogs);
+        return;
+      }
+      const filtered = allLoadedActivityLogs.filter(l => 
+        (l.aktor_nama && l.aktor_nama.toLowerCase().includes(q)) ||
+        (l.aktor_id && l.aktor_id.toLowerCase().includes(q)) ||
+        (l.target && l.target.toLowerCase().includes(q)) ||
+        (l.keterangan && l.keterangan.toLowerCase().includes(q))
+      );
+      renderActivityLogsTable(filtered);
     }
 
     function viewPhotoModal(url, title) {
       document.getElementById('viewPhotoModalTitle').textContent = title || 'Pratinjau Foto';
       document.getElementById('viewPhotoModalImg').src = url;
       bootstrap.Modal.getOrCreateInstance(document.getElementById('viewPhotoModal')).show();
+    }
+
+    // ==============================================================
+    // PENGATURAN AKUN ADMINISTRATOR & STAF KEPEGAWAIAN (KHUSUS SUPERADMIN)
+    // ==============================================================
+    let currentAdminFilter = 'all';
+    let loadedAdminAccounts = [];
+
+    async function openAdminAccountManagerModal() {
+      await loadAdminAccounts(currentAdminFilter);
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('adminAccountManagerModal')).show();
+    }
+
+    async function filterAdminTable(filter) {
+      currentAdminFilter = filter;
+      document.querySelectorAll('#adminAccountManagerModal .btn-group button').forEach(btn => btn.classList.remove('active'));
+      if (filter === 'all') document.getElementById('filterAdmAll')?.classList.add('active');
+      else if (filter === 'active') document.getElementById('filterAdmActive')?.classList.add('active');
+      else if (filter === 'inactive') document.getElementById('filterAdmInactive')?.classList.add('active');
+
+      await loadAdminAccounts(filter);
+    }
+
+    async function loadAdminAccounts(filter = 'all') {
+      const tbody = document.getElementById('adminAccountsTableBody');
+      const warningBanner = document.getElementById('superadminWarningBanner');
+      const warningText = document.getElementById('superadminWarningText');
+
+      try {
+        const res = await fetch(`/api/admins?status=${filter}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || ''}`
+          }
+        });
+        const data = await res.json();
+        if (!data.success) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="ti ti-alert-circle me-1"></i> ${data.message || 'Gagal memuat akun admin.'}</td></tr>`;
+          return;
+        }
+
+        loadedAdminAccounts = data.admins || [];
+        if (data.warning) {
+          warningBanner.classList.remove('d-none');
+          warningText.textContent = data.warning;
+        } else {
+          warningBanner.classList.add('d-none');
+        }
+
+        if (loadedAdminAccounts.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada akun admin pada filter ini.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = loadedAdminAccounts.map((adm, idx) => {
+          const isSuper = (adm.peran || adm.role) === 'superadmin';
+          const isActive = adm.aktif !== false;
+          const lastLoginFormatted = adm.terakhir_login 
+            ? new Date(adm.terakhir_login).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+            : '<span class="text-muted fst-italic">Belum pernah</span>';
+
+          const roleBadge = isSuper
+            ? '<span class="badge bg-warning text-dark fw-bold"><i class="ti ti-crown me-1"></i> Superadmin</span>'
+            : '<span class="badge bg-primary text-white"><i class="ti ti-shield me-1"></i> Kepegawaian</span>';
+
+          const statusBadge = isActive
+            ? '<span class="badge bg-success-lt text-success fw-bold"><i class="ti ti-check me-1"></i> Aktif</span>'
+            : '<span class="badge bg-danger-lt text-danger fw-bold"><i class="ti ti-ban me-1"></i> Nonaktif</span>';
+
+          const rowClass = !isActive ? 'table-light opacity-75' : '';
+
+          return `
+            <tr class="${rowClass}">
+              <td class="text-center text-muted">${idx + 1}</td>
+              <td class="font-monospace fw-bold text-dark">${escapeHtml(adm.username)}</td>
+              <td>
+                <div class="fw-semibold">${escapeHtml(adm.name || adm.username)}</div>
+                ${adm.wajib_ganti_password ? '<span class="badge bg-warning-lt text-warning" style="font-size: 0.65rem;">Wajib ganti password</span>' : ''}
+              </td>
+              <td>${roleBadge}</td>
+              <td class="small font-monospace">${lastLoginFormatted}</td>
+              <td>${statusBadge}</td>
+              <td class="text-end">
+                <div class="btn-list justify-content-end flex-nowrap">
+                  <button type="button" class="btn btn-outline-secondary btn-sm px-2" onclick="openEditAdminFormModal(${adm.id})" title="Ubah Nama & Peran">
+                    <i class="ti ti-edit"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-warning btn-sm px-2" onclick="handleResetAdminPassword(${adm.id}, '${escapeHtml(adm.username)}')" title="Reset Sandi Sekali Pakai">
+                    <i class="ti ti-key"></i>
+                  </button>
+                  ${isActive ? `
+                    <button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="handleToggleAdminActive(${adm.id}, '${escapeHtml(adm.username)}', false)" title="Nonaktifkan Akun">
+                      <i class="ti ti-ban"></i>
+                    </button>
+                  ` : `
+                    <button type="button" class="btn btn-outline-success btn-sm px-2" onclick="handleToggleAdminActive(${adm.id}, '${escapeHtml(adm.username)}', true)" title="Aktifkan Kembali">
+                      <i class="ti ti-check"></i>
+                    </button>
+                  `}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="ti ti-alert-triangle me-1"></i> Kesalahan jaringan: ${err.message}</td></tr>`;
+      }
+    }
+
+    function openAddAdminFormModal() {
+      document.getElementById('adminFormModalTitle').innerHTML = '<i class="ti ti-user-plus me-1 text-primary"></i> Tambah Akun Administrator Baru';
+      document.getElementById('formAdminId').value = '';
+      document.getElementById('formAdminUsername').value = '';
+      document.getElementById('formAdminUsername').readOnly = false;
+      document.getElementById('formAdminName').value = '';
+      document.getElementById('formAdminPeran').value = 'kepegawaian';
+      document.getElementById('formAdminInitialPasswordBox').classList.remove('d-none');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('adminFormModal')).show();
+    }
+
+    function openEditAdminFormModal(id) {
+      const adm = loadedAdminAccounts.find(a => Number(a.id) === Number(id));
+      if (!adm) return;
+
+      document.getElementById('adminFormModalTitle').innerHTML = `<i class="ti ti-user-check me-1 text-primary"></i> Ubah Akun: ${escapeHtml(adm.username)}`;
+      document.getElementById('formAdminId').value = adm.id;
+      document.getElementById('formAdminUsername').value = adm.username;
+      document.getElementById('formAdminUsername').readOnly = true;
+      document.getElementById('formAdminName').value = adm.name || '';
+      document.getElementById('formAdminPeran').value = adm.peran || adm.role || 'kepegawaian';
+      document.getElementById('formAdminInitialPasswordBox').classList.add('d-none');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('adminFormModal')).show();
+    }
+
+    async function handleSaveAdminAccount(e) {
+      e.preventDefault();
+      const id = document.getElementById('formAdminId').value;
+      const username = document.getElementById('formAdminUsername').value.trim();
+      const name = document.getElementById('formAdminName').value.trim();
+      const peran = document.getElementById('formAdminPeran').value;
+
+      const btn = document.getElementById('btnSubmitAdminForm');
+      btn.disabled = true;
+
+      try {
+        const isEdit = Boolean(id);
+        const url = isEdit ? `/api/admins/${id}` : '/api/admins';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || ''}`
+          },
+          body: JSON.stringify({ username, name, peran, role: peran })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('adminFormModal')).hide();
+          if (data.tempPassword) {
+            document.getElementById('tempPasswordTargetInfo').textContent = `Sandi acak sekali pakai untuk akun "${username}" telah dibuat:`;
+            document.getElementById('tempPasswordDisplayInput').value = data.tempPassword;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('adminTempPasswordModal')).show();
+          } else {
+            showNotification(data.message, 'success');
+          }
+          await loadAdminAccounts(currentAdminFilter);
+        } else {
+          showNotification(data.message || 'Gagal menyimpan akun admin.', 'error');
+        }
+      } catch (err) {
+        showNotification(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function handleToggleAdminActive(id, username, nextActiveState) {
+      const aksiText = nextActiveState ? 'mengaktifkan kembali' : 'menonaktifkan';
+      if (!confirm(`Apakah Anda yakin ingin ${aksiText} akun administrator "${username}"?`)) return;
+
+      try {
+        const res = await fetch(`/api/admins/${id}/toggle-active`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || ''}`
+          },
+          body: JSON.stringify({ aktif: nextActiveState })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showNotification(data.message, 'success');
+          await loadAdminAccounts(currentAdminFilter);
+        } else {
+          showNotification(data.message || 'Gagal mengubah status akun admin.', 'error');
+        }
+      } catch (err) {
+        showNotification(err.message, 'error');
+      }
+    }
+
+    async function handleResetAdminPassword(id, username) {
+      if (!confirm(`Reset kata sandi akun "${username}" ke kata sandi acak sekali pakai?`)) return;
+
+      try {
+        const res = await fetch(`/api/admins/${id}/reset-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || ''}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('tempPasswordTargetInfo').textContent = `Sandi sekali pakai baru untuk akun "${username}" berhasil direset:`;
+          document.getElementById('tempPasswordDisplayInput').value = data.tempPassword;
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('adminTempPasswordModal')).show();
+          await loadAdminAccounts(currentAdminFilter);
+        } else {
+          showNotification(data.message || 'Gagal mereset sandi.', 'error');
+        }
+      } catch (err) {
+        showNotification(err.message, 'error');
+      }
+    }
+
+    function copyTempPasswordToClipboard() {
+      const input = document.getElementById('tempPasswordDisplayInput');
+      if (!input) return;
+      input.select();
+      input.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(input.value).then(() => {
+        showNotification('Kata sandi berhasil disalin ke clipboard!', 'success');
+      }).catch(() => {
+        document.execCommand('copy');
+        showNotification('Kata sandi berhasil disalin!', 'success');
+      });
+    }
+
+    async function handleForceChangePassword(e) {
+      e.preventDefault();
+      const p1 = document.getElementById('forceNewPassword').value;
+      const p2 = document.getElementById('forceConfirmPassword').value;
+
+      if (!p1 || p1.length < 8) {
+        showNotification('Kata sandi baru minimal 8 karakter!', 'error');
+        return;
+      }
+      if (p1 !== p2) {
+        showNotification('Konfirmasi kata sandi tidak cocok!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitForcePassword');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/auth/admin-change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || ''}`
+          },
+          body: JSON.stringify({ newPassword: p1 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('adminForceChangePasswordModal')).hide();
+          if (data.token) {
+            localStorage.setItem('adminToken', data.token);
+            sessionStorage.setItem('adminToken', data.token);
+          }
+          if (window.currentAdminUser) {
+            window.currentAdminUser.wajib_ganti_password = false;
+          }
+          showNotification('Kata sandi Anda berhasil diperbarui! Selamat bertugas.', 'success');
+        } else {
+          showNotification(data.message || 'Gagal mengubah kata sandi.', 'error');
+        }
+      } catch (err) {
+        showNotification(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
     }
 
     // ==============================================================
