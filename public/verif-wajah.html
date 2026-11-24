@@ -288,14 +288,15 @@
         if (data.success && data.employee) {
           currentAuthUser = data.employee;
           
-          // Cek persistensi lokal browser/HP jika serverless Lambda merestart memori
-          const localFace = localStorage.getItem(`bpmp_face_registered_${currentAuthUser.nip}`) === 'true';
-          const localPhoto = localStorage.getItem(`bpmp_face_photo_${currentAuthUser.nip}`);
-          if (localFace) {
+          // Cek Biometrik Wajah dari Data Server (Database sebagai Single Source of Truth)
+          const isRegisteredOnServer = Boolean(data.employee.faceRegistered || data.employee.facePhotoUrl);
+          if (!isRegisteredOnServer) {
+            localStorage.removeItem(`bpmp_face_registered_${currentAuthUser.nip}`);
+            localStorage.removeItem(`bpmp_face_photo_${currentAuthUser.nip}`);
+            currentAuthUser.faceRegistered = false;
+            currentAuthUser.facePhotoUrl = null;
+          } else {
             currentAuthUser.faceRegistered = true;
-            if (localPhoto && !currentAuthUser.facePhotoUrl) {
-              currentAuthUser.facePhotoUrl = localPhoto;
-            }
           }
 
           BPMPLayout.init({

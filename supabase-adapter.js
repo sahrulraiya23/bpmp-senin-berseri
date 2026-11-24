@@ -600,9 +600,6 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
       accumulated_jp: newJp,
       updated_at: now
     };
-    if (attendancePhotoUrl) {
-      updatePayload.attendance_photo_url = attendancePhotoUrl;
-    }
 
     let { data, error } = await client
       .from('employees')
@@ -610,19 +607,6 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
       .eq('id', existing.id)
       .select()
       .maybeSingle();
-
-    // Fallback toleran jika kolom attendance_photo_url belum ditambahkan di tabel employees
-    if (error && error.message && error.message.includes('attendance_photo_url')) {
-      delete updatePayload.attendance_photo_url;
-      const retry = await client
-        .from('employees')
-        .update(updatePayload)
-        .eq('id', existing.id)
-        .select()
-        .maybeSingle();
-      data = retry.data;
-      error = retry.error;
-    }
 
     if (error) {
       console.error(`[Supabase Error] markEmployeeAttended(${existing.id}):`, error.message);
