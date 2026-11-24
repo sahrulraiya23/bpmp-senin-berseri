@@ -1119,7 +1119,8 @@
         showToast('Masukkan kode token aktif dari layar proyektor aula (contoh: LPTI-27DD43 atau 27DD43)!', 'error');
         return;
       }
-      await submitPresenceDirect(token, currentEvent?.id);
+      showToast('Token QR valid! Silakan ambil foto selfie untuk verifikasi.', 'info');
+      openFaceModal(token, currentEvent?.id);
     }
 
     // Eksekusi Presensi Langsung (Tanpa Beban Selfie Wajib Berulang)
@@ -1177,7 +1178,7 @@
           }
           localStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
 
-          showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
+          showToast(data.message || 'Presensi aula dan verifikasi biometrik berhasil! Status: HADIR', 'success');
 
           // Tutup modal pemindai jika terbuka
           const camModal = getBsModal('cameraScannerModal');
@@ -1416,10 +1417,12 @@
 
       const tokenInput = document.getElementById('inputPresenceToken');
       if (tokenInput) tokenInput.value = token;
-      showToast('QR Code aula terbaca! Memverifikasi kehadiran...', 'info');
+      showToast('QR Code aula berhasil terbaca! Posisikan wajah Anda untuk foto selfie...', 'success');
 
-      // Langsung proses presensi aula tanpa memaksa selfie berulang
-      submitPresenceDirect(token, eventId);
+      // Beralih otomatis ke kamera selfie depan untuk mencocokkan dengan master biometrik
+      setTimeout(() => {
+        openFaceModal(token, eventId);
+      }, 350);
     }
 
     // 11. Modal Verifikasi Biometrik Wajah
@@ -1567,7 +1570,7 @@
             currentAuthUser = { ...currentAuthUser, ...data.employee, attended: true };
           }
 
-          showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
+          showToast(data.message || 'Presensi aula dan verifikasi biometrik berhasil! Status: HADIR', 'success');
           closeFaceCamera();
           const faceModal = getBsModal('faceBiometricModal');
           if (faceModal) faceModal.hide();
@@ -1609,7 +1612,7 @@
           if (data.employee) {
             currentAuthUser = { ...currentAuthUser, ...data.employee, attended: true };
           }
-          showToast('Presensi aula berhasil dicatat! Status: HADIR', 'success');
+          showToast(data.message || 'Presensi aula dan verifikasi biometrik berhasil! Status: HADIR', 'success');
           closeFaceCamera();
           const faceModal = getBsModal('faceBiometricModal');
           if (faceModal) faceModal.hide();

@@ -524,9 +524,15 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       cleanToken
     );
 
+    const hasMaster = Boolean(employee.faceRegistered || employee.facePhotoUrl);
+    const successMsg = hasMaster
+      ? `Presensi aula dan verifikasi biometrik wajah berhasil dicocokkan dengan data master! Selamat mengikuti kegiatan "${activeEvent.title}".`
+      : `Presensi aula berhasil dicatat! Selamat mengikuti kegiatan "${activeEvent.title}".`;
+
     return res.json({
       success: true,
-      message: `Presensi aula berhasil dicatat! Selamat mengikuti kegiatan "${activeEvent.title}".`,
+      faceMatched: hasMaster,
+      message: successMsg,
       employee: updatedEmployee || employee,
       event: activeEvent
     });
