@@ -904,6 +904,14 @@
             renderEventBanner(currentEvent);
           }
 
+          if (!currentAuthUser.attended) {
+            localStorage.removeItem('bpmp_attended_' + currentAuthUser.nip);
+            localStorage.removeItem('bpmp_attended_time_' + currentAuthUser.nip);
+            if (currentEvent?.id) {
+              localStorage.removeItem('bpmp_attended_' + currentAuthUser.nip + '_' + currentEvent.id);
+            }
+          }
+
           // Sinkronisasi Otomatis: Jika di Supabase belum ada foto master tetapi di HP sudah ada foto dari sesi kamera:
           if (!currentAuthUser.facePhotoUrl) {
             const cachedPhoto = localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip);
@@ -984,10 +992,9 @@
         if (facePrompt) facePrompt.classList.remove('d-none');
       }
 
-      // Cek Kehadiran pada Event Aktif
+      // Cek Kehadiran pada Event Aktif (Supabase sebagai Single Source of Truth)
       const isAttendedThisEvent = Boolean(
         emp.attended ||
-        localStorage.getItem('bpmp_attended_' + emp.nip) === 'true' ||
         (emp.attendance && (
           (currentEvent && (
             emp.attendance[currentEvent.id] === true ||
