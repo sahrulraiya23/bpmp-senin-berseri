@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Verifikasi Keabsahan E-Sertifikat - BPMP Provinsi Sulawesi Tenggara</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+
+  <!-- Tabler Core CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <!-- Tabler Icons (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <!-- Design Tokens BPMP Sultra -->
+  <link rel="stylesheet" href="/css/tokens.css">
+
+  <style>
+    .cert-verify-card {
+      border: 1px solid var(--tblr-border-color);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 45, 91, 0.08);
+      background: #ffffff;
+      overflow: hidden;
+    }
+    .cert-header-band {
+      background: linear-gradient(135deg, #1a3a5c 0%, #002d5b 100%);
+      color: #ffffff;
+      padding: 1.5rem 2rem;
+    }
+    .cert-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .badge-valid {
+      background-color: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .badge-revoked {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .field-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .field-value {
+      font-size: 1.1rem;
+      color: #1e293b;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="page">
+    
+    <!-- Top Official Identity Strip -->
+    <div id="bpmp-top-strip"></div>
+
+    <!-- Main Navigation Header -->
+    <div id="bpmp-navbar"></div>
+
+    <!-- Main Content -->
+    <div class="page-wrapper py-4">
+      <div class="container-xl" style="max-width: 800px;">
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-5">
+          <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+          <h4 class="fw-bold text-primary mb-1">Memverifikasi Keabsahan Dokumen...</h4>
+          <p class="text-secondary small">Menghubungkan ke Pangkalan Data Resmi Sertifikasi ASN BPMP Sultra</p>
+        </div>
+
+        <!-- Not Found State -->
+        <div id="notFoundState" class="card border-danger-subtle shadow-sm p-4 p-md-5 text-center my-4 d-none bg-white">
+          <div class="avatar avatar-xl rounded-circle bg-danger-lt text-danger mb-3 mx-auto">
+            <i class="ti ti-shield-x font-40"></i>
+          </div>
+          <h2 class="text-danger fw-bold mb-2">Sertifikat Tidak Ditemukan</h2>
+          <p class="text-secondary mx-auto mb-4" style="max-width: 520px;">
+            Token atau kode verifikasi yang Anda periksa tidak terdaftar dalam pangkalan data resmi Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara.
+          </p>
+          <div class="d-flex justify-content-center gap-2">
+            <a href="/" class="btn btn-outline-secondary">
+              <i class="ti ti-home me-1"></i> Kembali ke Beranda
+            </a>
+          </div>
+        </div>
+
+        <!-- Result State -->
+        <div id="resultState" class="cert-verify-card mb-4 d-none">
+          <!-- Card Header Band -->
+          <div class="cert-header-band d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <span class="avatar avatar-lg rounded-circle bg-white text-primary">
+                <i class="ti ti-certificate font-32"></i>
+              </span>
+              <div>
+                <h3 class="mb-0 fw-bold">Verifikasi Keaslian E-Sertifikat</h3>
+                <div class="small opacity-75">Kementerian Pendidikan Dasar dan Menengah • BPMP Sultra</div>
+              </div>
+            </div>
+            <div id="statusBadgeContainer">
+              <!-- Render Status Badge (Valid / Revoked) -->
+            </div>
+          </div>
+
+          <!-- Card Body -->
+          <div class="card-body p-4 p-md-5">
+            
+            <!-- Alert Revoked (Jika Dicabut) -->
+            <div id="alertRevoked" class="alert alert-danger d-none mb-4" role="alert">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="ti ti-alert-triangle font-20"></i>
+                <h4 class="alert-title mb-0 fw-bold">Perhatian: Sertifikat Ini Telah Dicabut</h4>
+              </div>
+              <div id="revocationDetails" class="small text-secondary">
+                Dokumen ini tidak lagi berlaku resmi karena telah dilakukan penerbitan ulang atau koreksi data.
+              </div>
+            </div>
+
+            <!-- Detail Sertifikat Publik Sesuai Persyaratan -->
+            <div class="row g-4">
+              
+              <!-- 1. Nomor Sertifikat -->
+              <div class="col-md-6">
+                <div class="field-label"><i class="ti ti-file-certificate me-1"></i> Nomor Sertifikat</div>
+                <div id="certNomor" class="field-value font-monospace text-primary">--</div>
+              </div>
+
+              <!-- 2. Status Keabsahan -->
+              <div class="col-md-6">
+                <div class="field-label"><i class="ti ti-shield-check me-1"></i> Status Keabsahan</div>
+                <div id="certStatusText" class="field-value">--</div>
+              </div>
+
+              <div class="col-12"><hr class="my-1 border-light-subtle"></div>
+
+              <!-- 3. Nama Pegawai (Penerima) -->
+              <div class="col-12">
+                <div class="field-label"><i class="ti ti-user me-1"></i> Nama Lengkap Penerima</div>
+                <div id="certNama" class="field-value fs-2 text-dark">--</div>
+              </div>
+
+              <!-- 4. Judul / Tema Pelatihan -->
+              <div class="col-12">
+                <div class="field-label"><i class="ti ti-book me-1"></i> Topik / Tema Pengembangan Kompetensi</div>
+                <div id="certJudul" class="field-value text-secondary" style="font-size: 1.05rem; line-height: 1.5;">--</div>
+              </div>
+
+              <div class="col-12"><hr class="my-1 border-light-subtle"></div>
+
+              <!-- 5. Tanggal Pelaksanaan -->
+              <div class="col-md-6">
+                <div class="field-label"><i class="ti ti-calendar-event me-1"></i> Waktu Pelaksanaan</div>
+                <div id="certTanggal" class="field-value" style="font-size: 1rem;">--</div>
+              </div>
+
+              <!-- 6. Tanggal Terbit -->
+              <div class="col-md-6">
+                <div class="field-label"><i class="ti ti-calendar-check me-1"></i> Tanggal Penerbitan</div>
+                <div id="certIssuedAt" class="field-value" style="font-size: 1rem;">--</div>
+              </div>
+
+            </div>
+
+            <!-- Footer Penjamin Mutu -->
+            <div class="mt-5 pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted small">
+              <div class="d-flex align-items-center gap-2">
+                <i class="ti ti-building-bank font-18 text-primary"></i>
+                <span>Pangkalan Data Resmi Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara</span>
+              </div>
+              <div>
+                <a href="/" class="btn btn-sm btn-outline-secondary">
+                  <i class="ti ti-home me-1"></i> Beranda Utama
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Official Footer -->
+    <div id="bpmp-footer"></div>
+  </div>
+
+  <!-- Tabler Core JS & Layout Engine -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script src="/js/layout.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Inisialisasi strip & navbar
+      if (typeof renderBpmpNavbar === 'function') renderBpmpNavbar();
+      if (typeof renderBpmpFooter === 'function') renderBpmpFooter();
+
+      // Dapatkan token dari path URL: /cek-sertifikat/:token
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      const token = pathSegments[pathSegments.length - 1];
+
+      if (!token || token === 'cek-sertifikat') {
+        showNotFound();
+        return;
+      }
+
+      await verifyCertificate(token);
+    });
+
+    async function verifyCertificate(token) {
+      try {
+        const resp = await fetch(`/api/cek-sertifikat/${encodeURIComponent(token)}`);
+        const data = await resp.json();
+
+        document.getElementById('loadingState').classList.add('d-none');
+
+        if (!resp.ok || !data.success || !data.certificate) {
+          showNotFound();
+          return;
+        }
+
+        const cert = data.certificate;
+        const isValid = cert.statusRaw === 'valid';
+
+        // Tampilkan Data
+        document.getElementById('certNomor').textContent = cert.nomor || '-';
+        document.getElementById('certNama').textContent = cert.nama || '-';
+        document.getElementById('certJudul').textContent = cert.judul || '-';
+        document.getElementById('certTanggal').textContent = cert.tanggal || '-';
+        document.getElementById('certIssuedAt').textContent = cert.issuedAt || '-';
+
+        // Badge Status
+        const badgeContainer = document.getElementById('statusBadgeContainer');
+        if (isValid) {
+          badgeContainer.innerHTML = `
+            <span class="cert-status-badge badge-valid">
+              <i class="ti ti-check font-18"></i> RESMI TERVERIFIKASI
+            </span>
+          `;
+          document.getElementById('certStatusText').innerHTML = `
+            <span class="text-success"><i class="ti ti-circle-check me-1"></i> Resmi Terverifikasi (Valid)</span>
+          `;
+        } else {
+          badgeContainer.innerHTML = `
+            <span class="cert-status-badge badge-revoked">
+              <i class="ti ti-ban font-18"></i> DICABUT / TIDAK BERLAKU
+            </span>
+          `;
+          document.getElementById('certStatusText').innerHTML = `
+            <span class="text-danger"><i class="ti ti-circle-x me-1"></i> Sertifikat Dicabut (Revoked)</span>
+          `;
+          const alertRevoked = document.getElementById('alertRevoked');
+          alertRevoked.classList.remove('d-none');
+          if (cert.revocationReason) {
+            document.getElementById('revocationDetails').textContent = `Alasan pencabutan: ${cert.revocationReason}` + (cert.revokedAt ? ` (pada ${cert.revokedAt})` : '');
+          }
+        }
+
+        document.getElementById('resultState').classList.remove('d-none');
+      } catch (err) {
+        document.getElementById('loadingState').classList.add('d-none');
+        showNotFound();
+      }
+    }
+
+    function showNotFound() {
+      document.getElementById('loadingState').classList.add('d-none');
+      document.getElementById('notFoundState').classList.remove('d-none');
+    }
+  </script>
+</body>
+</html>

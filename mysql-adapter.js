@@ -1418,6 +1418,173 @@ async function getAllCertificates() {
   return [];
 }
 
+// Memory fallback store untuk MySQL mode
+const mysqlCertStore = {
+  templates: [],
+  issued: []
+};
+
+async function saveCertificateTemplate(templateData) {
+  const pool = getPool();
+  const id = templateData.id || `tpl-${Date.now()}`;
+  const record = {
+    id: id,
+    nama: templateData.nama || 'Template Sertifikat Kustom',
+    file_latar: templateData.file_latar || templateData.filePath || '',
+    config_json: templateData.config_json || templateData.config || {},
+    versi: parseInt(templateData.versi, 10) || 1,
+    aktif: templateData.aktif !== false,
+    dibuat_oleh: templateData.dibuat_oleh || 'Admin Kepegawaian',
+    updated_at: new Date().toISOString()
+  };
+
+  if (pool) {
+    try {
+      await pool.query(
+        `INSERT INTO template_sertifikat (id, nama, file_latar, config_json, versi, aktif, dibuat_oleh, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE nama=VALUES(nama), file_latar=VALUES(file_latar), config_json=VALUES(config_json), versi=VALUES(versi), aktif=VALUES(aktif), updated_at=NOW()`,
+        [record.id, record.nama, record.file_latar, JSON.stringify(record.config_json), record.versi, record.aktif ? 1 : 0, record.dibuat_oleh]
+      );
+    } catch (e) {}
+  }
+
+  const idx = mysqlCertStore.templates.findIndex(t => t.id === id);
+  if (idx >= 0) mysqlCertStore.templates[idx] = { ...mysqlCertStore.templates[idx], ...record };
+  else mysqlCertStore.templates.push(record);
+  return record;
+}
+
+async function getAllCertificateTemplates() {
+  const pool = getPool();
+  if (pool) {
+    try {
+      const [rows] = await pool.query(`SELECT * FROM template_sertifikat ORDER BY created_at DESC`);
+      if (rows && rows.length > 0) return rows;
+    } catch (e) {}
+  }
+  return mysqlCertStore.templates;
+}
+
+async function getCertificateTemplateById(id) {
+  if (!id) return null;
+  const pool = getPool();
+  if (pool) {
+    try {
+      const [rows] = await pool.query(`SELECT * FROM template_sertifikat WHERE id = ? LIMIT 1`, [id]);
+      if (rows.length > 0) return rows[0];
+    } catch (e) {}
+  }
+  return mysqlCertStore.templates.find(t => t.id === id) || null;
+}
+
+async function saveIssuedCertificate(certData) {
+  const pool = getPool();
+  const now = certData.issued_at || new Date().toISOString();
+  const id = certData.id || `cert-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const record = {
+    id: id,
+    event_id: certData.event_id || certData.eventId,
+    pegawai_id: certData.pegawai_id || certData.pegawaiId || certData.employeeId,
+    nomor: certData.nomor || certData.number,
+    token: certData.token,
+    template_id: certData.template_id || certData.templateId || 'preset-a',
+    template_versi: parseInt(certData.template_versi || 1, 10),
+    versi: parseInt(certData.versi || 1, 10),
+    status: certData.status || 'valid',
+    revoked_at: certData.revoked_at || null,
+    revocation_reason: certData.revocation_reason || null,
+    issued_at: now,
+    created_at: now
+  };
+
+  if (pool) {
+    try {
+      await pool.query(
+        `INSERT INTO sertifikat (id, event_id, pegawai_id, nomor, token, template_id, template_versi, versi, status, issued_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE status=VALUES(status), versi=VALUES(versi)`,
+        [record.id, record.event_id, record.pegawai_id, record.nomor, record.token, record.template_id, record.template_versi, record.versi, record.status, record.issued_at]
+      );
+    } catch (e) {}
+  }
+
+  const idx = mysqlCertStore.issued.findIndex(c => c.id === id || c.token === record.token);
+  if (idx >= 0) mysqlCertStore.issued[idx] = { ...mysqlCertStore.issued[idx], ...record };
+  else mysqlCertStore.issued.push(record);
+  return record;
+}
+
+async function getCertificateByToken(token) {
+  if (!token) return null;
+  const clean = String(token).trim();
+  const pool = getPool();
+  if (pool) {
+    try {
+      const [rows] = await pool.query(`SELECT * FROM sertifikat WHERE token = ? LIMIT 1`, [clean]);
+      if (rows.length > 0) return rows[0];
+    } catch (e) {}
+  }
+  return mysqlCertStore.issued.find(c => c.token === clean) || null;
+}
+
+async function getCertificatesByEmployeeId(pegawaiId) {
+  if (!pegawaiId) return [];
+  const pool = getPool();
+  if (pool) {
+    try {
+      const [rows] = await pool.query(`SELECT * FROM sertifikat WHERE pegawai_id = ? ORDER BY issued_at DESC`, [pegawaiId]);
+      if (rows) return rows;
+    } catch (e) {}
+  }
+  return mysqlCertStore.issued.filter(c => c.pegawai_id === pegawaiId);
+}
+
+async function revokeCertificate(idOrToken, reason = 'Koreksi Data / Terbit Ulang') {
+  const pool = getPool();
+  const now = new Date().toISOString();
+  if (pool) {
+    try {
+      await pool.query(
+        `UPDATE sertifikat SET status = 'revoked', revoked_at = NOW(), revocation_reason = ? WHERE id = ? OR token = ?`,
+        [reason, idOrToken, idOrToken]
+      );
+    } catch (e) {}
+  }
+  const item = mysqlCertStore.issued.find(c => c.id === idOrToken || c.token === idOrToken);
+  if (item) {
+    item.status = 'revoked';
+    item.revoked_at = now;
+    item.revocation_reason = reason;
+  }
+  return true;
+}
+
+async function getNextCertificateSequence(year = new Date().getFullYear()) {
+  let maxSeq = 0;
+  const pool = getPool();
+  if (pool) {
+    try {
+      const [rows] = await pool.query(`SELECT nomor FROM sertifikat`);
+      for (const r of rows) {
+        if (r.nomor) {
+          const parts = r.nomor.split('/');
+          const p1 = parseInt(parts[0], 10);
+          if (!isNaN(p1) && p1 > maxSeq) maxSeq = p1;
+        }
+      }
+    } catch (e) {}
+  }
+  for (const c of mysqlCertStore.issued) {
+    if (c.nomor) {
+      const parts = c.nomor.split('/');
+      const p1 = parseInt(parts[0], 10);
+      if (!isNaN(p1) && p1 > maxSeq) maxSeq = p1;
+    }
+  }
+  return maxSeq + 1;
+}
+
 async function getAttendanceLogs(eventId = null) {
   const pool = getPool();
   if (pool) {
@@ -1513,5 +1680,13 @@ module.exports = {
   saveCertificate,
   getCertificateByIdOrNumber,
   getAllCertificates,
+  saveCertificateTemplate,
+  getAllCertificateTemplates,
+  getCertificateTemplateById,
+  saveIssuedCertificate,
+  getCertificateByToken,
+  getCertificatesByEmployeeId,
+  revokeCertificate,
+  getNextCertificateSequence,
   getAttendanceLogs
 };

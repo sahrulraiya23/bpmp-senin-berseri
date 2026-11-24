@@ -7,6 +7,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { generateCertificatePdf } = require('./certificate-generator');
+const certificateService = require('./services/certificate');
 const { signCertificate, generateCertId, verifyCertificateSignature } = require('./cert-crypto');
 // Auto-load .env environment file (Node.js 20+)
 if (typeof process.loadEnvFile === 'function') {
@@ -143,6 +144,29 @@ function getAdminFromToken(authHeader, cookieHeader) {
     if (match) token = decodeURIComponent(match[1].trim());
   }
   return verifyAdminToken(token);
+}
+
+function createEmployeeSessionToken(employee) {
+  if (!employee || !employee.nip) return '';
+  const hash = crypto.createHmac('sha256', JWT_SECRET).update(`${employee.nip}:${employee.id}`).digest('hex');
+  return `${employee.nip}:${hash}`;
+}
+
+function getEmployeeFromRequest(req) {
+  const cookieHeader = req.headers.cookie || '';
+  const matchCookie = cookieHeader.match(/employee_session=([^;]+)/);
+  if (matchCookie) {
+    const raw = decodeURIComponent(matchCookie[1].trim());
+    const nip = raw.split(':')[0];
+    if (nip) return nip;
+  }
+  if (req.headers['x-employee-nip']) {
+    return String(req.headers['x-employee-nip']).trim();
+  }
+  if (req.query.sessionNip) {
+    return String(req.query.sessionNip).trim();
+  }
+  return null;
 }
 
 // Multer Storage for LPTI PDFs
@@ -542,12 +566,15 @@ app.post('/api/auth/login', async (req, res) => {
 
     const activeEvent = await db.getActiveEvent();
     const { password: _, ...safeEmployee } = employee;
+    const employeeSessionToken = createEmployeeSessionToken(employee);
+    res.cookie('employee_session', employeeSessionToken, { httpOnly: true, sameSite: 'lax', path: '/' });
 
     return res.json({
       success: true,
       message: `Login berhasil! Selamat datang, ${employee.name}.`,
       mustChangePassword,
       isProduction,
+      sessionToken: employeeSessionToken,
       employee: {
         ...safeEmployee,
         needsFaceRegistration: false,
@@ -1043,6 +1070,336 @@ function resolveTemplatePath(filePath) {
   return null;
 }
 
+// ==============================================================
+// FITUR BARU: TEMPLATE SERTIFIKAT TERKUNCI & ZONA PANDUAN
+// ==============================================================
+
+// 1. Ambil Semua Template Sertifikat (Preset Bawaan A, B, C, D + Template Kustom)
+app.get('/api/admin/certificate-templates', async (req, res) => {
+  try {
+    const customTemplates = await db.getAllCertificateTemplates();
+    const presets = Object.keys(certificateService.PRESET_TEMPLATES).map(key => {
+      const p = certificateService.PRESET_TEMPLATES[key];
+      return {
+        id: `preset-${key.toLowerCase()}`,
+        presetKey: key,
+        nama: p.nama,
+        theme: p.theme,
+        qrPosition: p.defaultQrPosition,
+        isPreset: true,
+        patternIsi: p.patternIsi,
+        pejabat: p.defaultPejabat
+      };
+    });
+    res.json({
+      success: true,
+      presets: presets,
+      customTemplates: customTemplates,
+      all: [...presets, ...customTemplates]
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memuat daftar template: ' + err.message });
+  }
+});
+
+// 2. Upload Template Sertifikat Baru oleh Admin Kepegawaian (Terkunci & Berversi)
+app.post('/api/admin/certificate-templates/upload', (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin || !['superadmin', 'admin'].includes(admin.role)) {
+    return res.status(403).json({ success: false, message: 'Hanya Admin Kepegawaian yang diizinkan mengunggah template sertifikat.' });
+  }
+
+  uploadTemplate.single('templateFile')(req, res, async (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+    if (!req.file) return res.status(400).json({ success: false, message: 'Berkas template (PNG atau PDF) wajib diunggah!' });
+
+    try {
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      if (!['.png', '.pdf', '.jpg', '.jpeg'].includes(ext)) {
+        return res.status(400).json({ success: false, message: 'Format berkas harus PNG atau PDF A4 Landscape!' });
+      }
+
+      let filePath = `/uploads/templates/${req.file.filename}`;
+      if (typeof db.uploadToStorage === 'function') {
+        try {
+          const fileBuffer = fs.readFileSync(req.file.path);
+          const storageUrl = await db.uploadToStorage('templates', req.file.filename, fileBuffer, req.file.mimetype);
+          if (storageUrl) filePath = storageUrl;
+        } catch (e) {}
+      }
+
+      const nama = (req.body.nama || req.file.originalname.replace(/\.[^/.]+$/, '')).trim();
+      const basePreset = (req.body.basePreset || 'A').toUpperCase();
+      const qrPosition = req.body.qrPosition === 'kiri' ? 'kiri' : 'kanan';
+      const existingId = req.body.templateId;
+
+      let versi = 1;
+      let templateId = existingId || `tpl-${Date.now()}`;
+      if (existingId) {
+        const oldTpl = await db.getCertificateTemplateById(existingId);
+        if (oldTpl) {
+          versi = (parseInt(oldTpl.versi, 10) || 1) + 1;
+        }
+      }
+
+      const configJson = {
+        basePreset,
+        qrPosition,
+        patternIsi: req.body.patternIsi || undefined,
+        pejabat: {
+          nama: req.body.pejabatNama || 'Junaiddin Pagala, S.T., M.T.',
+          nip: req.body.pejabatNip || '197606122002121004',
+          jabatan: req.body.pejabatJabatan || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra'
+        }
+      };
+
+      const record = await db.saveCertificateTemplate({
+        id: templateId,
+        nama,
+        file_latar: filePath,
+        config_json: configJson,
+        versi,
+        aktif: true,
+        dibuat_oleh: admin.name || admin.username || 'Admin Kepegawaian'
+      });
+
+      res.json({
+        success: true,
+        message: `Template "${nama}" versi ${versi} berhasil disimpan dengan tata letak zona terkunci.`,
+        template: record
+      });
+    } catch (e) {
+      res.status(500).json({ success: false, message: 'Gagal memproses template: ' + e.message });
+    }
+  });
+});
+
+// 3. Unduh Panduan Zona (Overlay Grid PDF) untuk Desainer Grafis
+app.get('/api/admin/certificate-templates/overlay', async (req, res) => {
+  try {
+    const preset = (req.query.preset || 'A').toUpperCase();
+    const qrPos = req.query.qrPosition === 'kiri' ? 'kiri' : 'kanan';
+    const overlayBytes = await certificateService.generateZoneOverlayPdf(preset, qrPos);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="Panduan_Zona_Template_Sertifikat.pdf"');
+    res.setHeader('Content-Length', overlayBytes.length);
+    res.send(Buffer.from(overlayBytes));
+  } catch (err) {
+    res.status(500).send('Gagal membuat file panduan zona overlay: ' + err.message);
+  }
+});
+
+// 4. Pratinjau Template Sertifikat dengan Sampel Data ASN
+app.get('/api/admin/certificate-templates/preview-sample.pdf', async (req, res) => {
+  try {
+    const presetKey = (req.query.preset || 'A').toUpperCase();
+    const qrPosition = req.query.qrPosition === 'kiri' ? 'kiri' : 'kanan';
+    const templateId = req.query.templateId;
+
+    let customTpl = null;
+    if (templateId && templateId.startsWith('tpl-')) {
+      customTpl = await db.getCertificateTemplateById(templateId);
+    }
+
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
+    const baseUrl = `${protocol}://${host}`;
+
+    const templateObj = {
+      presetKey,
+      qrPosition,
+      file_latar: customTpl ? resolveTemplatePath(customTpl.file_latar) : null,
+      patternIsi: customTpl?.config_json?.patternIsi
+    };
+
+    const sampleData = {
+      nomor: '0031/C6.26/Sertifikat/KP.04.00/2026',
+      nama: 'Sri Wahyudi, S.Sos., M.AP.',
+      nip: '198503152010011012',
+      jabatan: 'Subbagian Tata Usaha & Kepegawaian',
+      instansi: 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
+      judul: 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra',
+      tanggal: '18 - 20 November 2026',
+      jp: 32,
+      lokasi: 'BPMP Provinsi Sulawesi Tenggara',
+      issuedAt: new Date().toISOString()
+    };
+
+    const result = await certificateService.generateCertificatePdf({
+      template: templateObj,
+      data: sampleData,
+      token: 'sample-preview-token',
+      baseUrl: baseUrl
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="Pratinjau_Template_Sertifikat.pdf"');
+    res.setHeader('Cache-Control', 'no-store, no-cache');
+    res.send(result.pdfBuffer);
+  } catch (err) {
+    res.status(500).send('Gagal membuat pratinjau sertifikat: ' + err.message);
+  }
+});
+
+// 5. Penerbitan Sertifikat (Single & Bulk) - Penomoran Unik & Validasi Server Ketat
+app.post('/api/admin/issue-certificates', async (req, res) => {
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  if (!admin) {
+    return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+  }
+
+  const { eventId, employeeIds, templateId } = req.body;
+  if (!eventId || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+    return res.status(400).json({ success: false, message: 'Event ID dan daftar ID Pegawai wajib dipilih.' });
+  }
+
+  const event = await db.getEventById(eventId);
+  if (!event) return res.status(404).json({ success: false, message: 'Data kegiatan tidak ditemukan.' });
+
+  const year = new Date().getFullYear();
+  let nextSeq = await db.getNextCertificateSequence(year);
+
+  const issuedList = [];
+  const skippedList = [];
+
+  for (const empId of employeeIds) {
+    const employee = await db.getEmployeeByIdOrNip(empId);
+    if (!employee) {
+      skippedList.push({ id: empId, reason: 'Pegawai tidak ditemukan' });
+      continue;
+    }
+
+    // SERVER-SIDE VALIDATION (Poin 9): Hanya jika Hadir DAN LPTI Disetujui!
+    if (!employee.attended) {
+      skippedList.push({ id: empId, name: employee.name, reason: 'Presensi belum Hadir di aula' });
+      continue;
+    }
+
+    if (!employee.lpti || employee.lpti.status !== 'approved') {
+      skippedList.push({ id: empId, name: employee.name, reason: 'Berkas LPTI belum Disetujui oleh admin' });
+      continue;
+    }
+
+    // Penomoran sekuensial unik bebas tabrakan saat bulk (Poin 6)
+    const certNumber = `${String(nextSeq).padStart(4, '0')}/C6.26/Sertifikat/KP.04.00/${year}`;
+    nextSeq++;
+
+    // Token acak unik untuk QR & URL publik (Poin 5)
+    const certToken = crypto.randomBytes(16).toString('hex');
+
+    // Cek apakah sebelumnya sudah ada sertifikat (Poin 7: Koreksi data = terbit ulang versi baru, lama dicabut)
+    const existingCerts = await db.getCertificatesByEmployeeId(employee.id);
+    const prevCert = existingCerts.find(c => c.event_id === eventId && c.status === 'valid');
+    let versi = 1;
+
+    if (prevCert) {
+      await db.revokeCertificate(prevCert.id, 'Terbit ulang versi baru setelah koreksi data peserta');
+      versi = (prevCert.versi || 1) + 1;
+    }
+
+    const issuedRecord = await db.saveIssuedCertificate({
+      event_id: event.id,
+      pegawai_id: employee.id,
+      nomor: certNumber,
+      token: certToken,
+      template_id: templateId || event.templateId || 'preset-a',
+      template_versi: 1,
+      versi: versi,
+      status: 'valid',
+      issued_at: new Date().toISOString()
+    });
+
+    // Update profil pegawai
+    await db.updateEmployee(employee.id, {
+      certificate: {
+        number: certNumber,
+        token: certToken,
+        issuedAt: issuedRecord.issued_at,
+        verifier: 'Junaiddin Pagala, S.T., M.T.',
+        verifierTitle: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra'
+      }
+    });
+
+    issuedList.push({
+      employeeId: employee.id,
+      name: employee.name,
+      nip: employee.nip,
+      certNumber: certNumber,
+      token: certToken,
+      versi: versi
+    });
+  }
+
+  res.json({
+    success: true,
+    message: `Berhasil menerbitkan ${issuedList.length} sertifikat resmi. (${skippedList.length} dilewati karena belum memenuhi syarat).`,
+    issuedCount: issuedList.length,
+    skippedCount: skippedList.length,
+    issued: issuedList,
+    skipped: skippedList
+  });
+});
+
+// 6. Endpoint Verifikasi Publik Keabsahan E-Sertifikat (Poin 5)
+// URL QR: {BASE_URL}/cek-sertifikat/{token}
+app.get('/api/cek-sertifikat/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    const cert = await db.getCertificateByToken(token);
+
+    if (!cert) {
+      // Fallback: periksa jika token adalah certNumber lama
+      const legacyCert = await db.getCertificateByIdOrNumber(token);
+      if (legacyCert) {
+        return res.json({
+          success: true,
+          certificate: {
+            nomor: legacyCert.certificate_number || legacyCert.number,
+            nama: legacyCert.name || 'Aparatur Sipil Negara',
+            judul: legacyCert.event_title || 'Pengembangan Kompetensi Senin Berseri',
+            tanggal: certificateService.formatTanggalIndonesia(legacyCert.issued_at),
+            status: 'Resmi Terverifikasi (Valid)',
+            statusRaw: 'valid'
+          }
+        });
+      }
+
+      return res.status(404).json({
+        success: false,
+        message: 'Sertifikat tidak ditemukan atau token verifikasi tidak valid dalam pangkalan data resmi BPMP Sultra.'
+      });
+    }
+
+    const employee = await db.getEmployeeByIdOrNip(cert.pegawai_id);
+    const event = (cert.event_id ? await db.getEventById(cert.event_id) : await db.getActiveEvent()) || {};
+
+    const isValid = cert.status === 'valid';
+    res.json({
+      success: true,
+      certificate: {
+        nomor: cert.nomor,
+        nama: employee ? employee.name : 'Aparatur Sipil Negara',
+        judul: event.title || 'Pengembangan Kompetensi ASN BPMP Sultra',
+        tanggal: certificateService.formatTanggalIndonesia(event.schedule || cert.issued_at),
+        status: isValid ? 'Resmi Terverifikasi (Valid)' : 'Dicabut (Revoked)',
+        statusRaw: cert.status,
+        revocationReason: cert.revocation_reason || null,
+        revokedAt: cert.revoked_at ? certificateService.formatTanggalIndonesia(cert.revoked_at) : null,
+        versi: cert.versi || 1,
+        issuedAt: certificateService.formatTanggalIndonesia(cert.issued_at)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memverifikasi sertifikat: ' + err.message });
+  }
+});
+
+// Route Tampilan Web Verifikasi Publik
+app.get('/cek-sertifikat/:token', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'cek-sertifikat.html'));
+});
+
 app.delete('/api/event/template', async (req, res) => {
   const targetEventId = req.body?.eventId || req.query?.eventId;
   await db.updateEventTemplate(targetEventId, null);
@@ -1478,11 +1835,20 @@ app.get('/api/employees/:id/certificate', async (req, res) => {
   });
 });
 
-// Unduh / Streaming Asli PDF E-Sertifikat Pegawai
+// Unduh / Streaming Asli PDF E-Sertifikat Pegawai (Dibatasi ID Sesi & Generator Template Terkunci)
 app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
   try {
     const employee = await db.getEmployeeByIdOrNip(req.params.id);
     if (!employee) return res.status(404).send('Data pegawai tidak ditemukan.');
+
+    // Validasi Keamanan Akses: Pegawai hanya boleh unduh sertifikat miliknya sendiri
+    const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+    if (!admin) {
+      const requesterNip = getEmployeeFromRequest(req);
+      if (requesterNip && requesterNip !== employee.nip && requesterNip !== employee.id) {
+        return res.status(403).send('Akses Ditolak: Anda hanya memiliki izin untuk mengunduh e-sertifikat atas nama Anda sendiri.');
+      }
+    }
 
     if (employee.lpti?.status !== 'approved' || !employee.certificate) {
       return res.status(403).send('E-Sertifikat masih terkunci atau belum disetujui admin.');
@@ -1490,45 +1856,49 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
 
     const empEvtId = employee.eventId;
     const event = (empEvtId ? await db.getEventById(empEvtId) : await db.getActiveEvent()) || {};
-    const certConfig = event.certSettings || {};
 
-    const templatePath = resolveTemplatePath(event.certificateTemplate?.filePath);
+    // Dapatkan data sertifikat terbit dari tabel sertifikat
+    const certList = await db.getCertificatesByEmployeeId(employee.id);
+    const certRecord = certList.find(c => c.status === 'valid') || {};
+    const certNumber = certRecord.nomor || employee.certificate.number || '0001/C6.26/Sertifikat/KP.04.00/2026';
+    const certToken = certRecord.token || employee.certificate.token || crypto.createHash('md5').update(`${employee.nip}-${certNumber}`).digest('hex');
+
+    // Dapatkan template yang ditentukan event atau preset default
+    const templateId = event.templateId || certRecord.template_id;
+    let customTemplate = null;
+    if (templateId && templateId.startsWith('tpl-')) {
+      customTemplate = await db.getCertificateTemplateById(templateId);
+    }
 
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
+    const baseUrl = `${protocol}://${host}`;
 
-    const certCrypto = signCertificate({
-      certNumber: employee.certificate.number,
-      employeeNip: employee.nip,
-      employeeName: employee.name,
-      eventTitle: event.title || 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN',
-      eventJp: event.jp || 4,
-      issuedAt: employee.certificate.issuedAt
-    });
-    const certId = certCrypto.certId;
-    const verifyUrl = `${protocol}://${host}/sertifikat/${certId}`;
+    const templateObj = {
+      presetKey: customTemplate?.config_json?.basePreset || 'A',
+      qrPosition: customTemplate?.config_json?.qrPosition || 'kanan',
+      file_latar: customTemplate ? resolveTemplatePath(customTemplate.file_latar) : resolveTemplatePath(event.certificateTemplate?.filePath),
+      patternIsi: customTemplate?.config_json?.patternIsi
+    };
 
-    const pdfBuffer = await generateCertificatePdf({
-      templatePath: templatePath,
-      certNumber: employee.certificate.number,
-      certId: certId,
-      employeeName: employee.name,
-      employeeNip: employee.nip,
-      employeeJabatan: employee.jabatan,
-      employeeInstansi: employee.instansi,
-      eventTitle: event.title || 'Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN',
-      eventJp: event.jp || 4,
-      eventSchedule: event.schedule || '18 - 20 November 2026',
-      verifier: employee.certificate.verifier || 'Junaiddin Pagala, ST, M.T.',
-      verifierTitle: employee.certificate.verifierTitle || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
-      verifierNip: '197606122002121004',
-      issuedAt: employee.certificate.issuedAt,
-      verifyUrl: verifyUrl,
-      nomorYRatio: certConfig.nomorYRatio || 0.72,
-      namaYRatio: certConfig.namaYRatio || 0.50,
-      namaFontSize: certConfig.namaFontSize || 26,
-      nomorFontSize: certConfig.nomorFontSize || 11,
-      showUnderline: certConfig.showUnderline !== false
+    const certData = {
+      nomor: certNumber,
+      nama: employee.name,
+      nip: employee.nip,
+      jabatan: employee.jabatan || employee.position || 'Aparatur Sipil Negara',
+      instansi: employee.instansi || 'BPMP Provinsi Sulawesi Tenggara',
+      judul: event.title || 'Pengembangan Kompetensi ASN BPMP Sultra',
+      tanggal: event.schedule || 'Tahun 2026',
+      jp: event.jp || 4,
+      lokasi: event.location || 'BPMP Provinsi Sulawesi Tenggara',
+      issuedAt: employee.certificate.issuedAt || certRecord.issued_at || new Date().toISOString()
+    };
+
+    const result = await certificateService.generateCertificatePdf({
+      template: templateObj,
+      data: certData,
+      token: certToken,
+      baseUrl: baseUrl
     });
 
     const isDownload = req.query.download === 'true';
@@ -1539,15 +1909,16 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('Content-Length', pdfBuffer.length);
-    // Simpan berkas PDF sertifikat ke database (tabel files)
+    res.setHeader('Content-Length', result.pdfBuffer.length);
+
+    // Simpan berkas PDF sertifikat ke database (tabel files) jika storage tersedia
     if (typeof db.uploadToStorage === 'function') {
       try {
-        db.uploadToStorage('certificates', filename, Buffer.from(pdfBuffer), 'application/pdf').catch(() => {});
+        db.uploadToStorage('certificates', filename, result.pdfBuffer, 'application/pdf').catch(() => {});
       } catch (e) {}
     }
 
-    res.send(Buffer.from(pdfBuffer));
+    res.send(result.pdfBuffer);
   } catch (error) {
     console.error('Error cert PDF:', error);
     res.status(500).send('Gagal menghasilkan e-sertifikat PDF: ' + error.message);

@@ -1970,6 +1970,226 @@ async function getAllCertificates() {
   return mem.certificates || [];
 }
 
+// ==============================================================
+// FITUR BARU: TEMPLATE SERTIFIKAT TERKUNCI & TABEL SERTIFIKAT
+// ==============================================================
+
+async function saveCertificateTemplate(templateData) {
+  const client = getClient();
+  const id = templateData.id || `tpl-${Date.now()}`;
+  const record = {
+    id: id,
+    nama: templateData.nama || 'Template Sertifikat Kustom',
+    file_latar: templateData.file_latar || templateData.filePath || '',
+    config_json: templateData.config_json || templateData.config || {},
+    versi: parseInt(templateData.versi, 10) || 1,
+    aktif: templateData.aktif !== false,
+    dibuat_oleh: templateData.dibuat_oleh || 'Admin Kepegawaian',
+    updated_at: new Date().toISOString()
+  };
+
+  if (client) {
+    try {
+      await client.from('template_sertifikat').upsert(record, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('[Supabase] Warning saveCertificateTemplate:', err.message);
+    }
+  }
+
+  const mem = getMemoryStore();
+  if (!mem.certificateTemplates) mem.certificateTemplates = [];
+  const idx = mem.certificateTemplates.findIndex(t => t.id === id);
+  if (idx >= 0) {
+    mem.certificateTemplates[idx] = { ...mem.certificateTemplates[idx], ...record };
+  } else {
+    mem.certificateTemplates.push(record);
+  }
+  return record;
+}
+
+async function getAllCertificateTemplates() {
+  const client = getClient();
+  let list = [];
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('template_sertifikat')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        list = data;
+      }
+    } catch (e) {}
+  }
+
+  const mem = getMemoryStore();
+  if (!mem.certificateTemplates) mem.certificateTemplates = [];
+  
+  // Gabungkan jika ada data memory
+  const combined = [...list];
+  for (const m of mem.certificateTemplates) {
+    if (!combined.some(c => c.id === m.id)) combined.push(m);
+  }
+  return combined;
+}
+
+async function getCertificateTemplateById(id) {
+  if (!id) return null;
+  const client = getClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('template_sertifikat')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  const mem = getMemoryStore();
+  return (mem.certificateTemplates || []).find(t => t.id === id) || null;
+}
+
+async function saveIssuedCertificate(certData) {
+  const client = getClient();
+  const now = certData.issued_at || new Date().toISOString();
+  const id = certData.id || `cert-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const record = {
+    id: id,
+    event_id: certData.event_id || certData.eventId,
+    pegawai_id: certData.pegawai_id || certData.pegawaiId || certData.employeeId,
+    nomor: certData.nomor || certData.number,
+    token: certData.token,
+    template_id: certData.template_id || certData.templateId || 'preset-a',
+    template_versi: parseInt(certData.template_versi || 1, 10),
+    versi: parseInt(certData.versi || 1, 10),
+    status: certData.status || 'valid',
+    revoked_at: certData.revoked_at || null,
+    revocation_reason: certData.revocation_reason || null,
+    issued_at: now,
+    created_at: now
+  };
+
+  if (client) {
+    try {
+      await client.from('sertifikat').upsert(record, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('[Supabase] Warning saveIssuedCertificate:', err.message);
+    }
+  }
+
+  const mem = getMemoryStore();
+  if (!mem.issuedCertificates) mem.issuedCertificates = [];
+  const idx = mem.issuedCertificates.findIndex(c => c.id === id || c.token === record.token);
+  if (idx >= 0) {
+    mem.issuedCertificates[idx] = { ...mem.issuedCertificates[idx], ...record };
+  } else {
+    mem.issuedCertificates.push(record);
+  }
+
+  // Juga sinkronkan ke method lama saveCertificate agar query backward-compatible
+  try {
+    await saveCertificate({
+      id: id,
+      number: record.nomor,
+      employeeId: record.pegawai_id,
+      eventId: record.event_id,
+      issuedAt: now,
+      token: record.token
+    });
+  } catch (e) {}
+
+  return record;
+}
+
+async function getCertificateByToken(token) {
+  if (!token) return null;
+  const clean = String(token).trim();
+  const client = getClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('sertifikat')
+        .select('*')
+        .eq('token', clean)
+        .maybeSingle();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  const mem = getMemoryStore();
+  return (mem.issuedCertificates || []).find(c => c.token === clean) || null;
+}
+
+async function getCertificatesByEmployeeId(pegawaiId) {
+  if (!pegawaiId) return [];
+  const client = getClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('sertifikat')
+        .select('*')
+        .eq('pegawai_id', pegawaiId)
+        .order('issued_at', { ascending: false });
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  const mem = getMemoryStore();
+  return (mem.issuedCertificates || []).filter(c => c.pegawai_id === pegawaiId);
+}
+
+async function revokeCertificate(idOrToken, reason = 'Koreksi Data / Terbit Ulang') {
+  const client = getClient();
+  const now = new Date().toISOString();
+  if (client) {
+    try {
+      await client
+        .from('sertifikat')
+        .update({ status: 'revoked', revoked_at: now, revocation_reason: reason })
+        .or(`id.eq.${idOrToken},token.eq.${idOrToken}`);
+    } catch (e) {}
+  }
+  const mem = getMemoryStore();
+  if (mem.issuedCertificates) {
+    const item = mem.issuedCertificates.find(c => c.id === idOrToken || c.token === idOrToken);
+    if (item) {
+      item.status = 'revoked';
+      item.revoked_at = now;
+      item.revocation_reason = reason;
+    }
+  }
+  return true;
+}
+
+async function getNextCertificateSequence(year = new Date().getFullYear()) {
+  const allCerts = await getAllCertificates();
+  const mem = getMemoryStore();
+  const issued = mem.issuedCertificates || [];
+
+  let maxSeq = 0;
+  const regex = /(\d+)\/C6\.26\/Sertifikat/i;
+
+  const checkItem = (str) => {
+    if (!str) return;
+    const match = str.match(regex);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxSeq) maxSeq = num;
+    } else {
+      // Periksa nomor umum di awal string (misal: 0031/...)
+      const parts = str.split('/');
+      if (parts.length > 0) {
+        const p1 = parseInt(parts[0], 10);
+        if (!isNaN(p1) && p1 > maxSeq) maxSeq = p1;
+      }
+    }
+  };
+
+  for (const c of allCerts) checkItem(c.certificate_number || c.number);
+  for (const c of issued) checkItem(c.nomor);
+
+  return maxSeq + 1;
+}
+
 async function saveQrToken(eventId, token, validUntil) {
   const client = getClient();
   const validDate = validUntil ? new Date(validUntil).toISOString() : new Date(Date.now() + 30000).toISOString();
@@ -2082,6 +2302,14 @@ module.exports = {
   saveCertificate,
   getCertificateByIdOrNumber,
   getAllCertificates,
+  saveCertificateTemplate,
+  getAllCertificateTemplates,
+  getCertificateTemplateById,
+  saveIssuedCertificate,
+  getCertificateByToken,
+  getCertificatesByEmployeeId,
+  revokeCertificate,
+  getNextCertificateSequence,
   saveQrToken,
   isQrTokenValid,
   getAttendanceLogs
