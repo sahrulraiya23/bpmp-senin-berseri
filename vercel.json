@@ -21,8 +21,8 @@
     { "source": "/superadmin", "destination": "/superadmin.html" },
     { "source": "/proyektor", "destination": "/proyektor.html" },
     { "source": "/qr", "destination": "/proyektor.html" },
-    { "source": "/verif-wajah", "destination": "/verif-wajah.html" },
-    { "source": "/verifikasi-wajah", "destination": "/verif-wajah.html" },
+    { "source": "/verif-wajah", "destination": "/pegawai.html" },
+    { "source": "/verifikasi-wajah", "destination": "/pegawai.html" },
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/(.*)", "destination": "/api/index.js" }
   ]
