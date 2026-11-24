@@ -39,6 +39,42 @@ let _supabaseInstance = null;
 let _isConfigured = false;
 let _explicitNull = false;
 
+// Cache Persisten Biometrik Wajah Lokal (Fail-safe jika ALTER TABLE Supabase belum dieksekusi)
+const FACES_CACHE_PATH = path.join(__dirname, 'uploads', 'faces', 'descriptors_cache.json');
+
+function getFaceCache(nip) {
+  try {
+    if (fs.existsSync(FACES_CACHE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8'));
+      return data[String(nip).trim()] || null;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveFaceCache(nip, obj) {
+  try {
+    const dir = path.dirname(FACES_CACHE_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    let data = {};
+    if (fs.existsSync(FACES_CACHE_PATH)) {
+      try { data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8')); } catch(e){}
+    }
+    data[String(nip).trim()] = obj;
+    fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {}
+}
+
+function deleteFaceCache(nip) {
+  try {
+    if (fs.existsSync(FACES_CACHE_PATH)) {
+      let data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8'));
+      delete data[String(nip).trim()];
+      fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(data, null, 2), 'utf8');
+    }
+  } catch (e) {}
+}
+
 // In-Memory store untuk development lokal sebelum file .env diisi credential Supabase
 let _memoryStore = null;
 
@@ -276,10 +312,12 @@ function formatSupabaseEmployee(row) {
       verifier: row.certificate_verifier || 'Junaiddin Pagala, ST, M.T.',
       verifierTitle: row.certificate_verifier_title || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra'
     } : null,
-    faceRegistered: Boolean(row.face_photo_url || row.face_descriptor),
-    facePhotoUrl: row.face_photo_url || null,
-    faceDescriptor: row.face_descriptor ? (typeof row.face_descriptor === 'string' ? JSON.parse(row.face_descriptor) : row.face_descriptor) : null,
-    faceRegisteredAt: row.face_registered_at || null,
+    faceRegistered: Boolean(row.face_photo_url || row.face_descriptor || getFaceCache(row.nip)?.facePhotoUrl),
+    facePhotoUrl: row.face_photo_url || getFaceCache(row.nip)?.facePhotoUrl || null,
+    faceDescriptor: row.face_descriptor
+      ? (typeof row.face_descriptor === 'string' ? JSON.parse(row.face_descriptor) : row.face_descriptor)
+      : (getFaceCache(row.nip)?.faceDescriptor || null),
+    faceRegisteredAt: row.face_registered_at || getFaceCache(row.nip)?.faceRegisteredAt || null,
     attendancePhotoUrl: row.attendance_photo_url || null
   };
 }
@@ -681,12 +719,16 @@ async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = 
       .select()
       .maybeSingle();
 
+    saveFaceCache(existing.nip, { faceDescriptor, facePhotoUrl, faceRegisteredAt: now });
+
     if (error && error.message && (error.message.includes('face_photo_url') || error.message.includes('face_descriptor'))) {
       console.warn(`[Supabase Note] Kolom biometrik belum ada di tabel employees. Menunggu eksekusi ALTER TABLE di Supabase SQL Editor.`);
       return {
         ...existing,
         faceRegistered: true,
-        facePhotoUrl: facePhotoUrl
+        facePhotoUrl: facePhotoUrl,
+        faceDescriptor: faceDescriptor,
+        faceRegisteredAt: now
       };
     }
 
@@ -745,6 +787,8 @@ async function resetEmployeeFace(id) {
 
   const existing = await getEmployeeByIdOrNip(clean);
   if (!existing) return null;
+
+  deleteFaceCache(existing.nip);
 
   const client = getClient();
   if (client) {
