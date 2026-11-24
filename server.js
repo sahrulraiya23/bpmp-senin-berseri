@@ -482,12 +482,43 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       }
     }
 
+    // Verifikasi Biometrik Wajah Ketat (Strict Face Matching): Tolak jika beda orang
+    const liveDescriptor = req.body.faceDescriptor;
+    let masterDescriptor = employee.faceDescriptor || employee.face_descriptor;
+    if (typeof masterDescriptor === 'string') {
+      try { masterDescriptor = JSON.parse(masterDescriptor); } catch (e) {}
+    }
+
+    if (Array.isArray(masterDescriptor) && masterDescriptor.length > 0 && Array.isArray(liveDescriptor) && liveDescriptor.length > 0) {
+      // Hitung Cosine Similarity antar dua vektor biometrik
+      let dot = 0, normA = 0, normB = 0;
+      for (let i = 0; i < masterDescriptor.length; i++) {
+        dot += masterDescriptor[i] * liveDescriptor[i];
+        normA += masterDescriptor[i] * masterDescriptor[i];
+        normB += liveDescriptor[i] * liveDescriptor[i];
+      }
+      const similarity = (normA > 0 && normB > 0) ? (dot / (Math.sqrt(normA) * Math.sqrt(normB))) : 0;
+      const similarityPercent = Math.round(similarity * 100);
+      const MATCH_THRESHOLD = 0.60; // Minimal 60% kemiripan
+
+      if (similarity < MATCH_THRESHOLD) {
+        console.warn(`[Biometric Reject] Face mismatch for ${employee.name} (${employee.nip}). Similarity: ${similarityPercent}% < 60%`);
+        return res.status(403).json({
+          success: false,
+          faceMismatch: true,
+          similarity: similarityPercent,
+          message: `Presensi Ditolak! Wajah yang terdeteksi tidak cocok dengan data master pegawai (${employee.name}). Tingkat kemiripan hanya ${similarityPercent}% (minimal 60%). Dilarang menitipkan presensi!`
+        });
+      }
+    }
+
     // Validasi / Registrasi Otomatis Biometrik Wajah ke Supabase Cloud
     let hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl);
     if (!hasFace && attendancePhotoUrl) {
       try {
         await db.registerEmployeeFace(employee.id, {
-          facePhotoUrl: attendancePhotoUrl
+          facePhotoUrl: attendancePhotoUrl,
+          faceDescriptor: liveDescriptor || null
         });
         hasFace = true;
         employee.faceRegistered = true;

@@ -1524,6 +1524,7 @@
       const btnText = document.getElementById('btnCaptureText');
 
       let faceSnapshotBase64 = null;
+      let faceDescriptor = null;
       if (canvas) {
         if (video && video.videoWidth > 0) {
           canvas.width = 400;
@@ -1537,6 +1538,10 @@
         }
         try {
           faceSnapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
+          if (window.BPMPComponents && typeof window.BPMPComponents.extractFaceDescriptor === 'function') {
+            const bio = window.BPMPComponents.extractFaceDescriptor(canvas);
+            faceDescriptor = bio.descriptor;
+          }
         } catch (e) {
           console.warn('Canvas toDataURL notice:', e);
         }
@@ -1552,7 +1557,8 @@
           token: activePresenceToken,
           eventId: activePresenceEventId || currentEvent?.id,
           attendancePhoto: faceSnapshotBase64,
-          faceSnapshot: faceSnapshotBase64
+          faceSnapshot: faceSnapshotBase64,
+          faceDescriptor: faceDescriptor
         };
 
         const res = await fetch('/api/attendance/verify', {
@@ -1584,7 +1590,17 @@
           renderEmployeeProfile(currentAuthUser);
           await syncCurrentProfile();
         } else {
-          showToast(data.message || 'Presensi gagal. Token kedaluwarsa atau wajah tidak cocok.', 'error');
+          if (data.faceMismatch) {
+            const badge = document.getElementById('faceStatusBadge');
+            if (badge) {
+              badge.className = 'badge bg-danger text-white px-3 py-1';
+              badge.textContent = 'Wajah Tidak Cocok';
+            }
+            showToast(data.message, 'danger');
+            alert(`⛔ PERINGATAN PRESENSI:\n\n${data.message}\n\nHarap lakukan presensi mandiri oleh pegawai pemilik akun!`);
+          } else {
+            showToast(data.message || 'Presensi gagal. Token kedaluwarsa atau wajah tidak cocok.', 'error');
+          }
         }
       } catch (err) {
         showToast('Kesalahan koneksi presensi: ' + err.message, 'error');
