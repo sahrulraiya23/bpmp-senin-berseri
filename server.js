@@ -514,20 +514,14 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       }
     }
 
-    // Validasi / Registrasi Otomatis Biometrik Wajah ke Supabase Cloud
-    let hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl);
-    if (!hasFace && attendancePhotoUrl) {
-      try {
-        await db.registerEmployeeFace(employee.id, {
-          facePhotoUrl: attendancePhotoUrl,
-          faceDescriptor: liveDescriptor || null
-        });
-        hasFace = true;
-        employee.faceRegistered = true;
-        employee.facePhotoUrl = attendancePhotoUrl;
-      } catch (errFace) {
-        console.warn('Auto face register to Supabase note:', errFace.message);
-      }
+    // Pastikan pegawai sudah memiliki data master biometrik resmi (Mencegah joki merekam wajah orang lain saat presensi aula)
+    const hasFace = Boolean(employee.faceRegistered || employee.facePhotoUrl || employee.faceDescriptor);
+    if (!hasFace) {
+      return res.status(403).json({
+        success: false,
+        needsFaceRegistration: true,
+        message: `Presensi Ditolak! Pegawai ${employee.name} belum memiliki data Master Wajah resmi. Silakan buka menu Perekaman Wajah (/verif-wajah) untuk mendaftarkan wajah asli Anda terlebih dahulu.`
+      });
     }
 
     // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini

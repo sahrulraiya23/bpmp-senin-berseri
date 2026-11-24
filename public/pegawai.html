@@ -912,30 +912,6 @@
             }
           }
 
-          // Sinkronisasi Otomatis: Jika di Supabase belum ada foto master tetapi di HP sudah ada foto dari sesi kamera:
-          if (!currentAuthUser.facePhotoUrl) {
-            const cachedPhoto = localStorage.getItem('bpmp_face_photo_' + currentAuthUser.nip);
-            if (cachedPhoto && typeof cachedPhoto === 'string' && cachedPhoto.startsWith('data:image')) {
-              try {
-                const syncFaceRes = await fetch('/api/employees/' + currentAuthUser.nip + '/register-face', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ facePhoto: cachedPhoto })
-                });
-                const syncFaceData = await syncFaceRes.json();
-                if (syncFaceData.success && syncFaceData.employee) {
-                  currentAuthUser = { ...currentAuthUser, ...syncFaceData.employee };
-                  localStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
-                  if (syncFaceData.employee.facePhotoUrl) {
-                    localStorage.setItem('bpmp_face_photo_' + currentAuthUser.nip, syncFaceData.employee.facePhotoUrl);
-                  }
-                }
-              } catch (errSync) {
-                console.warn('Auto sync face to Supabase Cloud:', errSync.message);
-              }
-            }
-          }
-
           renderEmployeeProfile(currentAuthUser);
         }
       } catch (err) {
@@ -1630,14 +1606,8 @@
         const data = await res.json();
 
         if (data.success) {
-          localStorage.setItem(`bpmp_face_registered_${currentAuthUser.nip}`, 'true');
           localStorage.setItem(`bpmp_attended_${currentAuthUser.nip}`, 'true');
           localStorage.setItem(`bpmp_attended_time_${currentAuthUser.nip}`, new Date().toISOString());
-          if (faceSnapshotBase64) {
-            localStorage.setItem(`bpmp_face_photo_${currentAuthUser.nip}`, faceSnapshotBase64);
-            currentAuthUser.facePhotoUrl = faceSnapshotBase64;
-          }
-          currentAuthUser.faceRegistered = true;
           currentAuthUser.attended = true;
           currentAuthUser.attendedAt = new Date().toISOString();
           if (data.employee) {
