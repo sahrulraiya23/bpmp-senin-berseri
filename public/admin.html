@@ -24,6 +24,182 @@
   <link rel="stylesheet" href="/vendor/apexcharts/apexcharts.css">
   <!-- Design Tokens BPMP Sultra -->
   <link rel="stylesheet" href="/css/tokens.css">
+
+  <style>
+    /* Styling khusus Dashboard Admin Revamp */
+    .admin-table-wrapper {
+      position: relative;
+      background: #ffffff;
+      border: 1px solid rgba(98, 105, 118, 0.16);
+      border-radius: 4px;
+    }
+    
+    .admin-table {
+      table-layout: fixed;
+      width: 100%;
+      min-width: 1100px;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .admin-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: #f8fafc !important;
+      color: #334155 !important;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-top: none;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 0.65rem 0.6rem;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .admin-table thead th.sortable {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .admin-table thead th.sortable:hover {
+      background-color: #eef2f6 !important;
+    }
+
+    .admin-table tbody tr {
+      min-height: 54px;
+      transition: background-color 0.15s ease;
+    }
+
+    .admin-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .admin-table tbody td {
+      padding: 0.55rem 0.6rem;
+      vertical-align: middle;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #edf2f7;
+    }
+
+    /* Em-dash status redup */
+    .status-empty {
+      color: #94a3b8;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    /* Floating / Inset Bulk Action Bar */
+    .bulk-action-bar {
+      background: #1e293b;
+      color: #ffffff;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+      z-index: 20;
+      animation: slideUpFade 0.2s ease-out;
+    }
+
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* KPI Cards interaktif */
+    .kpi-card-clickable {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .kpi-card-clickable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+      border-color: #3b82f6 !important;
+    }
+
+    .kpi-card-clickable.active-filter {
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+    }
+
+    /* Responsif Mobile (<768px): Card format */
+    @media (max-width: 767.98px) {
+      .admin-table-mobile-cards .admin-table {
+        min-width: 100%;
+        display: block;
+      }
+      .admin-table-mobile-cards .admin-table thead {
+        display: none;
+      }
+      .admin-table-mobile-cards .admin-table tbody {
+        display: block;
+      }
+      .admin-table-mobile-cards .admin-table tr {
+        display: block;
+        margin-bottom: 1rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.85rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      }
+      .admin-table-mobile-cards .admin-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 0;
+        border-bottom: 1px dashed #f1f5f9;
+        font-size: 0.85rem;
+      }
+      .admin-table-mobile-cards .admin-table td:last-child {
+        border-bottom: none;
+        padding-top: 0.6rem;
+      }
+      .admin-table-mobile-cards .admin-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #64748b;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-right: 0.75rem;
+      }
+    }
+
+    /* Print media export view */
+    @media print {
+      body {
+        background: #fff !important;
+      }
+      #bpmp-top-strip, #bpmp-navbar, #bpmp-footer,
+      .page-header, .d-print-none, .bulk-action-bar,
+      .btn, .pagination, .card-header .btn-list,
+      #filterEventSelect, #searchEmployee, #filterUnitKerja, #pageSizeSelect {
+        display: none !important;
+      }
+      .admin-table-wrapper {
+        border: none !important;
+        box-shadow: none !important;
+      }
+      .admin-table {
+        min-width: 100% !important;
+        font-size: 11px !important;
+      }
+      .admin-table thead th {
+        background-color: #f1f5f9 !important;
+        color: #000 !important;
+      }
+      .print-header-bpmp {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+      }
+    }
+  </style>
 </head>
 <body class="bg-white">
   <div class="page">
@@ -38,30 +214,35 @@
       <!-- Container -->
       <div class="container-xl py-3">
         
-        <!-- Live Clock & Quick Status Subheader -->
+        <!-- Live Clock & Quick Status Subheader (Bar Resmi terpadu) -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-primary-lt text-primary d-inline-flex align-items-center px-2 py-1">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-primary text-white d-inline-flex align-items-center px-2 py-1">
               <i class="ti ti-shield-check me-1"></i>
               <span id="sideAdminRoleText">Bagian Kepegawaian</span>
             </span>
             <span id="sideAdminRoleBadge" class="badge bg-azure-lt text-azure">Kepegawaian</span>
-            <span class="text-secondary small d-none d-md-inline" id="sideAdminSubTitle">Pengelola Harian Kepegawaian BPMP</span>
+            <span class="text-secondary small d-none d-md-inline" id="sideAdminSubTitle">Pengelola Harian Kepegawaian BPMP Sultra</span>
           </div>
 
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
             <!-- Superadmin Shortcut Button -->
-            <a href="/superadmin" id="btnGoToSuperadmin" class="btn btn-outline-warning btn-sm d-none">
+            <a href="/superadmin" id="btnGoToSuperadmin" class="btn btn-outline-warning btn-sm d-none" aria-label="Konsol Superadmin">
               <i class="ti ti-crown me-1 text-warning"></i> Konsol Superadmin
             </a>
 
-            <!-- Reset Data Uji Coba -->
-            <button onclick="handleResetTestingData()" class="btn btn-outline-danger btn-sm" title="Reset data presensi dan LPTI pengujian">
-              <i class="ti ti-rotate-2 me-1"></i> Reset Data Uji Coba
+            <!-- Tombol Pengaturan Reset Data (Hanya tampil di DEV / Testing) -->
+            <button id="btnResetTestingDev" onclick="handleResetTestingData()" class="btn btn-outline-danger btn-sm d-none" title="Reset data presensi dan LPTI pengujian" aria-label="Reset Data Uji Coba">
+              <i class="ti ti-rotate-2 me-1"></i> Reset Data <span class="badge bg-danger-lt ms-1">DEV</span>
             </button>
 
-            <!-- Live Clock Badge -->
-            <div id="liveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1">
+            <!-- Tombol Pengaturan Sistem (Di Produksi untuk membuka modal konfirmasi) -->
+            <button id="btnOpenSystemSettings" onclick="openSystemSettingsModal()" class="btn btn-outline-secondary btn-sm" title="Pengaturan Sistem & Data" aria-label="Pengaturan">
+              <i class="ti ti-settings me-1"></i> Pengaturan
+            </button>
+
+            <!-- Live Clock Badge WITA -->
+            <div id="liveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Indonesia Tengah">
               <i class="ti ti-clock me-1"></i> --:--:-- WITA
             </div>
           </div>
@@ -85,16 +266,13 @@
             <div class="col-auto ms-auto d-print-none">
               <div class="btn-list">
                 <!-- Tab Buttons -->
-                <button type="button" id="tabBtnDashboard" class="btn btn-primary" onclick="switchMainTab('dashboard')">
+                <button type="button" id="tabBtnDashboard" class="btn btn-primary" onclick="switchMainTab('dashboard')" aria-label="Presensi dan LPTI">
                   <i class="ti ti-layout-dashboard me-1"></i> Presensi & LPTI
                 </button>
-                <button type="button" id="tabBtnQr" class="btn btn-outline-secondary" onclick="switchMainTab('qr')">
+                <button type="button" id="tabBtnQr" class="btn btn-outline-secondary" onclick="switchMainTab('qr')" aria-label="Dynamic QR Presensi">
                   <i class="ti ti-qrcode me-1"></i> Dynamic QR
                 </button>
-                <a href="/proyektor" target="_blank" class="btn btn-outline-primary" title="Buka tampilan layar penuh untuk proyektor aula">
-                  <i class="ti ti-presentation me-1"></i> Layar Aula
-                </a>
-                <button type="button" class="btn btn-teal text-white" onclick="createNewEventForm()">
+                <button type="button" class="btn btn-teal text-white" onclick="openEventModal('new')" aria-label="Tambah Event Baru">
                   <i class="ti ti-plus me-1"></i> Tambah Event
                 </button>
               </div>
@@ -102,22 +280,22 @@
           </div>
         </div>
 
-        <!-- Hidden Side Admin Elements for Script Compatibility -->
+        <!-- Hidden Compatibility Elements for Scripts -->
         <div class="d-none">
           <span id="sideAdminName"></span>
           <div id="sideAdminAvatar"></div>
           <div id="superadminActionGroup"></div>
           <a id="navLinkDashboard" onclick="switchMainTab('dashboard')"></a>
           <a id="navLinkQr" onclick="switchMainTab('qr')"></a>
-          <a id="navLinkEvent" onclick="scrollToSection('step1FormSection')"></a>
+          <a id="navLinkEvent" onclick="openEventModal('new')"></a>
         </div>
 
         <!-- VIEW 1: DASHBOARD UTAMA -->
         <div id="viewDashboardSection">
           
-          <!-- Alert Standar Layanan Kepegawaian BPMP Sultra -->
-          <div class="alert alert-primary border-primary-subtle shadow-sm mb-3 alert-dismissible" role="alert">
-            <div class="d-flex">
+          <!-- Alert Standar Layanan Kepegawaian BPMP Sultra (Dismissible & Disimpan di localStorage) -->
+          <div id="sopBannerAlert" class="alert alert-primary border-primary-subtle shadow-sm mb-3 alert-dismissible fade show" role="alert">
+            <div class="d-flex align-items-start">
               <div class="me-3">
                 <span class="avatar avatar-sm rounded bg-primary text-white shadow-sm">
                   <i class="ti ti-shield-check fs-2"></i>
@@ -129,14 +307,21 @@
                   <h4 class="alert-title mb-0 fw-bold">Pedoman Pelayanan Kepegawaian & Kurasi LPTI</h4>
                 </div>
                 <div class="text-secondary small">
-                  Setiap sesi kegiatan <strong>Senin Berseri</strong> berbobot <strong>4 Jam Pelajaran (JP)</strong>. Pastikan verifikasi kehadiran aula telah tervalidasi secara fisik (QR TOTP/Wajah) dan periksa kelengkapan substansi berkas PDF LPTI sebelum memberikan persetujuan penerbitan E-Sertifikat resmi bagi 104 ASN.
+                  Setiap sesi kegiatan <strong>Senin Berseri</strong> berbobot <strong id="sopJpText">2 Jam Pelajaran (JP)</strong>. Pastikan verifikasi kehadiran aula telah tervalidasi secara fisik (QR TOTP/Wajah) dan periksa kelengkapan substansi berkas PDF LPTI sebelum memberikan persetujuan penerbitan E-Sertifikat resmi bagi <strong id="sopTotalAsnText">105 ASN</strong>.
                 </div>
               </div>
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              <button type="button" class="btn-close" onclick="dismissSopBanner()" aria-label="Tutup Banner SOP"></button>
             </div>
           </div>
 
-          <!-- Active Event Banner Card -->
+          <!-- SOP Reopen Info Button (Tampil jika banner ditutup) -->
+          <div id="sopReopenBox" class="d-none mb-3">
+            <button type="button" class="btn btn-ghost-primary btn-sm px-2 py-1" onclick="reopenSopBanner()">
+              <i class="ti ti-help-circle me-1"></i> Tampilkan Kembali Pedoman SOP Pelayanan Kepegawaian
+            </button>
+          </div>
+
+          <!-- Active Event Card (Ringkas & Informatif) -->
           <div class="card card-stacked mb-3 border-primary-subtle shadow-sm">
             <div class="card-body p-3">
               <div class="row align-items-center g-3">
@@ -148,13 +333,16 @@
                 <div class="col">
                   <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                     <span id="displayActiveStatusBadge" class="badge bg-green text-green-fg">
-                      <i class="ti ti-check me-1"></i> Sedang Berlangsung
+                      <i class="ti ti-check me-1"></i> Sesi Aktif di Aula
                     </span>
                     <span id="displayActiveCategory" class="badge bg-blue-lt">Pelatihan ASN</span>
-                    <span id="displayActiveJp" class="badge bg-purple-lt">4 JP</span>
+                    <span id="displayActiveJp" class="badge bg-purple-lt">2 JP</span>
+                    <span id="displayActiveReadOnlyNotice" class="badge bg-secondary-lt text-secondary d-none">
+                      <i class="ti ti-lock me-1"></i> Mode Hanya-Baca (Arsip)
+                    </span>
                   </div>
                   <h3 class="card-title mb-1 text-primary fw-bold" id="displayActiveTitleBanner">
-                    Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
+                    Pelatihan Digital Marketing
                   </h3>
                   <div class="text-secondary small d-flex flex-wrap gap-3">
                     <span id="displayActiveSchedule"><i class="ti ti-calendar me-1"></i> Setiap Senin, Pukul 07.30 WITA</span>
@@ -162,10 +350,16 @@
                   </div>
                 </div>
                 <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
-                  <button id="btnCompleteCurrentEvent" class="btn btn-outline-warning btn-sm" onclick="completeCurrentSelectedEvent()">
-                    <i class="ti ti-circle-check me-1"></i> Selesaikan Kegiatan
+                  <button id="btnCompleteCurrentEvent" class="btn btn-outline-warning btn-sm" onclick="completeCurrentSelectedEvent()" title="Selesaikan kegiatan ini">
+                    <i class="ti ti-circle-check me-1"></i> Selesaikan
                   </button>
-                  <button class="btn btn-outline-primary btn-sm" onclick="editCurrentEvent()">
+                  <button id="btnActivateCurrentEvent" class="btn btn-outline-success btn-sm d-none" onclick="activateCurrentSelectedEvent()" title="Buka kembali sesi kegiatan ini">
+                    <i class="ti ti-bolt me-1"></i> Aktifkan Sesi
+                  </button>
+                  <button class="btn btn-outline-primary btn-sm" onclick="openCertCustomizerModal()" title="Kustomisasi Template & Tata Letak Piagam">
+                    <i class="ti ti-certificate me-1"></i> Tata Letak Piagam
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" onclick="editCurrentEvent()" title="Ubah parameter kegiatan">
                     <i class="ti ti-edit me-1"></i> Ubah Detail
                   </button>
                 </div>
@@ -173,223 +367,56 @@
             </div>
           </div>
 
-          <!-- STEP 1 FORM SECTION (TAMBAH / EDIT EVENT) -->
-          <div id="step1FormSection" class="card shadow-sm border-0 mb-3 d-none">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
-              <h4 class="card-title text-white mb-0">
-                <i class="ti ti-calendar-event me-2"></i> Pengaturan & Parameter Kegiatan Pelatihan
-              </h4>
-              <button type="button" class="btn-close btn-close-white" onclick="closeEventWorkflow()" aria-label="Close"></button>
-            </div>
-            <div class="card-body p-3">
-              <form id="formEventSetting" onsubmit="handleSaveEvent(event)">
-                <div class="row g-3">
-                  <div class="col-md-8">
-                    <label class="form-label required">Nama / Judul Kegiatan Pelatihan</label>
-                    <input type="text" id="eventTitle" class="form-control" placeholder="Contoh: Pelatihan Transformasi Digital ASN BPMP Sultra" required>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label required">Kategori Kegiatan</label>
-                    <select id="eventCategory" class="form-select" required>
-                      <option value="Pelatihan ASN">Pelatihan ASN</option>
-                      <option value="Workshop Internal">Workshop Internal</option>
-                      <option value="Sosialisasi Kebijakan">Sosialisasi Kebijakan</option>
-                      <option value="Bimtek Mutu Pendidikan">Bimtek Mutu Pendidikan</option>
-                      <option value="Upacara & Apel Pagi">Upacara & Apel Pagi</option>
-                    </select>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label required">Jadwal & Waktu Pelaksanaan</label>
-                    <input type="text" id="eventSchedule" class="form-control" placeholder="Contoh: Setiap Senin, Pukul 07.30 WITA" required>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label required">Lokasi Aula / Ruangan</label>
-                    <input type="text" id="eventLocation" class="form-control" placeholder="Contoh: Aula Utama BPMP Provinsi Sulawesi Tenggara" required>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label required">Bobot Jam Pelajaran (JP)</label>
-                    <input type="text" id="eventJp" class="form-control" placeholder="Contoh: 4 JP" required>
-                  </div>
-                </div>
-
-                <div class="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
-                  <button type="button" class="btn btn-outline-secondary" onclick="closeEventWorkflow()">Batal</button>
-                  <button type="submit" id="btnSaveEvent" class="btn btn-primary">
-                    <i class="ti ti-device-floppy me-1"></i> Simpan & Lanjut Tata Letak Piagam
-                  </button>
-                </div>
-              </form>
+          <!-- Empty State jika Tidak Ada Event Aktif -->
+          <div id="emptyEventAlert" class="card card-sm mb-3 border-dashed d-none">
+            <div class="card-body text-center py-4">
+              <i class="ti ti-calendar-off text-muted font-32 mb-2 d-block"></i>
+              <h4 class="card-title text-dark mb-1">Belum Ada Kegiatan Pelatihan yang Aktif</h4>
+              <p class="text-secondary small mb-3">Buat event kegiatan pelatihan baru untuk memulai rotasi QR aula dan kurasi LPTI.</p>
+              <button class="btn btn-primary btn-sm" onclick="openEventModal('new')">
+                <i class="ti ti-plus me-1"></i> Tambah Event Baru
+              </button>
             </div>
           </div>
 
-          <!-- STEP 2 ACTIVE SECTION (CUSTOMIZER E-SERTIFIKAT) -->
-          <div id="step2ActiveSection" class="card shadow-sm border-0 mb-3 d-none">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 border-bottom">
-              <h4 class="card-title text-primary mb-0">
-                <i class="ti ti-certificate me-2"></i> Kustomisasi Template E-Sertifikat & Tata Letak Teks
-              </h4>
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-blue-lt" id="displayStep2EventId">ID: -</span>
-                <button type="button" class="btn-close" onclick="closeEventWorkflow()" aria-label="Close"></button>
-              </div>
-            </div>
-            <div class="card-body p-3">
-              <div class="row g-3">
-                <!-- Kolom 1: Unggah Background / Template Sertifikat -->
-                <div class="col-lg-5">
-                  <div class="card border h-100 bg-light-subtle">
-                    <div class="card-header py-2 bg-transparent">
-                      <h5 class="card-title mb-0 small fw-bold">
-                        <i class="ti ti-upload me-1"></i> Berkas Template Sertifikat (A4 Landscape)
-                      </h5>
-                    </div>
-                    <div class="card-body p-3">
-                      <!-- Status Template Box -->
-                      <div id="templateStatusBox" class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2">
-                        <i id="templateTypeIcon" class="ti ti-file-text font-20"></i>
-                        <div class="flex-fill">
-                          <div class="fw-bold small" id="templateStatusLabel">Memuat status template...</div>
-                          <div class="text-secondary small" style="font-size: 0.75rem;">Standar template bawaan BPMP Provinsi Sulawesi Tenggara</div>
-                        </div>
-                        <button type="button" id="btnDeleteTemplate" class="btn btn-sm btn-outline-danger d-none" onclick="deleteCustomTemplate()" title="Hapus template kustom dan kembali ke default">
-                          <i class="ti ti-trash"></i>
-                        </button>
-                      </div>
-
-                      <!-- Drop Zone / Upload Input -->
-                      <div class="border border-dashed rounded p-3 text-center mb-3 bg-white" id="templatePromptBox">
-                        <i class="ti ti-cloud-upload text-primary font-32 mb-2"></i>
-                        <h6 class="mb-1">Pilih Desain Template Piagam</h6>
-                        <p class="text-secondary small mb-2">Format didukung: PDF, PNG, atau JPG (A4 Landscape recommended)</p>
-                        <input type="file" id="templateFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg" onchange="handleTemplateFileSelected(this)">
-                      </div>
-
-                      <div id="templateSelectedBox" class="d-none border rounded p-2 mb-3 bg-white d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-2">
-                          <span class="badge bg-primary text-white" id="templateSelectedExt">PDF</span>
-                          <div>
-                            <div class="fw-bold small text-truncate" style="max-width: 180px;" id="templateSelectedName">file.pdf</div>
-                            <div class="text-secondary small" id="templateSelectedSize">0 KB</div>
-                          </div>
-                        </div>
-                        <button type="button" id="btnUploadTemplateSubmit" class="btn btn-sm btn-primary" onclick="handleUploadTemplate()">
-                          <i class="ti ti-upload me-1"></i> Unggah Sekarang
-                        </button>
-                      </div>
-
-                      <div class="small text-secondary">
-                        <i class="ti ti-info-circle me-1"></i> Template sertifikat akan menjadi latar belakang piagam yang diterbitkan secara otomatis untuk 104 peserta.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Kolom 2: Tata Letak Teks & Live Preview -->
-                <div class="col-lg-7">
-                  <div class="card border h-100 bg-white">
-                    <div class="card-header py-2 bg-transparent d-flex justify-content-between align-items-center">
-                      <h5 class="card-title mb-0 small fw-bold">
-                        <i class="ti ti-adjustments me-1"></i> Posisi Koordinat & Tipografi Piagam
-                      </h5>
-                      <span class="badge bg-secondary-lt">Canvas Preview</span>
-                    </div>
-                    <div class="card-body p-3">
-                      <div class="row g-2 mb-3">
-                        <div class="col-md-12">
-                          <label class="form-label small fw-bold mb-1">Prefix / Format Nomor Piagam</label>
-                          <input type="text" id="certPrefixInput" class="form-control form-control-sm" value="001/BPMP-SULTRA/SENIN-BERSERI/2026">
-                        </div>
-                        <div class="col-md-6">
-                          <div class="d-flex justify-content-between">
-                            <label class="form-label small fw-bold mb-1">Posisi Y Nomor Sertifikat</label>
-                            <span class="badge bg-light text-primary font-monospace small" id="badgeNomorY">475 pt</span>
-                          </div>
-                          <div class="d-flex align-items-center gap-2">
-                            <input type="range" class="form-range" id="certNomorYRange" min="200" max="550" value="475" oninput="syncCertRange('nomor', this.value)">
-                            <input type="number" class="form-control form-control-sm font-monospace" id="certNomorYInput" value="475" style="width: 70px;" oninput="syncCertNumber('nomor', this.value)">
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <label class="form-label small fw-bold mb-1">Ukuran Font Nomor</label>
-                          <input type="number" id="certNomorSizeInput" class="form-control form-control-sm" value="13" min="8" max="24" oninput="updateCertLivePreview()">
-                        </div>
-                        <div class="col-md-6">
-                          <div class="d-flex justify-content-between">
-                            <label class="form-label small fw-bold mb-1">Posisi Y Nama Peserta</label>
-                            <span class="badge bg-light text-primary font-monospace small" id="badgeNamaY">360 pt</span>
-                          </div>
-                          <div class="d-flex align-items-center gap-2">
-                            <input type="range" class="form-range" id="certNamaYRange" min="150" max="450" value="360" oninput="syncCertRange('nama', this.value)">
-                            <input type="number" class="form-control form-control-sm font-monospace" id="certNamaYInput" value="360" style="width: 70px;" oninput="syncCertNumber('nama', this.value)">
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <label class="form-label small fw-bold mb-1">Ukuran Font Nama</label>
-                          <div class="d-flex align-items-center gap-2">
-                            <input type="number" id="certNamaSizeInput" class="form-control form-control-sm" value="23" min="12" max="36" oninput="updateCertLivePreview()">
-                            <div class="form-check ms-1 mb-0">
-                              <input class="form-check-input" type="checkbox" id="certShowUnderlineCheck" checked onchange="updateCertLivePreview()">
-                              <label class="form-check-label small" for="certShowUnderlineCheck">Garis Bawah</label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Mini Interactive Preview Canvas Box -->
-                      <div class="border rounded p-2 mb-3 bg-light text-center position-relative overflow-hidden" id="certMiniPreviewBox" style="height: 150px; border: 1px solid var(--tblr-border-color);">
-                        <div class="small text-muted position-absolute top-0 start-0 p-1" style="font-size: 0.65rem;">Simulasi Cetak</div>
-                        <div id="previewSimNomor" class="position-absolute w-100 text-center font-monospace" style="top: 25%; font-size: 11px; color: #1a3a5c; font-weight: 600;">
-                          Nomor: 001/BPMP-SULTRA/SENIN-BERSERI/2026
-                        </div>
-                        <div id="previewSimNama" class="position-absolute w-100 text-center" style="top: 52%; font-size: 15px; font-weight: bold; color: #002d5b;">
-                          <span id="previewSimNamaText" style="text-decoration: underline;">Nama Lengkap Peserta ASN, S.Pd., M.Pd.</span>
-                        </div>
-                      </div>
-
-                      <div class="d-flex justify-content-between align-items-center">
-                        <button type="button" id="btnPreviewSamplePdf" class="btn btn-outline-secondary btn-sm" onclick="previewSamplePdfNow()">
-                          <i class="ti ti-eye me-1"></i> Unduh Contoh PDF
-                        </button>
-                        <button type="button" id="btnSaveCertSettings" class="btn btn-primary btn-sm" onclick="saveCertSettings()">
-                          <i class="ti ti-device-floppy me-1"></i> Simpan Tata Letak Piagam
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- KPI STAT CARDS ROW -->
+          <!-- 5. KPI CARDS (INTERAKTIF DENGAN PROGRESS BAR & KLIK UNTUK FILTER) -->
           <div class="row row-cards mb-3">
+            <!-- Total Peserta ASN -->
             <div class="col-sm-6 col-lg-3">
-              <div class="card card-sm">
+              <div class="card card-sm kpi-card-clickable" id="kpiCardTotal" onclick="applyKpiFilter('all')" title="Klik untuk menampilkan seluruh pegawai">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
-                      <span class="bg-primary text-white avatar">
+                      <span class="bg-primary text-white avatar shadow-sm">
                         <i class="ti ti-users"></i>
                       </span>
                     </div>
                     <div class="col">
                       <div class="font-weight-medium">Total Peserta ASN</div>
-                      <div class="text-secondary small">Terdaftar di Sistem</div>
+                      <div class="text-secondary small" id="kpiTotalSub">Terdaftar di Sistem</div>
                     </div>
-                    <div class="col-auto">
-                      <span class="h2 mb-0 fw-bold text-primary" id="statTotal">104</span>
+                    <div class="col-auto text-end">
+                      <span class="h2 mb-0 fw-bold text-primary" id="statTotal">105</span>
                     </div>
+                  </div>
+                  <div class="progress progress-xs mt-2">
+                    <div class="progress-bar bg-primary" id="progTotal" style="width: 100%;"></div>
+                  </div>
+                  <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.72rem;">
+                    <span>Semua Satker</span>
+                    <span>100%</span>
                   </div>
                 </div>
               </div>
             </div>
 
+            <!-- Presensi Hadir -->
             <div class="col-sm-6 col-lg-3">
-              <div class="card card-sm">
+              <div class="card card-sm kpi-card-clickable" id="kpiCardHadir" onclick="applyKpiFilter('hadir')" title="Klik untuk filter: Pegawai Hadir di Aula">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
-                      <span class="bg-green text-white avatar">
+                      <span class="bg-green text-white avatar shadow-sm">
                         <i class="ti ti-user-check"></i>
                       </span>
                     </div>
@@ -397,131 +424,257 @@
                       <div class="font-weight-medium">Presensi Hadir</div>
                       <div class="text-secondary small">Di Aula BPMP</div>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto text-end">
                       <span class="h2 mb-0 fw-bold text-green" id="statHadir">0</span>
                     </div>
+                  </div>
+                  <div class="progress progress-xs mt-2">
+                    <div class="progress-bar bg-green" id="progHadir" style="width: 0%;"></div>
+                  </div>
+                  <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.72rem;">
+                    <span id="statHadirRatio">0 dari 105</span>
+                    <span id="statHadirPct">0%</span>
                   </div>
                 </div>
               </div>
             </div>
 
+            <!-- LPTI Menunggu (Perlu Dikurasi) -->
             <div class="col-sm-6 col-lg-3">
-              <div class="card card-sm">
+              <div class="card card-sm kpi-card-clickable" id="kpiCardPending" onclick="applyKpiFilter('pending')" title="Klik untuk filter: LPTI Menunggu Kurasi Admin">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
-                      <span class="bg-warning text-white avatar">
+                      <span class="bg-warning text-white avatar shadow-sm">
                         <i class="ti ti-file-text"></i>
                       </span>
                     </div>
                     <div class="col">
                       <div class="font-weight-medium">LPTI Menunggu</div>
-                      <div class="text-secondary small">Perlu Kurasi Admin</div>
+                      <div class="text-secondary small">Perlu Dikurasi</div>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto text-end">
                       <span class="h2 mb-0 fw-bold text-warning" id="statPending">0</span>
                     </div>
+                  </div>
+                  <div class="progress progress-xs mt-2">
+                    <div class="progress-bar bg-warning" id="progPending" style="width: 0%;"></div>
+                  </div>
+                  <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.72rem;">
+                    <span id="statPendingRatio">0 dari 105</span>
+                    <span id="statPendingPct">0%</span>
                   </div>
                 </div>
               </div>
             </div>
 
+            <!-- Sertifikat Terbit -->
             <div class="col-sm-6 col-lg-3">
-              <div class="card card-sm">
+              <div class="card card-sm kpi-card-clickable" id="kpiCardApproved" onclick="applyKpiFilter('disetujui')" title="Klik untuk filter: Sertifikat Terbit / Disetujui">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
-                      <span class="bg-teal text-white avatar">
+                      <span class="bg-teal text-white avatar shadow-sm">
                         <i class="ti ti-certificate"></i>
                       </span>
                     </div>
                     <div class="col">
                       <div class="font-weight-medium">Sertifikat Terbit</div>
-                      <div class="text-secondary small">LPTI Telah Disetujui</div>
+                      <div class="text-secondary small">LPTI Disetujui</div>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto text-end">
                       <span class="h2 mb-0 fw-bold text-teal" id="statApproved">0</span>
                     </div>
+                  </div>
+                  <div class="progress progress-xs mt-2">
+                    <div class="progress-bar bg-teal" id="progApproved" style="width: 0%;"></div>
+                  </div>
+                  <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.72rem;">
+                    <span id="statApprovedRatio">0 dari 105</span>
+                    <span id="statApprovedPct">0%</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- REKAP PRESENSI & VERIFIKASI LPTI TABLE CARD -->
-          <div class="card shadow-sm border-0 mb-4">
+          <!-- 1. TABEL REKAP PRESENSI & VERIFIKASI LPTI (SATU TABEL DENGAN FIXED LAYOUT & STICKY HEADER) -->
+          <div class="card shadow-sm border-0 mb-4" id="sectionTabelRekap">
+            <!-- Header Kartu Tabel -->
             <div class="card-header py-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
                 <h3 class="card-title text-primary fw-bold mb-0">
                   <i class="ti ti-list-check me-2"></i> Rekap Presensi & Verifikasi LPTI ASN BPMP Sultra
                 </h3>
                 <div class="text-secondary small">
-                  Daftar 104 Pegawai BPMP Sultra beserta status presensi, verifikasi wajah, dan persetujuan LPTI
+                  Daftar <span class="fw-bold text-dark" id="textTotalPegawaiLabel">105 Pegawai</span> BPMP Sultra beserta status presensi aula, biometrik wajah, berkas LPTI, dan penerbitan e-sertifikat
                 </div>
               </div>
-              <div class="d-flex align-items-center gap-2">
-                <select id="filterEventSelect" class="form-select form-select-sm" style="min-width: 220px;" onchange="handleEventFilterChange(this.value)">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Dropdown Pilih Event -->
+                <select id="filterEventSelect" class="form-select form-select-sm" style="min-width: 220px;" onchange="handleEventFilterChange(this.value)" aria-label="Filter berdasarkan kegiatan pelatihan">
                   <option value="all">Semua Kegiatan Pelatihan</option>
                 </select>
-                <button class="btn btn-outline-secondary btn-sm" onclick="loadEmployees()" title="Segarkan Data">
-                  <i class="ti ti-refresh"></i>
+                <!-- Waktu Terakhir Diperbarui -->
+                <span class="text-secondary small font-monospace d-none d-md-inline" id="lastUpdatedTimeText" title="Waktu sinkronisasi data terakhir">
+                  <i class="ti ti-clock me-1"></i> Terakhir: --:--:--
+                </span>
+                <!-- Tombol Refresh -->
+                <button class="btn btn-outline-secondary btn-sm" onclick="loadEmployees(true)" title="Segarkan Data Sekarang" aria-label="Segarkan Data">
+                  <i class="ti ti-refresh" id="iconRefresh"></i>
                 </button>
               </div>
             </div>
 
-            <!-- Filter Tabs & Search Bar -->
+            <!-- Toolbar Filter, Search, Unit Kerja, & Ekspor -->
             <div class="card-body border-bottom py-2 bg-light-subtle">
               <div class="row g-2 align-items-center justify-content-between">
-                <!-- Filter Status Presensi -->
-                <div class="col-12 col-md-auto">
-                  <div class="btn-group btn-group-sm flex-wrap" role="group">
-                    <button type="button" class="btn btn-outline-primary active" onclick="setFilter('all', this)">Semua (104)</button>
-                    <button type="button" class="btn btn-outline-success" onclick="setFilter('hadir', this)">Hadir</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="setFilter('belum', this)">Belum Hadir</button>
-                    <button type="button" class="btn btn-outline-warning" onclick="setFilter('pending', this)">
-                      LPTI Menunggu <span class="badge bg-warning text-dark ms-1" id="badgePendingCount">0</span>
+                <!-- Filter Status Presensi & LPTI -->
+                <div class="col-12 col-xl-auto">
+                  <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Filter Status">
+                    <button type="button" id="btnFilterAll" class="btn btn-outline-primary active" onclick="setFilter('all', this)">Semua (<span id="countFilterAll">105</span>)</button>
+                    <button type="button" id="btnFilterHadir" class="btn btn-outline-success" onclick="setFilter('hadir', this)">Hadir</button>
+                    <button type="button" id="btnFilterBelum" class="btn btn-outline-secondary" onclick="setFilter('belum', this)">Belum Hadir</button>
+                    <button type="button" id="btnFilterPending" class="btn btn-outline-warning" onclick="setFilter('pending', this)">
+                      Perlu Dikurasi <span class="badge bg-warning text-dark ms-1" id="badgePendingCount">0</span>
                     </button>
-                    <button type="button" class="btn btn-outline-teal" onclick="setFilter('disetujui', this)">Disetujui</button>
-                    <button type="button" class="btn btn-outline-danger" onclick="setFilter('revisi', this)">Revisi</button>
+                    <button type="button" id="btnFilterDisetujui" class="btn btn-outline-teal" onclick="setFilter('disetujui', this)">Disetujui</button>
+                    <button type="button" id="btnFilterRevisi" class="btn btn-outline-danger" onclick="setFilter('revisi', this)">Revisi</button>
                   </div>
                 </div>
 
-                <!-- Search Input -->
-                <div class="col-12 col-md-4">
-                  <div class="input-icon">
+                <!-- Kolom Kanan: Filter Unit Kerja, Search, Ekspor -->
+                <div class="col-12 col-xl-auto d-flex align-items-center gap-2 flex-wrap">
+                  <!-- Filter Jabatan / Unit Kerja -->
+                  <select id="filterUnitKerja" class="form-select form-select-sm" style="max-width: 180px;" onchange="handleUnitKerjaFilterChange(this.value)" aria-label="Filter berdasarkan jabatan atau unit kerja">
+                    <option value="all">Semua Unit Kerja</option>
+                  </select>
+
+                  <!-- Search Input -->
+                  <div class="input-icon" style="min-width: 200px;">
                     <span class="input-icon-addon">
                       <i class="ti ti-search"></i>
                     </span>
-                    <input type="text" id="searchEmployee" class="form-control form-control-sm" placeholder="Cari nama atau NIP pegawai..." oninput="renderTable()">
+                    <input type="text" id="searchEmployee" class="form-control form-control-sm" placeholder="Cari nama atau NIP..." oninput="handleSearchInput()" aria-label="Cari nama atau NIP pegawai">
+                  </div>
+
+                  <!-- Tombol Ekspor Excel & PDF -->
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-success" onclick="exportTableToExcel()" title="Ekspor data tersaring ke file Excel / CSV" aria-label="Ekspor Excel">
+                      <i class="ti ti-file-spreadsheet me-1"></i> Excel
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="exportTableToPdf()" title="Cetak atau unduh dokumen PDF data rekap" aria-label="Ekspor PDF">
+                      <i class="ti ti-printer me-1"></i> PDF
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Table Responsive Container (Sticky Header) -->
-            <div class="table-responsive table-sticky-container" style="max-height: 520px;">
-              <table class="table table-vcenter table-hover card-table table-striped">
-                <thead class="table-light sticky-top">
+            <!-- Floating Bulk Action Bar (Muncul saat ada baris yang dipilih) -->
+            <div id="bulkActionBar" class="bulk-action-bar mx-3 my-2 d-none d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary text-white font-monospace" id="bulkSelectedCount">0</span>
+                <span class="small fw-bold">Pegawai Terpilih</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="handleBulkApproveLpti()" title="Setujui berkas LPTI untuk semua pegawai terpilih">
+                  <i class="ti ti-check me-1"></i> Setujui LPTI Terpilih
+                </button>
+                <button type="button" class="btn btn-teal btn-sm text-white fw-bold" onclick="handleBulkIssueCertificates()" title="Terbitkan e-sertifikat untuk pegawai yang telah disetujui">
+                  <i class="ti ti-certificate me-1"></i> Terbitkan Sertifikat
+                </button>
+                <button type="button" class="btn btn-outline-light btn-sm" onclick="clearBulkSelection()">
+                  Batal
+                </button>
+              </div>
+            </div>
+
+            <!-- Header Cetak Resmi (Hanya tampil saat Print PDF) -->
+            <div class="print-header-bpmp d-none">
+              <h3 style="margin: 0; font-size: 16pt; font-weight: bold;">KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI</h3>
+              <h4 style="margin: 2px 0; font-size: 14pt; font-weight: bold;">BALAI PENJAMINAN MUTU PENDIDIKAN PROVINSI SULAWESI TENGGARA</h4>
+              <p style="margin: 0; font-size: 9pt;">Jl. Wolter Monginsidi No. 115, Ranomeeto, Kendari - Sulawesi Tenggara</p>
+              <h5 style="margin-top: 15px; font-size: 12pt; text-decoration: underline;">DAFTAR REKAPITULASI PRESENSI & VERIFIKASI LPTI PELATIHAN ASN</h5>
+              <div id="printEventTitleSub" style="font-size: 10pt; font-weight: bold;"></div>
+            </div>
+
+            <!-- Satu Tabel dengan table-layout fixed & Sticky Header (No Scroll-in-Scroll) -->
+            <div class="table-responsive admin-table-wrapper" style="overflow-x: auto;">
+              <table class="table table-vcenter admin-table" id="mainAdminTable">
+                <thead>
                   <tr>
-                    <th style="width: 40px;" class="text-center">No</th>
-                    <th>Nama Pegawai & NIP</th>
-                    <th>Jabatan / Unit Kerja</th>
-                    <th>Presensi Aula</th>
-                    <th>Biometrik Wajah</th>
-                    <th>Berkas LPTI</th>
-                    <th>E-Sertifikat</th>
-                    <th class="text-center" style="width: 140px;">Aksi Admin</th>
+                    <!-- Col 1: Checkbox (44px) -->
+                    <th style="width: 44px;" class="text-center">
+                      <input type="checkbox" id="selectAllCheckbox" class="form-check-input" onchange="toggleSelectAllRows(this.checked)" title="Pilih Semua Pegawai di Halaman Ini" aria-label="Pilih Semua">
+                    </th>
+                    <!-- Col 2: No (48px) -->
+                    <th style="width: 48px;" class="text-center sortable" onclick="sortTableBy('no')">
+                      No <span id="sortIcon_no" class="small text-muted">▲</span>
+                    </th>
+                    <!-- Col 3: Nama (220px) -->
+                    <th style="width: 220px;" class="sortable" onclick="sortTableBy('name')">
+                      Nama Pegawai <span id="sortIcon_name" class="small text-muted">↕</span>
+                    </th>
+                    <!-- Col 4: NIP (165px) -->
+                    <th style="width: 165px;" class="sortable" onclick="sortTableBy('nip')">
+                      NIP <span id="sortIcon_nip" class="small text-muted">↕</span>
+                    </th>
+                    <!-- Col 5: Jabatan / Unit Kerja (185px) -->
+                    <th style="width: 185px;" class="sortable" onclick="sortTableBy('jabatan')">
+                      Jabatan / Unit Kerja <span id="sortIcon_jabatan" class="small text-muted">↕</span>
+                    </th>
+                    <!-- Col 6: Presensi Aula (125px) -->
+                    <th style="width: 125px;" class="text-center sortable" onclick="sortTableBy('attended')">
+                      Presensi Aula <span id="sortIcon_attended" class="small text-muted">↕</span>
+                    </th>
+                    <!-- Col 7: Biometrik Wajah (120px) -->
+                    <th style="width: 120px;" class="text-center">
+                      Biometrik Wajah
+                    </th>
+                    <!-- Col 8: Berkas LPTI (145px) -->
+                    <th style="width: 145px;" class="text-center sortable" onclick="sortTableBy('lpti')">
+                      Berkas LPTI <span id="sortIcon_lpti" class="small text-muted">↕</span>
+                    </th>
+                    <!-- Col 9: E-Sertifikat (150px) -->
+                    <th style="width: 150px;">
+                      E-Sertifikat
+                    </th>
+                    <!-- Col 10: Aksi Admin (135px) -->
+                    <th style="width: 135px;" class="text-center">
+                      Aksi Admin
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="employeeTableBody">
                   <tr>
-                    <td colspan="8" class="text-center py-4 text-secondary">
+                    <td colspan="10" class="text-center py-5 text-secondary">
                       <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                      Memuat daftar 104 ASN BPMP Sultra...
+                      Memuat daftar pegawai BPMP Provinsi Sulawesi Tenggara...
                     </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Footer Pagination & Tampilan Jumlah Baris -->
+            <div class="card-footer d-flex flex-wrap justify-content-between align-items-center py-2 bg-white gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="text-secondary small">Baris per halaman:</span>
+                <select id="pageSizeSelect" class="form-select form-select-sm" style="width: 75px;" onchange="changePageSize(this.value)" aria-label="Jumlah baris per halaman">
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="105">Semua</option>
+                </select>
+                <span class="text-secondary small ms-2" id="paginationEntriesInfo">
+                  Menampilkan 1-25 dari 105 pegawai
+                </span>
+              </div>
+
+              <div class="d-flex align-items-center gap-1" id="paginationControls">
+                <!-- Diisi secara dinamis oleh JavaScript -->
+              </div>
             </div>
           </div>
 
@@ -533,12 +686,13 @@
                   <i class="ti ti-archive me-2"></i> Riwayat & Katalog Pelatihan ASN BPMP Sultra
                 </h3>
                 <div class="text-secondary small">
-                  Arsip seluruh kegiatan Senin Berseri dan pelatihan peningkatan kompetensi kepegawaian
+                  Arsip seluruh kegiatan pelatihan peningkatan kompetensi kepegawaian
                 </div>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-primary-lt" id="badgeTotalEventsCount">Total: 0 Event</span>
-                <div class="btn-group btn-group-sm" role="group">
+                <!-- Tombol Toggle Tabel / Kartu: Hanya tampil jika event > 5 -->
+                <div class="btn-group btn-group-sm d-none" id="eventsViewToggleGroup" role="group">
                   <button type="button" class="btn btn-primary active" id="btnViewEventsTable" onclick="toggleEventsView('table')">
                     <i class="ti ti-table me-1"></i> Tabel
                   </button>
@@ -549,7 +703,7 @@
               </div>
             </div>
 
-            <!-- VIEW 1: TABEL (Default, rapi dan responsif) -->
+            <!-- VIEW 1: TABEL KATALOG EVENT -->
             <div id="eventsTableViewContainer" class="card-body p-0">
               <div class="table-responsive">
                 <table class="table table-vcenter card-table table-hover">
@@ -560,7 +714,7 @@
                       <th>Lokasi Aula</th>
                       <th>Bobot JP</th>
                       <th>Status Kegiatan</th>
-                      <th class="text-end" style="width: 220px;">Tindakan</th>
+                      <th class="text-end" style="width: 230px;">Tindakan</th>
                     </tr>
                   </thead>
                   <tbody id="eventsListContainer">
@@ -575,7 +729,7 @@
               </div>
             </div>
 
-            <!-- VIEW 2: GRID KARTU (Responsif row g-3) -->
+            <!-- VIEW 2: GRID KARTU (Jika diaktifkan pada event > 5) -->
             <div id="eventsCardsViewContainer" class="card-body p-3 d-none">
               <div id="eventsCardsGrid" class="row g-3">
                 <!-- Rendered dynamically -->
@@ -629,16 +783,16 @@
 
                 <!-- Actions -->
                 <div class="d-flex flex-wrap justify-content-center gap-2">
-                  <a href="/proyektor" target="_blank" class="btn btn-primary" id="btnViewQrProjectorLink">
+                  <a href="/proyektor" target="_blank" class="btn btn-primary" id="btnViewQrProjectorLink" aria-label="Buka Layar Penuh Aula">
                     <i class="ti ti-presentation me-1"></i> Buka Layar Penuh Aula
                   </a>
-                  <button type="button" class="btn btn-outline-secondary" onclick="copyCurrentToken()">
+                  <button type="button" class="btn btn-outline-secondary" onclick="copyCurrentToken()" aria-label="Salin Token">
                     <i class="ti ti-copy me-1"></i> Salin Token
                   </button>
-                  <button type="button" class="btn btn-outline-secondary" onclick="copyScanUrl()">
+                  <button type="button" class="btn btn-outline-secondary" onclick="copyScanUrl()" aria-label="Salin Tautan Presensi">
                     <i class="ti ti-link me-1"></i> Salin Tautan Presensi
                   </button>
-                  <button type="button" id="btnStep2ProjectorLink" class="btn btn-outline-success" onclick="toggleEventStatus()">
+                  <button type="button" id="btnStep2ProjectorLink" class="btn btn-outline-success" onclick="toggleEventStatus()" aria-label="Jeda atau Buka Presensi">
                     <i class="ti ti-player-pause me-1"></i> <span id="btnToggleEventLabel">Jeda Presensi</span>
                   </button>
                 </div>
@@ -658,29 +812,279 @@
     </div> <!-- End page-wrapper -->
   </div> <!-- End page -->
 
-  <!-- MODAL: CATATAN REVISI LPTI -->
+
+  <!-- ============================================================== -->
+  <!-- MODAL 1: FORM TAMBAH / UBAH EVENT PELATIHAN                    -->
+  <!-- ============================================================== -->
+  <div class="modal modal-blur fade" id="eventFormModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2.5">
+          <h5 class="modal-title text-white fw-bold" id="eventFormModalTitle">
+            <i class="ti ti-calendar-event me-2"></i> Tambah Kegiatan Pelatihan Baru
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="formEventSetting" onsubmit="handleSaveEvent(event)">
+          <div class="modal-body p-3">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label required">Nama / Judul Kegiatan Pelatihan</label>
+                <input type="text" id="eventTitle" class="form-control" placeholder="Contoh: Pelatihan Transformasi Digital ASN BPMP Sultra" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label required">Kategori Kegiatan</label>
+                <select id="eventCategory" class="form-select" required>
+                  <option value="Pelatihan ASN">Pelatihan ASN</option>
+                  <option value="Workshop Internal">Workshop Internal</option>
+                  <option value="Sosialisasi Kebijakan">Sosialisasi Kebijakan</option>
+                  <option value="Bimtek Mutu Pendidikan">Bimtek Mutu Pendidikan</option>
+                  <option value="Upacara & Apel Pagi">Upacara & Apel Pagi</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label required">Jadwal & Waktu Pelaksanaan</label>
+                <input type="text" id="eventSchedule" class="form-control" placeholder="Contoh: Setiap Senin, Pukul 07.30 WITA" required>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label required">Lokasi Aula / Ruangan</label>
+                <input type="text" id="eventLocation" class="form-control" placeholder="Contoh: Aula Utama BPMP Provinsi Sulawesi Tenggara" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label required">Bobot Jam Pelajaran (JP)</label>
+                <input type="text" id="eventJp" class="form-control" placeholder="Contoh: 2 JP" required>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" id="btnSaveEvent" class="btn btn-primary">
+              <i class="ti ti-device-floppy me-1"></i> Simpan Event Pelatihan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: KUSTOMISASI TEMPLATE E-SERTIFIKAT & TATA LETAK TEKS   -->
+  <!-- ============================================================== -->
+  <div class="modal modal-blur fade" id="certCustomizerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2.5 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <span class="avatar avatar-xs bg-primary text-white rounded"><i class="ti ti-certificate"></i></span>
+            <h5 class="modal-title text-primary fw-bold mb-0">
+              Kustomisasi Template E-Sertifikat & Tata Letak Teks
+            </h5>
+            <span class="badge bg-blue-lt ms-2" id="displayStep2EventId">ID: -</span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="row g-3">
+            <!-- Kolom 1: Berkas Template Piagam -->
+            <div class="col-lg-5">
+              <div class="card border h-100 bg-light-subtle">
+                <div class="card-header py-2 bg-transparent">
+                  <h5 class="card-title mb-0 small fw-bold">
+                    <i class="ti ti-upload me-1"></i> Berkas Background Template (A4 Landscape)
+                  </h5>
+                </div>
+                <div class="card-body p-3">
+                  <!-- Status Template Box -->
+                  <div id="templateStatusBox" class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2">
+                    <span id="templateTypeIcon" class="font-20">🏛️</span>
+                    <div class="flex-fill">
+                      <div class="fw-bold small" id="templateStatusLabel">Desain Piagam Standar Resmi BPMP Sultra</div>
+                      <div class="text-secondary small" style="font-size: 0.72rem;">Standar template bawaan BPMP Provinsi Sulawesi Tenggara</div>
+                    </div>
+                    <button type="button" id="btnDeleteTemplate" class="btn btn-sm btn-outline-danger d-none" onclick="deleteCustomTemplate()" title="Hapus template kustom">
+                      <i class="ti ti-trash"></i>
+                    </button>
+                  </div>
+
+                  <!-- Upload Drop Box -->
+                  <div class="border border-dashed rounded p-3 text-center mb-3 bg-white" id="templatePromptBox">
+                    <i class="ti ti-cloud-upload text-primary font-32 mb-2"></i>
+                    <h6 class="mb-1">Pilih Desain Template Piagam</h6>
+                    <p class="text-secondary small mb-2">Format: PDF, PNG, atau JPG (A4 Landscape)</p>
+                    <input type="file" id="templateFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg" onchange="handleTemplateFileSelected(this)">
+                  </div>
+
+                  <div id="templateSelectedBox" class="d-none border rounded p-2 mb-3 bg-white d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge bg-primary text-white" id="templateSelectedExt">PDF</span>
+                      <div>
+                        <div class="fw-bold small text-truncate" style="max-width: 170px;" id="templateSelectedName">file.pdf</div>
+                        <div class="text-secondary small" id="templateSelectedSize">0 KB</div>
+                      </div>
+                    </div>
+                    <button type="button" id="btnUploadTemplateSubmit" class="btn btn-sm btn-primary" onclick="handleUploadTemplate()">
+                      <i class="ti ti-upload me-1"></i> Terapkan
+                    </button>
+                  </div>
+
+                  <div class="small text-secondary">
+                    <i class="ti ti-info-circle me-1"></i> Template piagam akan menjadi latar belakang e-sertifikat ber-QR yang diterbitkan secara otomatis bagi peserta yang lulus kurasi LPTI.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kolom 2: Tata Letak Koordinat & Tipografi -->
+            <div class="col-lg-7">
+              <div class="card border h-100 bg-white">
+                <div class="card-header py-2 bg-transparent d-flex justify-content-between align-items-center">
+                  <h5 class="card-title mb-0 small fw-bold">
+                    <i class="ti ti-adjustments me-1"></i> Koordinat & Tipografi Piagam
+                  </h5>
+                  <span class="badge bg-secondary-lt">Live Canvas Simulation</span>
+                </div>
+                <div class="card-body p-3">
+                  <div class="row g-2 mb-3">
+                    <div class="col-12">
+                      <label class="form-label small fw-bold mb-1">Format / Prefix Penomoran Piagam</label>
+                      <input type="text" id="certPrefixInput" class="form-control form-control-sm font-monospace" value="800.1.3/SERT-LPTI/2026">
+                    </div>
+                    <div class="col-md-6">
+                      <div class="d-flex justify-content-between">
+                        <label class="form-label small fw-bold mb-1">Posisi Y Nomor Sertifikat</label>
+                        <span class="badge bg-light text-primary font-monospace small" id="badgeNomorY">72%</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <input type="range" class="form-range" id="certNomorYRange" min="30" max="95" value="72" oninput="syncCertRange('nomor')">
+                        <input type="number" class="form-control form-control-sm font-monospace" id="certNomorYInput" value="72" style="width: 70px;" oninput="syncCertNumber('nomor')">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold mb-1">Ukuran Font Nomor</label>
+                      <input type="number" id="certNomorSizeInput" class="form-control form-control-sm" value="11" min="8" max="24" oninput="updateCertLivePreview()">
+                    </div>
+                    <div class="col-md-6">
+                      <div class="d-flex justify-content-between">
+                        <label class="form-label small fw-bold mb-1">Posisi Y Nama Peserta</label>
+                        <span class="badge bg-light text-primary font-monospace small" id="badgeNamaY">50%</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <input type="range" class="form-range" id="certNamaYRange" min="15" max="85" value="50" oninput="syncCertRange('nama')">
+                        <input type="number" class="form-control form-control-sm font-monospace" id="certNamaYInput" value="50" style="width: 70px;" oninput="syncCertNumber('nama')">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-bold mb-1">Ukuran Font Nama</label>
+                      <div class="d-flex align-items-center gap-2">
+                        <input type="number" id="certNamaSizeInput" class="form-control form-control-sm" value="26" min="12" max="36" oninput="updateCertLivePreview()">
+                        <div class="form-check ms-1 mb-0">
+                          <input class="form-check-input" type="checkbox" id="certShowUnderlineCheck" checked onchange="updateCertLivePreview()">
+                          <label class="form-check-label small" for="certShowUnderlineCheck">Garis Bawah</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Simulasi Pratinjau Mini -->
+                  <div class="border rounded p-2 mb-3 bg-light text-center position-relative overflow-hidden" id="certMiniPreviewBox" style="height: 140px; border: 1px solid #cbd5e1;">
+                    <div class="small text-muted position-absolute top-0 start-0 p-1" style="font-size: 0.65rem;">Simulasi Cetak</div>
+                    <div id="previewSimNomor" class="position-absolute w-100 text-center font-monospace" style="bottom: 72%; font-size: 11px; color: #1a3a5c; font-weight: 600;">
+                      Nomor: 800.1.3/SERT-LPTI/2026/001
+                    </div>
+                    <div id="previewSimNama" class="position-absolute w-100 text-center" style="bottom: 50%; font-size: 15px; font-weight: bold; color: #002d5b;">
+                      <span id="previewSimNamaText" style="border-bottom: 1.5px solid #64748b;">Nama Lengkap Peserta ASN, S.Pd., M.Pd.</span>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center">
+                    <button type="button" id="btnPreviewSamplePdf" class="btn btn-outline-secondary btn-sm" onclick="previewSamplePdfNow()">
+                      <i class="ti ti-eye me-1"></i> Unduh Sampel PDF
+                    </button>
+                    <button type="button" id="btnSaveCertSettings" class="btn btn-primary btn-sm" onclick="saveCertSettings()">
+                      <i class="ti ti-device-floppy me-1"></i> Simpan Tata Letak
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Selesai & Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- MODAL 3: PENGATURAN SISTEM & RESET DATA AMAN                   -->
+  <!-- ============================================================== -->
+  <div class="modal modal-blur fade" id="systemSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white py-2.5">
+          <h5 class="modal-title fw-bold">
+            <i class="ti ti-settings me-1"></i> Pengaturan Sistem & Manajemen Data
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Lingkungan Operasional (Environment)</label>
+            <div id="envStatusBadge" class="badge bg-azure-lt px-2 py-1 font-monospace">Memuat status...</div>
+          </div>
+
+          <div class="card border-danger-subtle bg-danger-subtle p-3 mb-2">
+            <h5 class="text-danger fw-bold mb-1">
+              <i class="ti ti-alert-triangle me-1"></i> Reset Data Pengujian Presensi & LPTI
+            </h5>
+            <p class="small text-secondary mb-2">
+              Tindakan ini akan mengosongkan status presensi kehadiran aula, pengunggahan berkas LPTI, dan sertifikat terbit. Seluruh 105 data master pegawai BPMP Sultra akan tetap aman.
+            </p>
+            <div class="mb-2">
+              <label class="form-label small required text-dark">Ketik kata konfirmasi <code class="text-danger fw-bold">RESET DATA</code> untuk melanjutkan:</label>
+              <input type="text" id="confirmResetInput" class="form-control form-control-sm font-monospace" placeholder="Ketik RESET DATA di sini...">
+            </div>
+            <button type="button" id="btnExecuteSecureReset" class="btn btn-danger btn-sm w-100" onclick="executeSecureResetData()">
+              <i class="ti ti-rotate-2 me-1"></i> Eksekusi Pembersihan Data
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- MODAL 4: CATATAN REVISI LPTI                                   -->
+  <!-- ============================================================== -->
   <div class="modal modal-blur fade" id="revisionModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
-        <div class="modal-header bg-warning text-dark">
+        <div class="modal-header bg-warning text-dark py-2.5">
           <h5 class="modal-title fw-bold">
-            <i class="ti ti-pencil me-1"></i> Catatan Revisi Berkas LPTI
+            <i class="ti ti-pencil me-1"></i> Catatan Kurasi Revisi Berkas LPTI
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-3">
           <div class="alert alert-info py-2 px-3 small mb-3">
             <div class="fw-bold" id="modalEmployeeName">Nama Pegawai</div>
-            <div class="text-secondary" id="modalEmployeeNip">NIP: -</div>
+            <div class="text-secondary font-monospace" id="modalEmployeeNip">NIP: -</div>
           </div>
           <div class="mb-3">
-            <label class="form-label required">Alasan & Petunjuk Perbaikan untuk Pegawai</label>
-            <textarea id="revisionNotesInput" class="form-control" rows="4" placeholder="Tuliskan catatan perbaikan berkas LPTI (contoh: Laporan belum ditandatangani oleh atasan langsung / halaman 2 kurang jelas)..." required></textarea>
+            <label class="form-label required small fw-bold">Petunjuk Perbaikan untuk Pegawai</label>
+            <textarea id="revisionNotesInput" class="form-control" rows="4" placeholder="Tuliskan catatan perbaikan berkas LPTI (contoh: Laporan belum ditandatangani oleh atasan langsung / ringkasan materi kurang lengkap)..." required></textarea>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" id="btnSubmitRevision" class="btn btn-warning text-dark fw-bold" onclick="submitRevision()">
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" id="btnSubmitRevision" class="btn btn-warning text-dark btn-sm fw-bold" onclick="submitRevision()">
             <i class="ti ti-send me-1"></i> Kirim Catatan Revisi
           </button>
         </div>
@@ -688,7 +1092,10 @@
     </div>
   </div>
 
-  <!-- MODAL: FOTO BIOMETRIK / SELFIE PRESENSI PEGAWAI -->
+
+  <!-- ============================================================== -->
+  <!-- MODAL 5: FOTO BIOMETRIK / SELFIE PRESENSI PEGAWAI              -->
+  <!-- ============================================================== -->
   <div class="modal modal-blur fade" id="viewPhotoModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
       <div class="modal-content">
@@ -709,7 +1116,8 @@
     </div>
   </div>
 
-  <!-- Toast Container -->
+
+  <!-- Toast Notification Container -->
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 1090;"></div>
 
   <!-- Tabler Core JS (Local Dist) -->
@@ -721,15 +1129,28 @@
   <script src="/js/layout.js"></script>
   <script src="/pwa-install.js"></script>
 
-  <!-- Admin Application Logic -->
+  <!-- ============================================================== -->
+  <!-- APPLICATION JAVASCRIPT: LOGIKA ADMIN REVAMP                    -->
+  <!-- ============================================================== -->
   <script>
-
-    // State Aplikasi
+    // State Utama Dashboard
     let eventData = null;
     let allEventsList = [];
     let employeesData = [];
-    let currentFilter = 'all';
-    let currentEventFilter = 'all';
+    let isProductionEnv = false;
+
+    // Filter, Search, Pagination & Sort State
+    let currentFilter = 'all';          // 'all', 'hadir', 'belum', 'pending', 'disetujui', 'revisi'
+    let currentEventFilter = 'all';     // 'all' or eventId
+    let currentUnitFilter = 'all';      // 'all' or specific unit / jabatan
+    let currentSearchTerm = '';
+    let currentPage = 1;
+    let pageSize = 25;
+    let sortColumn = 'no';
+    let sortDirection = 'asc';          // 'asc' or 'desc'
+    let selectedEmployeeIds = new Set();
+
+    // QR & Workflow State
     let targetEmployeeForRevision = null;
     let editingEventId = null;
     let currentSelectedEventId = null;
@@ -737,7 +1158,7 @@
     let currentScanUrl = '';
     let isEventCurrentlyActive = false;
 
-    // 0. Autentikasi Admin & Logout
+    // 0. Autentikasi Admin & Pengecekan Environment
     async function checkAdminAuth() {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
       if (!token) {
@@ -745,7 +1166,6 @@
         return false;
       }
       
-      // Pertahankan token di kedua penyimpanan
       localStorage.setItem('adminToken', token);
       sessionStorage.setItem('adminToken', token);
 
@@ -762,6 +1182,11 @@
           window.location.replace('/admin/login');
           return false;
         }
+
+        // Simpan status environment
+        isProductionEnv = Boolean(data.isProduction);
+        renderEnvironmentUI(isProductionEnv);
+
         if (data.admin) {
           window.currentAdminUser = data.admin;
           const isSuper = data.admin.role === 'superadmin' || data.admin.username === 'superadmin';
@@ -772,6 +1197,7 @@
           const subTitleEl = document.getElementById('sideAdminSubTitle');
           const superActionEl = document.getElementById('superadminActionGroup');
           const avatarEl = document.getElementById('sideAdminAvatar');
+          const btnGoSuper = document.getElementById('btnGoToSuperadmin');
 
           if (nameEl) nameEl.textContent = data.admin.username || (isSuper ? 'superadmin' : 'admin');
           if (badgeEl) {
@@ -783,12 +1209,11 @@
             avatarEl.innerHTML = isSuper ? '<i class="ti ti-crown font-14"></i>' : '<i class="ti ti-shield-lock font-14"></i>';
           }
           if (roleTextEl) roleTextEl.textContent = isSuper ? 'Super Administrator' : 'Bagian Kepegawaian';
-          if (subTitleEl) subTitleEl.textContent = isSuper ? 'Hak Akses Penuh Sistem (Master)' : 'Pengelola Harian Kepegawaian BPMP';
+          if (subTitleEl) subTitleEl.textContent = isSuper ? 'Hak Akses Penuh Sistem (Master)' : 'Pengelola Harian Kepegawaian BPMP Sultra';
           if (superActionEl) {
             if (isSuper) superActionEl.classList.remove('d-none');
             else superActionEl.classList.add('d-none');
           }
-          const btnGoSuper = document.getElementById('btnGoToSuperadmin');
           if (btnGoSuper) {
             if (isSuper) btnGoSuper.classList.remove('d-none');
             else btnGoSuper.classList.add('d-none');
@@ -797,29 +1222,69 @@
         return true;
       } catch (e) {
         console.warn('Network auth check issue:', e);
-        // Jangan logout otomatis jika terjadi gangguan jaringan sesaat
         return true;
       }
     }
 
-    async function handleAdminLogout() {
-      if (!confirm('Apakah Anda yakin ingin keluar dari Administrator Console?')) return;
+    function renderEnvironmentUI(isProd) {
+      const btnResetDev = document.getElementById('btnResetTestingDev');
+      const envBadge = document.getElementById('envStatusBadge');
+      if (isProd) {
+        if (btnResetDev) btnResetDev.classList.add('d-none');
+        if (envBadge) {
+          envBadge.className = 'badge bg-success-lt text-success px-2 py-1 font-monospace';
+          envBadge.textContent = 'Production (Live Vercel / Cloud)';
+        }
+      } else {
+        if (btnResetDev) btnResetDev.classList.remove('d-none');
+        if (envBadge) {
+          envBadge.className = 'badge bg-warning-lt text-warning px-2 py-1 font-monospace';
+          envBadge.textContent = 'Development / Local Testing';
+        }
+      }
+    }
+
+    // Modal Pengaturan Sistem
+    function openSystemSettingsModal() {
+      document.getElementById('confirmResetInput').value = '';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('systemSettingsModal')).show();
+    }
+
+    async function executeSecureResetData() {
+      const input = document.getElementById('confirmResetInput')?.value.trim();
+      if (input !== 'RESET DATA') {
+        showToast('Konfirmasi tidak cocok. Ketik "RESET DATA" huruf kapital tepat.', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('btnExecuteSecureReset');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Mereset data...`;
+
       try {
         const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-        await fetch('/api/auth/admin-logout', {
+        const res = await fetch('/api/reset-data', {
           method: 'POST',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
-      } catch (e) {}
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminUser');
-      sessionStorage.removeItem('adminToken');
-      sessionStorage.removeItem('adminUser');
-      window.location.replace('/admin/login');
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('systemSettingsModal')).hide();
+          setTimeout(() => location.reload(), 800);
+        } else {
+          showToast(data.message || 'Gagal reset data pengujian.', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal terhubung ke server: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="ti ti-rotate-2 me-1"></i> Eksekusi Pembersihan Data`;
+      }
     }
 
     async function handleResetTestingData() {
-      if (!confirm('⚠️ PERINGATAN SUPERADMIN:\nApakah Anda yakin ingin membersihkan seluruh data pengujian (kehadiran, LPTI, sertifikat)?\n\n104 data pegawai ASN BPMP Sultra akan tetap aman dan utuh.')) {
+      if (!confirm('⚠️ PERINGATAN DEV/TESTING:\nApakah Anda yakin ingin membersihkan data presensi, LPTI, dan sertifikat pengujian?\n\n105 data master ASN BPMP Sultra akan tetap aman dan utuh.')) {
         return;
       }
       try {
@@ -840,25 +1305,46 @@
       }
     }
 
-    // Smooth Scroll to Section
-    function scrollToSection(sectionId) {
-      switchMainTab('dashboard');
-      const sec = document.getElementById(sectionId);
-      if (sec) {
-        sec.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-
     // Live Clock Widget WITA
     function updateLiveClock() {
       const clockEl = document.getElementById('liveClockBadge');
       if (clockEl) {
         const now = new Date();
-        clockEl.textContent = now.toLocaleTimeString('id-ID') + ' WITA';
+        clockEl.innerHTML = `<i class="ti ti-clock me-1"></i> ${now.toLocaleTimeString('id-ID')} WITA`;
       }
     }
     setInterval(updateLiveClock, 1000);
     updateLiveClock();
+
+    // SOP Banner Dismissal (localStorage)
+    function checkSopBannerStatus() {
+      const dismissed = localStorage.getItem('bpmp_sop_dismissed');
+      const banner = document.getElementById('sopBannerAlert');
+      const reopenBox = document.getElementById('sopReopenBox');
+      if (dismissed === 'true') {
+        if (banner) banner.classList.add('d-none');
+        if (reopenBox) reopenBox.classList.remove('d-none');
+      } else {
+        if (banner) banner.classList.remove('d-none');
+        if (reopenBox) reopenBox.classList.add('d-none');
+      }
+    }
+
+    function dismissSopBanner() {
+      localStorage.setItem('bpmp_sop_dismissed', 'true');
+      const banner = document.getElementById('sopBannerAlert');
+      const reopenBox = document.getElementById('sopReopenBox');
+      if (banner) banner.classList.add('d-none');
+      if (reopenBox) reopenBox.classList.remove('d-none');
+    }
+
+    function reopenSopBanner() {
+      localStorage.removeItem('bpmp_sop_dismissed');
+      const banner = document.getElementById('sopBannerAlert');
+      const reopenBox = document.getElementById('sopReopenBox');
+      if (banner) banner.classList.remove('d-none');
+      if (reopenBox) reopenBox.classList.add('d-none');
+    }
 
     // Toast Notification System
     function showToast(message, type = 'success') {
@@ -872,8 +1358,9 @@
         icon = '<i class="ti ti-info-circle text-info me-2"></i>';
       }
 
-      toast.className = 'toast-box';
-      toast.innerHTML = `${icon} <span>${message}</span>`;
+      toast.className = 'toast-box p-3 bg-white border shadow-sm rounded mb-2 d-flex align-items-center';
+      toast.style.minWidth = '280px';
+      toast.innerHTML = `${icon} <span class="small fw-bold">${message}</span>`;
 
       container.appendChild(toast);
       setTimeout(() => {
@@ -890,246 +1377,83 @@
       const tabQr = document.getElementById('viewQrSection');
       const btnDash = document.getElementById('tabBtnDashboard');
       const btnQr = document.getElementById('tabBtnQr');
-      const navDash = document.getElementById('navLinkDashboard');
-      const navQr = document.getElementById('navLinkQr');
       const breadcrumb = document.getElementById('headerBreadcrumb');
 
       if (tabName === 'qr') {
         tabDashboard.classList.add('d-none');
         tabQr.classList.remove('d-none');
         if (breadcrumb) breadcrumb.textContent = 'Layar QR Presensi Aula (30 Detik)';
-        
-        if (btnDash) btnDash.classList.remove('active');
-        if (btnQr) btnQr.classList.add('active');
-        if (navDash) navDash.classList.remove('active');
-        if (navQr) navQr.classList.add('active');
-        
+        if (btnDash) { btnDash.classList.remove('btn-primary'); btnDash.classList.add('btn-outline-secondary'); }
+        if (btnQr) { btnQr.classList.remove('btn-outline-secondary'); btnQr.classList.add('btn-primary'); }
         updateDynamicQr();
         tabQr.scrollIntoView({ behavior: 'smooth' });
       } else {
         tabDashboard.classList.remove('d-none');
         tabQr.classList.add('d-none');
-        if (breadcrumb) breadcrumb.textContent = 'Dashboard Manajemen Kepegawaian & Presensi';
-
-        if (btnDash) btnDash.classList.add('active');
-        if (btnQr) btnQr.classList.remove('active');
-        if (navDash) navDash.classList.add('active');
-        if (navQr) navQr.classList.remove('active');
-        
+        if (breadcrumb) breadcrumb.textContent = 'BPMP SULTRA / ADMIN KEPEGAWAIAN';
+        if (btnDash) { btnDash.classList.remove('btn-outline-secondary'); btnDash.classList.add('btn-primary'); }
+        if (btnQr) { btnQr.classList.remove('btn-primary'); btnQr.classList.add('btn-outline-secondary'); }
         tabDashboard.scrollIntoView({ behavior: 'smooth' });
       }
     }
 
     // ==============================================================
-    // EVENT WORKFLOW: LANGKAH 1 (BUAT) & LANGKAH 2 (SESI & TEMPLATE)
+    // EVENT WORKFLOW MODAL (TAMBAH / EDIT)
     // ==============================================================
-    function createNewEventForm() {
-      switchMainTab('dashboard');
-      currentSelectedEventId = null;
-      editingEventId = 'new';
-      document.getElementById('eventTitle').value = '';
-      document.getElementById('eventJp').value = 32;
-      document.getElementById('eventCategory').value = 'Teknis & Manajerial Kepegawaian';
-      document.getElementById('eventSchedule').value = '';
-      document.getElementById('eventLocation').value = '';
-      
-      const btn = document.getElementById('btnSaveEvent');
-      if (btn) {
-        btn.innerHTML = `<i class="ti ti-circle-check mr-1"></i> Simpan & Terbitkan Event Pelatihan Baru`;
+    function openEventModal(mode = 'new', eventId = null) {
+      editingEventId = (mode === 'new') ? 'new' : (eventId || currentSelectedEventId);
+      const titleEl = document.getElementById('eventFormModalTitle');
+      const btnSave = document.getElementById('btnSaveEvent');
+
+      if (editingEventId === 'new') {
+        if (titleEl) titleEl.innerHTML = '<i class="ti ti-plus me-2"></i> Tambah Kegiatan Pelatihan Baru';
+        if (btnSave) btnSave.innerHTML = '<i class="ti ti-circle-check me-1"></i> Terbitkan Event Baru';
+        document.getElementById('eventTitle').value = '';
+        document.getElementById('eventJp').value = '2 JP';
+        document.getElementById('eventCategory').value = 'Pelatihan ASN';
+        document.getElementById('eventSchedule').value = 'Setiap Senin, Pukul 07.30 WITA';
+        document.getElementById('eventLocation').value = 'Aula Utama BPMP Provinsi Sulawesi Tenggara';
+      } else {
+        const ev = (allEventsList || []).find(e => e.id === editingEventId) || eventData;
+        if (!ev) return;
+        if (titleEl) titleEl.innerHTML = `<i class="ti ti-edit me-2"></i> Ubah Detail Kegiatan (${ev.id})`;
+        if (btnSave) btnSave.innerHTML = '<i class="ti ti-device-floppy me-1"></i> Simpan Perubahan';
+        document.getElementById('eventTitle').value = ev.title || '';
+        document.getElementById('eventJp').value = ev.jp ? `${ev.jp} JP` : '2 JP';
+        document.getElementById('eventCategory').value = ev.category || 'Pelatihan ASN';
+        document.getElementById('eventSchedule').value = ev.schedule || '';
+        document.getElementById('eventLocation').value = ev.location || '';
       }
 
-      const step1 = document.getElementById('step1FormSection');
-      const step2 = document.getElementById('step2ActiveSection');
-      step1.classList.remove('d-none');
-      step2.classList.add('d-none');
-      step1.scrollIntoView({ behavior: 'smooth' });
-      showToast('Silakan isi formulir pembuatan event pelatihan baru.', 'info');
-    }
-
-    function editEventById(eventId) {
-      switchMainTab('dashboard');
-      currentSelectedEventId = eventId;
-      const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
-      if (!ev) return;
-      editingEventId = ev.id;
-      document.getElementById('eventTitle').value = ev.title || '';
-      document.getElementById('eventJp').value = ev.jp || 32;
-      document.getElementById('eventCategory').value = ev.category || 'Teknis & Manajerial Kepegawaian';
-      document.getElementById('eventSchedule').value = ev.schedule || '';
-      document.getElementById('eventLocation').value = ev.location || '';
-      
-      const btn = document.getElementById('btnSaveEvent');
-      if (btn) {
-        btn.innerHTML = `<i class="ti ti-device-floppy me-1"></i> Simpan Perubahan Event (${ev.id})`;
-      }
-
-      const step1 = document.getElementById('step1FormSection');
-      const step2 = document.getElementById('step2ActiveSection');
-      step1.classList.remove('d-none');
-      step2.classList.add('d-none');
-      step1.scrollIntoView({ behavior: 'smooth' });
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('eventFormModal')).show();
     }
 
     function editCurrentEvent() {
       const targetId = currentSelectedEventId || (eventData && eventData.id);
-      if (targetId) {
-        editEventById(targetId);
-      } else {
-        createNewEventForm();
-      }
+      openEventModal('edit', targetId);
     }
 
-    function closeEventWorkflow() {
-      currentSelectedEventId = null;
-      editingEventId = null;
-      const step1 = document.getElementById('step1FormSection');
-      const step2 = document.getElementById('step2ActiveSection');
-      if (step1) step1.classList.add('d-none');
-      if (step2) step2.classList.add('d-none');
-      const catalog = document.getElementById('sectionKatalogEvent');
-      if (catalog) catalog.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Buka Panel Langkah 2 (Hanya saat diklik user di dashboard)
-    function openEventDetail(eventId, doScroll = true) {
-      currentSelectedEventId = eventId;
-      const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
-      if (!ev) return;
-      eventData = ev;
-
-      switchMainTab('dashboard');
-
-      const step1 = document.getElementById('step1FormSection');
-      if (step1) step1.classList.add('d-none');
-
-      const step2 = document.getElementById('step2ActiveSection');
-      if (step2) step2.classList.remove('d-none');
-
-      // Update detail card
-      document.getElementById('displayActiveTitle').textContent = ev.title || 'Pelatihan Kepegawaian';
-      document.getElementById('displayActiveJp').textContent = `${ev.jp || 32} Jam Pelajaran (JP)`;
-      document.getElementById('displayActiveCategory').textContent = ev.category || 'Teknis & Manajerial Kepegawaian';
-      document.getElementById('displayActiveSchedule').textContent = ev.schedule || 'Jadwal Ditentukan';
-      document.getElementById('displayActiveLocation').textContent = ev.location || 'Auditorium BPMP Sultra & Hybrid';
-
-      const badgeId = document.getElementById('displayStep2EventId');
-      if (badgeId) badgeId.textContent = ev.id || 'EVT';
-
-      const isCompleted = ev.status === 'completed';
-      const isActive = Boolean(ev.active && !isCompleted);
-      const statusBadge = document.getElementById('displayActiveStatusBadge');
-      const btnActivate = document.getElementById('btnActivateCurrentEvent');
-      const btnComplete = document.getElementById('btnCompleteCurrentEvent');
-
-      if (statusBadge) {
-        if (isCompleted) {
-          statusBadge.className = 'badge bg-secondary text-white px-2.5 py-1 fw-bold';
-          statusBadge.innerHTML = '<i class="ti ti-check text-warning me-1"></i>KEGIATAN SELESAI (ARSIP)';
-        } else if (isActive) {
-          statusBadge.className = 'badge bg-success text-white px-2.5 py-1 fw-bold';
-          statusBadge.innerHTML = '<i class="ti ti-circle-filled me-1"></i>SESI AKTIF DI AULA';
-        } else {
-          statusBadge.className = 'badge bg-secondary-lt text-secondary px-2 py-1';
-          statusBadge.textContent = 'Arsip / Non-Aktif';
-        }
-      }
-
-      if (btnActivate) {
-        if (isActive) {
-          btnActivate.classList.add('d-none');
-        } else {
-          btnActivate.classList.remove('d-none');
-          btnActivate.innerHTML = `<i class="ti ti-bolt me-1"></i> ${isCompleted ? 'Buka Kembali Sesi Ini' : 'Terbitkan Sesi Ini ke Layar Aula'}`;
-        }
-      }
-
-      if (btnComplete) {
-        if (isActive) {
-          btnComplete.classList.remove('d-none');
-        } else {
-          btnComplete.classList.add('d-none');
-        }
-      }
-
-      if (document.getElementById('qrViewTitle')) {
-        document.getElementById('qrViewTitle').textContent = ev.title || 'Pelatihan Kepegawaian';
-      }
-
-      // Sinkronkan tautan proyektor dengan event yang dipilih
-      const pUrl = `/proyektor?event=${encodeURIComponent(ev.id)}`;
-      const pLink1 = document.getElementById('btnStep2ProjectorLink');
-      if (pLink1) pLink1.href = pUrl;
-      const pLink2 = document.getElementById('btnViewQrProjectorLink');
-      if (pLink2) pLink2.href = pUrl;
-
-      // Sinkronisasi status template sertifikat
-      renderTemplateStatus(ev.certificateTemplate, ev.certSettings || {});
-
-      // Perbarui QR Code khusus event ini
-      updateDynamicQr();
-
-      if (doScroll && step2) {
-        step2.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-
-    async function activateCurrentSelectedEvent() {
-      const targetId = currentSelectedEventId || (eventData && eventData.id);
-      if (targetId) {
-        await activateEvent(targetId);
-        openEventDetail(targetId, false);
-      }
-    }
-
-    async function completeCurrentSelectedEvent() {
-      const targetId = currentSelectedEventId || (eventData && eventData.id);
-      if (targetId) {
-        await completeEvent(targetId);
-      }
-    }
-
-    async function completeEvent(eventId) {
-      const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
-      const title = ev ? ev.title : eventId;
-      if (!confirm(`Selesaikan Kegiatan Pelatihan:\n"${title}" (${eventId})?\n\nSesi presensi mandiri di aula dan rotasi QR Code akan ditutup, dan seluruh rekap kehadiran serta sertifikat peserta akan dibukukan sebagai arsip resmi yang tuntas.`)) return;
-      
-      try {
-        const res = await fetch(`/api/events/${eventId}/complete`, { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-          showToast(data.message, 'success');
-          if (data.events) {
-            allEventsList = data.events;
-            localStorage.setItem('bpmp_events_cache', JSON.stringify(data.events));
-          }
-          await loadEventData();
-          await loadEmployees();
-          updateDynamicQr();
-          if (currentSelectedEventId === eventId) {
-            openEventDetail(eventId, false);
-          }
-        } else {
-          showToast(data.message, 'error');
-        }
-      } catch (err) {
-        showToast('Gagal menyelesaikan event: ' + err.message, 'error');
-      }
+    function editEventById(eventId) {
+      openEventModal('edit', eventId);
     }
 
     async function handleSaveEvent(e) {
       e.preventDefault();
       const btn = document.getElementById('btnSaveEvent');
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Menyimpan & Menerbitkan Event...`;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan...`;
+
+      let rawJp = document.getElementById('eventJp').value.trim();
+      let parsedJp = parseInt(rawJp.replace(/\D/g, ''), 10) || 2;
 
       const payload = {
         id: (editingEventId && editingEventId !== 'new') ? editingEventId : undefined,
         isNew: editingEventId === 'new',
-        title: document.getElementById('eventTitle').value,
-        jp: document.getElementById('eventJp').value,
+        title: document.getElementById('eventTitle').value.trim(),
+        jp: parsedJp,
         category: document.getElementById('eventCategory').value,
-        schedule: document.getElementById('eventSchedule').value,
-        location: document.getElementById('eventLocation').value
+        schedule: document.getElementById('eventSchedule').value.trim(),
+        location: document.getElementById('eventLocation').value.trim()
       };
 
       try {
@@ -1141,6 +1465,7 @@
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('eventFormModal')).hide();
           eventData = result.event;
           currentSelectedEventId = result.event.id;
           editingEventId = null;
@@ -1151,18 +1476,156 @@
           }
 
           await loadEventData();
-          await loadEmployees();
+          await loadEmployees(false);
           await updateDynamicQr();
-          // Buka Langkah 2 KHUSUS untuk event yang baru diterbitkan ini
-          openEventDetail(result.event.id, true);
         } else {
-          showToast(result.message, 'error');
+          showToast(result.message || 'Gagal menyimpan event.', 'error');
         }
       } catch (err) {
         showToast('Gagal menyimpan event: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="ti ti-circle-check mr-1"></i> Simpan & Terbitkan Event Pelatihan (Buka QR Code)`;
+      }
+    }
+
+    // Modal Kustomisasi E-Sertifikat
+    function openCertCustomizerModal() {
+      const ev = (allEventsList || []).find(e => e.id === currentSelectedEventId) || eventData;
+      if (ev) {
+        const badgeId = document.getElementById('displayStep2EventId');
+        if (badgeId) badgeId.textContent = `Event ID: ${ev.id || '-'}`;
+        renderTemplateStatus(ev.certificateTemplate, ev.certSettings || {});
+      }
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('certCustomizerModal')).show();
+    }
+
+    // ==============================================================
+    // EVENT DETAIL & STATUS HANDLERS
+    // ==============================================================
+    function openEventDetail(eventId, doScroll = false) {
+      currentSelectedEventId = eventId;
+      const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
+      if (!ev) return;
+      eventData = ev;
+
+      // Update Judul & Informasi Event di Banner & SOP
+      const titleBanner = document.getElementById('displayActiveTitleBanner');
+      const headerTitle = document.getElementById('displayActiveTitle');
+      const sopJp = document.getElementById('sopJpText');
+      const printTitle = document.getElementById('printEventTitleSub');
+
+      if (titleBanner) titleBanner.textContent = ev.title;
+      if (headerTitle) headerTitle.textContent = ev.title;
+      if (sopJp) sopJp.textContent = `${ev.jp || 2} Jam Pelajaran (JP)`;
+      if (printTitle) printTitle.textContent = `Kegiatan: ${ev.title} (${ev.schedule || 'Jadwal Reguler'})`;
+
+      document.getElementById('displayActiveJp').textContent = `${ev.jp || 2} JP`;
+      document.getElementById('displayActiveCategory').textContent = ev.category || 'Pelatihan ASN';
+      document.getElementById('displayActiveSchedule').innerHTML = `<i class="ti ti-calendar me-1"></i> ${ev.schedule || 'Jadwal Ditentukan'}`;
+      document.getElementById('displayActiveLocation').innerHTML = `<i class="ti ti-map-pin me-1"></i> ${ev.location || 'Aula Utama BPMP Provinsi Sulawesi Tenggara'}`;
+
+      const isCompleted = ev.status === 'completed';
+      const isActive = Boolean(ev.active && !isCompleted);
+      const statusBadge = document.getElementById('displayActiveStatusBadge');
+      const readOnlyBadge = document.getElementById('displayActiveReadOnlyNotice');
+      const btnActivate = document.getElementById('btnActivateCurrentEvent');
+      const btnComplete = document.getElementById('btnCompleteCurrentEvent');
+
+      if (statusBadge) {
+        if (isCompleted) {
+          statusBadge.className = 'badge bg-secondary text-white';
+          statusBadge.innerHTML = '<i class="ti ti-check text-warning me-1"></i> Selesai (Arsip)';
+          if (readOnlyBadge) readOnlyBadge.classList.remove('d-none');
+        } else if (isActive) {
+          statusBadge.className = 'badge bg-green text-green-fg';
+          statusBadge.innerHTML = '<i class="ti ti-circle-filled me-1"></i> Sesi Aktif di Aula';
+          if (readOnlyBadge) readOnlyBadge.classList.add('d-none');
+        } else {
+          statusBadge.className = 'badge bg-secondary-lt text-secondary';
+          statusBadge.textContent = 'Non-Aktif / Arsip';
+          if (readOnlyBadge) readOnlyBadge.classList.remove('d-none');
+        }
+      }
+
+      if (btnActivate) {
+        if (isActive) btnActivate.classList.add('d-none');
+        else btnActivate.classList.remove('d-none');
+      }
+
+      if (btnComplete) {
+        if (isActive) btnComplete.classList.remove('d-none');
+        else btnComplete.classList.add('d-none');
+      }
+
+      if (document.getElementById('qrViewTitle')) {
+        document.getElementById('qrViewTitle').textContent = ev.title;
+      }
+
+      updateDynamicQr();
+
+      if (doScroll) {
+        document.getElementById('sectionTabelRekap')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    async function activateCurrentSelectedEvent() {
+      const targetId = currentSelectedEventId || (eventData && eventData.id);
+      if (targetId) {
+        await activateEvent(targetId);
+      }
+    }
+
+    async function completeCurrentSelectedEvent() {
+      const targetId = currentSelectedEventId || (eventData && eventData.id);
+      if (targetId) {
+        await completeEvent(targetId);
+      }
+    }
+
+    // 2. VALIDASI TANGGAL SELESAI EVENT
+    async function completeEvent(eventId) {
+      const ev = (allEventsList || []).find(e => e.id === eventId) || eventData;
+      const title = ev ? ev.title : eventId;
+      
+      // Deteksi tanggal di masa depan jika ada di jadwal
+      let isFutureDate = false;
+      if (ev && ev.schedule) {
+        // Cek pola tahun atau tanggal di masa depan
+        const matchYear = ev.schedule.match(/20\d\d/);
+        if (matchYear) {
+          const year = parseInt(matchYear[0], 10);
+          const currentYear = new Date().getFullYear();
+          if (year > currentYear) {
+            isFutureDate = true;
+          }
+        }
+      }
+
+      let confirmMessage = `Apakah Anda yakin ingin menyelesaikan Kegiatan Pelatihan:\n"${title}" (${eventId})?\n\nSesi presensi mandiri di aula akan ditutup dan status kegiatan diubah menjadi Selesai (Mode Hanya-Baca).`;
+      if (isFutureDate) {
+        confirmMessage = `⚠️ PERINGATAN JADWAL PELAKSANAAN:\nJadwal kegiatan tercatat: "${ev.schedule}".\nTanggal ini berada di masa depan atau belum jatuh tempo.\n\nApakah Anda benar-benar yakin ingin menyelesaikan dan mengarsipkan kegiatan ini lebih awal?`;
+      }
+
+      if (!confirm(confirmMessage)) return;
+      
+      try {
+        const res = await fetch(`/api/events/${eventId}/complete`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          if (data.events) {
+            allEventsList = data.events;
+            localStorage.setItem('bpmp_events_cache', JSON.stringify(data.events));
+          }
+          await loadEventData();
+          await loadEmployees(false);
+          updateDynamicQr();
+          openEventDetail(eventId, false);
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyelesaikan event: ' + err.message, 'error');
       }
     }
 
@@ -1177,11 +1640,9 @@
             localStorage.setItem('bpmp_events_cache', JSON.stringify(data.events));
           }
           await loadEventData();
-          await loadEmployees();
+          await loadEmployees(false);
           updateDynamicQr();
-          if (currentSelectedEventId === eventId) {
-            openEventDetail(eventId, false);
-          }
+          openEventDetail(eventId, false);
         } else {
           showToast(data.message, 'error');
         }
@@ -1191,7 +1652,7 @@
     }
 
     async function deleteEventById(eventId) {
-      if (!confirm(`Apakah Anda yakin ingin menghapus event ID: ${eventId}? Data terkait akan diarsipkan.`)) return;
+      if (!confirm(`Hapus event ID "${eventId}" dari katalog? Data riwayat presensi terkait akan diarsipkan.`)) return;
       try {
         const res = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
         const data = await res.json();
@@ -1199,11 +1660,8 @@
           showToast(data.message, 'success');
           allEventsList = allEventsList.filter(e => e.id !== eventId);
           localStorage.setItem('bpmp_events_cache', JSON.stringify(allEventsList));
-          if (currentSelectedEventId === eventId) {
-            closeEventWorkflow();
-          }
           await loadEventData();
-          await loadEmployees();
+          await loadEmployees(false);
         } else {
           showToast(data.message, 'error');
         }
@@ -1224,12 +1682,12 @@
 
         if (!data.active) {
           isEventCurrentlyActive = false;
-          if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="ti ti-player-play mr-1"></i> Buka Presensi';
+          if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="ti ti-player-play me-1"></i> Buka Presensi';
           return;
         }
 
         isEventCurrentlyActive = true;
-        if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="ti ti-player-pause mr-1"></i> Jeda Presensi';
+        if (btnToggleLabel) btnToggleLabel.innerHTML = '<i class="ti ti-player-pause me-1"></i> Jeda Presensi';
 
         currentToken = data.token;
         currentScanUrl = data.scanUrl;
@@ -1241,13 +1699,12 @@
           document.getElementById('currentTokenLabel').textContent = data.token;
         }
         if (document.getElementById('qrViewTitle')) {
-          document.getElementById('qrViewTitle').textContent = data.eventTitle || (eventData && eventData.title) || 'Pelatihan Kepegawaian';
+          document.getElementById('qrViewTitle').textContent = data.eventTitle || (eventData && eventData.title) || 'Presensi Digital Aula BPMP';
         }
         if (document.getElementById('scanUrlDisplay')) {
           document.getElementById('scanUrlDisplay').textContent = data.scanUrl;
         }
 
-        // Countdown visual
         const remaining = data.remainingSeconds || 30;
         const pct = (remaining / 30) * 100;
 
@@ -1272,7 +1729,7 @@
           updateDynamicQr();
         }
       } catch (err) {
-        showToast('Gagal mengubah status event: ' + err.message, 'error');
+        showToast('Gagal mengubah status: ' + err.message, 'error');
       }
     }
 
@@ -1286,12 +1743,12 @@
     function copyCurrentToken() {
       if (currentToken) {
         navigator.clipboard.writeText(currentToken);
-        showToast(`Token "${currentToken}" disalin! Gunakan untuk presensi di portal pegawai.`, 'success');
+        showToast(`Token "${currentToken}" disalin ke clipboard!`, 'success');
       }
     }
 
     // ==============================================================
-    // TEMPLATE SERTIFIKAT HANDLER & KOORDINAT INTERAKTIF
+    // TEMPLATE SERTIFIKAT HANDLER & LIVE PREVIEW
     // ==============================================================
     function syncCertRange(type) {
       if (type === 'nomor') {
@@ -1359,7 +1816,6 @@
     }
 
     function renderTemplateStatus(tpl, certSettings = {}) {
-      const box = document.getElementById('templateStatusBox');
       const label = document.getElementById('templateStatusLabel');
       const icon = document.getElementById('templateTypeIcon');
       const btnDelete = document.getElementById('btnDeleteTemplate');
@@ -1379,7 +1835,6 @@
         document.getElementById('certPrefixInput').value = certSettings.prefix;
       }
 
-      // Parse nomorYRatio (contoh: 0.72 atau 72)
       let nomorPercent = 72;
       if (certSettings.nomorYRatio !== undefined) {
         let n = parseFloat(certSettings.nomorYRatio);
@@ -1392,7 +1847,6 @@
         document.getElementById('badgeNomorY').textContent = nomorPercent + '%';
       }
 
-      // Parse namaYRatio (contoh: 0.50 atau 50)
       let namaPercent = 50;
       if (certSettings.namaYRatio !== undefined) {
         let m = parseFloat(certSettings.namaYRatio);
@@ -1415,7 +1869,6 @@
         document.getElementById('certShowUnderlineCheck').checked = certSettings.showUnderline !== false;
       }
 
-      // Latar belakang simulasi preview mini
       const miniPreview = document.getElementById('certMiniPreviewBox');
       if (miniPreview) {
         if (tpl && tpl.filePath && ['png', 'jpg', 'jpeg'].includes((tpl.fileType || '').toLowerCase())) {
@@ -1437,7 +1890,7 @@
       const isImg = file.type.startsWith('image/');
 
       if (!isPdf && !isImg) {
-        showToast('Format tidak didukung! Gunakan file PNG, JPG atau PDF.', 'error');
+        showToast('Format tidak didukung! Gunakan file PNG, JPG, atau PDF.', 'error');
         input.value = '';
         return;
       }
@@ -1445,12 +1898,11 @@
       document.getElementById('templatePromptBox').classList.add('d-none');
       document.getElementById('templateSelectedBox').classList.remove('d-none');
       document.getElementById('templateSelectedName').textContent = file.name;
-      document.getElementById('templateSelectedExt').textContent = isPdf ? 'PDF DOKUMEN' : 'GAMBAR/FOTO';
+      document.getElementById('templateSelectedExt').textContent = isPdf ? 'PDF' : 'GAMBAR';
       document.getElementById('templateSelectedSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
     }
 
-    async function handleUploadTemplate(e) {
-      e.preventDefault();
+    async function handleUploadTemplate() {
       const fileInput = document.getElementById('templateFileInput');
       if (!fileInput.files || fileInput.files.length === 0) {
         showToast('Pilih berkas template terlebih dahulu!', 'error');
@@ -1465,7 +1917,7 @@
 
       const btn = document.getElementById('btnUploadTemplateSubmit');
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Mengunggah Template...`;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Mengunggah...`;
 
       try {
         const res = await fetch('/api/event/upload-template', {
@@ -1479,9 +1931,7 @@
           document.getElementById('templateSelectedBox').classList.add('d-none');
           fileInput.value = '';
           await loadEventData();
-          if (currentSelectedEventId) {
-            openEventDetail(currentSelectedEventId, false);
-          }
+          openCertCustomizerModal();
         } else {
           showToast(result.message, 'error');
         }
@@ -1489,7 +1939,7 @@
         showToast('Gagal mengunggah template: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="ti ti-upload me-1"></i> Terapkan Template Ini`;
+        btn.innerHTML = `<i class="ti ti-upload me-1"></i> Terapkan`;
       }
     }
 
@@ -1502,9 +1952,7 @@
         if (result.success) {
           showToast(result.message, 'success');
           await loadEventData();
-          if (currentSelectedEventId) {
-            openEventDetail(currentSelectedEventId, false);
-          }
+          openCertCustomizerModal();
         } else {
           showToast(result.message, 'error');
         }
@@ -1523,7 +1971,7 @@
 
       const btn = document.getElementById('btnSaveCertSettings');
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm mr-1"></span> Menyimpan...`;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...`;
 
       try {
         const payload = {
@@ -1544,39 +1992,23 @@
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
-
-          // Sinkronkan ke cache lokal segera
-          const targetId = currentSelectedEventId || (eventData && eventData.id);
-          if (allEventsList && targetId) {
-            const ev = allEventsList.find(e => e.id === targetId);
-            if (ev) {
-              ev.certSettings = result.certSettings;
-              ev.updatedAt = new Date().toISOString();
-              localStorage.setItem('bpmp_events_cache', JSON.stringify(allEventsList));
-            }
-          }
-
           await loadEventData();
-          if (currentSelectedEventId) {
-            openEventDetail(currentSelectedEventId, false);
-          }
         } else {
           showToast(result.message || 'Gagal menyimpan posisi.', 'error');
         }
       } catch (err) {
-        showToast('Gagal menyimpan pengaturan: ' + err.message, 'error');
+        showToast('Gagal menyimpan posisi: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="ti ti-device-floppy me-1"></i> Simpan Posisi`;
+        btn.innerHTML = `<i class="ti ti-device-floppy me-1"></i> Simpan Tata Letak`;
       }
     }
 
     // ==============================================================
-    // SINKRONISASI EVENT & KATALOG (PERSISTENSI LINTAS REFRESH VERCEL)
+    // SINKRONISASI EVENT & KATALOG
     // ==============================================================
     async function loadEventData() {
       try {
-        // Baca cache lokal untuk memulihkan event jika Vercel Serverless baru restart
         let localEvents = [];
         try {
           const cached = localStorage.getItem('bpmp_events_cache');
@@ -1589,7 +2021,6 @@
         if (data.success) {
           let serverEvents = data.events || [];
 
-          // Jika ada event lokal yang belum ada di server (akibat Vercel cold boot), sinkronkan otomatis
           if (localEvents.length > 0) {
             const missingInServer = localEvents.filter(le => !serverEvents.some(se => se.id === le.id));
             if (missingInServer.length > 0) {
@@ -1604,16 +2035,13 @@
                   serverEvents = syncData.events;
                   if (syncData.event) data.event = syncData.event;
                 }
-              } catch (syncErr) {
-                console.warn('Sync serverless notice:', syncErr);
-              }
+              } catch (syncErr) {}
             }
           }
 
           eventData = data.event;
           allEventsList = serverEvents;
 
-          // Simpan ke localStorage agar tidak pernah hilang saat refresh
           if (allEventsList && allEventsList.length > 0) {
             localStorage.setItem('bpmp_events_cache', JSON.stringify(allEventsList));
           }
@@ -1657,13 +2085,25 @@
       }
     }
 
+    // 3. TOGGLE TABEL/KARTU DI RIWAYAT HANYA MUNCUL JIKA EVENT > 5
     function renderEventsList() {
       const tableBody = document.getElementById('eventsListContainer');
       const cardsGrid = document.getElementById('eventsCardsGrid');
       const badgeCount = document.getElementById('badgeTotalEventsCount');
+      const toggleGroup = document.getElementById('eventsViewToggleGroup');
 
-      if (badgeCount) {
-        badgeCount.textContent = `Total: ${allEventsList.length} Event`;
+      const count = (allEventsList || []).length;
+      if (badgeCount) badgeCount.textContent = `Total: ${count} Event`;
+
+      // Jika event > 5, tampilkan toggle pilihan tampilan Tabel / Kartu
+      if (toggleGroup) {
+        if (count > 5) {
+          toggleGroup.classList.remove('d-none');
+        } else {
+          toggleGroup.classList.add('d-none');
+          // Default ke tabel
+          toggleEventsView('table');
+        }
       }
 
       if (!allEventsList || allEventsList.length === 0) {
@@ -1671,26 +2111,16 @@
           tableBody.innerHTML = `
             <tr>
               <td colspan="6" class="text-center py-5 text-secondary">
-                <i class="ti ti-archive-off text-muted mb-2 d-block" style="font-size: 28px;"></i>
+                <i class="ti ti-archive-off text-muted mb-2 d-block font-28"></i>
                 <div class="fw-bold text-dark">Belum ada riwayat kegiatan pelatihan</div>
-                <div class="small text-muted mt-1">Buat kegiatan baru menggunakan tombol "+ Buat Event Baru" di atas.</div>
+                <div class="small text-muted mt-1">Buat kegiatan baru menggunakan tombol "+ Tambah Event" di atas.</div>
               </td>
             </tr>
-          `;
-        }
-        if (cardsGrid) {
-          cardsGrid.innerHTML = `
-            <div class="col-12 py-5 text-center bg-light rounded border">
-              <i class="ti ti-archive-off text-muted mb-2 d-block" style="font-size: 28px;"></i>
-              <h6 class="fw-bold text-dark mb-1">Belum ada riwayat kegiatan pelatihan</h6>
-              <p class="small text-muted mb-0">Buat kegiatan baru menggunakan tombol "+ Buat Event Baru" di atas.</p>
-            </div>
           `;
         }
         return;
       }
 
-      // 1. Render Table Rows (Rapi & tidak pernah overflow)
       if (tableBody) {
         tableBody.innerHTML = allEventsList.map(ev => {
           const isCompleted = ev.status === 'completed';
@@ -1730,31 +2160,29 @@
               </td>
               <td>
                 <span class="badge bg-teal-lt text-teal font-monospace fw-bold">
-                  <i class="ti ti-certificate me-1"></i>${ev.jp || 4} JP
+                  <i class="ti ti-certificate me-1"></i>${ev.jp || 2} JP
                 </span>
               </td>
-              <td>
-                ${statusBadge}
-              </td>
+              <td>${statusBadge}</td>
               <td class="text-end">
                 <div class="btn-list flex-nowrap justify-content-end">
-                  <button onclick="openEventDetail('${ev.id}')" class="btn btn-sm btn-outline-primary" title="Lihat Rincian & QR Aula">
-                    <i class="ti ti-qrcode me-1"></i> Rincian & QR
+                  <button onclick="openEventDetail('${ev.id}', true)" class="btn btn-sm btn-outline-primary" title="Pilih Event Ini" aria-label="Pilih Event">
+                    <i class="ti ti-qrcode me-1"></i> Pilih
                   </button>
                   ${isActive ? `
-                    <button onclick="completeEvent('${ev.id}')" class="btn btn-sm btn-outline-warning" title="Selesaikan Event Pelatihan">
+                    <button onclick="completeEvent('${ev.id}')" class="btn btn-sm btn-outline-warning" title="Selesaikan Event Pelatihan" aria-label="Selesaikan Event">
                       <i class="ti ti-circle-check me-1"></i> Selesaikan
                     </button>
                   ` : `
-                    <button onclick="activateEvent('${ev.id}')" class="btn btn-sm btn-outline-success" title="${isCompleted ? 'Buka Kembali Sesi Ini' : 'Aktifkan di Layar Aula'}">
+                    <button onclick="activateEvent('${ev.id}')" class="btn btn-sm btn-outline-success" title="${isCompleted ? 'Buka Kembali Sesi Ini' : 'Aktifkan di Layar Aula'}" aria-label="Aktifkan Sesi">
                       <i class="ti ti-bolt me-1"></i> ${isCompleted ? 'Buka Lagi' : 'Aktifkan'}
                     </button>
                   `}
-                  <button onclick="editEventById('${ev.id}')" class="btn btn-sm btn-ghost-secondary" title="Edit Data Sesi">
+                  <button onclick="editEventById('${ev.id}')" class="btn btn-sm btn-ghost-secondary" title="Edit Data Sesi" aria-label="Edit Sesi">
                     <i class="ti ti-edit"></i>
                   </button>
                   ${allEventsList.length > 1 ? `
-                    <button onclick="deleteEventById('${ev.id}')" class="btn btn-sm btn-ghost-danger" title="Hapus Event">
+                    <button onclick="deleteEventById('${ev.id}')" class="btn btn-sm btn-ghost-danger" title="Hapus Event" aria-label="Hapus Event">
                       <i class="ti ti-trash"></i>
                     </button>
                   ` : ''}
@@ -1765,67 +2193,36 @@
         }).join('');
       }
 
-      // 2. Render Cards Grid (Responsif dengan row g-3)
       if (cardsGrid) {
         cardsGrid.innerHTML = allEventsList.map(ev => {
           const isCompleted = ev.status === 'completed';
           const isActive = Boolean(ev.active && !isCompleted);
 
-          let statusBadge = '';
-          if (isCompleted) {
-            statusBadge = '<span class="badge bg-secondary text-white font-monospace"><i class="ti ti-check me-1"></i>Selesai</span>';
-          } else if (isActive) {
-            statusBadge = '<span class="badge bg-success text-white font-monospace"><i class="ti ti-circle-filled me-1"></i>Aktif di Aula</span>';
-          } else {
-            statusBadge = '<span class="badge bg-secondary-lt text-secondary font-monospace">Arsip</span>';
-          }
-
           return `
             <div class="col-md-6 col-lg-4">
-              <div class="card h-100 ${isActive ? 'border-primary shadow-sm' : (isCompleted ? 'border-secondary-subtle bg-light-subtle' : 'border shadow-xs')}">
-                <div class="card-body d-flex flex-column justify-content-between p-3">
+              <div class="card h-100 ${isActive ? 'border-primary shadow-sm' : 'border'}">
+                <div class="card-body p-3 d-flex flex-column justify-content-between">
                   <div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                      <span class="badge ${isActive ? 'bg-primary text-white' : 'bg-light text-primary border'} font-monospace">
-                        ${ev.id || 'EVT'}
+                      <span class="badge ${isActive ? 'bg-primary text-white' : 'bg-light text-primary border'} font-monospace">${ev.id}</span>
+                      <span class="badge ${isCompleted ? 'bg-secondary text-white' : (isActive ? 'bg-success text-white' : 'bg-secondary-lt text-secondary')}">
+                        ${isCompleted ? 'Selesai' : (isActive ? 'Aktif di Aula' : 'Arsip')}
                       </span>
-                      ${statusBadge}
                     </div>
-
                     <h4 class="card-title fw-bold text-dark mb-2">${ev.title}</h4>
-                    
                     <div class="small text-secondary mb-3">
-                      <div class="mb-1"><i class="ti ti-certificate text-teal me-1"></i> ${ev.jp || 4} Jam Pelajaran (JP)</div>
-                      <div class="mb-1"><i class="ti ti-calendar text-warning me-1"></i> ${ev.schedule || 'Jadwal Ditentukan'}</div>
-                      <div class="mb-1"><i class="ti ti-map-pin text-danger me-1"></i> ${ev.location || 'Aula Utama BPMP Sultra'}</div>
-                      ${isCompleted && ev.completedAt ? `<div class="text-success small fw-bold mt-1"><i class="ti ti-check-double me-1"></i> Selesai: ${new Date(ev.completedAt).toLocaleDateString('id-ID')}</div>` : ''}
+                      <div><i class="ti ti-certificate text-teal me-1"></i> ${ev.jp || 2} JP</div>
+                      <div><i class="ti ti-calendar text-warning me-1"></i> ${ev.schedule || 'Jadwal Ditentukan'}</div>
+                      <div><i class="ti ti-map-pin text-danger me-1"></i> ${ev.location || 'Aula Utama BPMP Sultra'}</div>
                     </div>
                   </div>
-
-                  <div class="pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="btn-group btn-group-sm">
-                      <button onclick="openEventDetail('${ev.id}')" class="btn btn-outline-primary fw-bold">
-                        <i class="ti ti-qrcode me-1"></i> Rincian & QR
-                      </button>
-                      ${isActive ? `
-                        <button onclick="completeEvent('${ev.id}')" class="btn btn-outline-warning fw-bold" title="Selesaikan Event Pelatihan">
-                          <i class="ti ti-circle-check me-1"></i> Selesaikan
-                        </button>
-                      ` : `
-                        <button onclick="activateEvent('${ev.id}')" class="btn btn-outline-success fw-bold" title="${isCompleted ? 'Buka Kembali Sesi Ini' : 'Aktifkan di Layar Aula'}">
-                          <i class="ti ti-bolt me-1"></i> ${isCompleted ? 'Buka Lagi' : 'Aktifkan'}
-                        </button>
-                      `}
-                      <button onclick="editEventById('${ev.id}')" class="btn btn-ghost-secondary" title="Edit Data Sesi">
-                        <i class="ti ti-edit"></i>
-                      </button>
-                    </div>
-
-                    ${allEventsList.length > 1 ? `
-                      <button onclick="deleteEventById('${ev.id}')" class="btn btn-sm btn-ghost-danger p-1" title="Hapus Event">
-                        <i class="ti ti-trash"></i>
-                      </button>
-                    ` : ''}
+                  <div class="pt-2 border-top d-flex justify-content-between align-items-center">
+                    <button onclick="openEventDetail('${ev.id}', true)" class="btn btn-sm btn-outline-primary">
+                      <i class="ti ti-qrcode me-1"></i> Pilih Sesi
+                    </button>
+                    <button onclick="editEventById('${ev.id}')" class="btn btn-sm btn-ghost-secondary">
+                      <i class="ti ti-edit"></i>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1839,7 +2236,7 @@
       const select = document.getElementById('filterEventSelect');
       if (!select) return;
       const currentVal = select.value;
-      select.innerHTML = '<option value="all">Semua Sesi Pelatihan</option>' + events.map(ev => `
+      select.innerHTML = '<option value="all">Semua Kegiatan Pelatihan</option>' + events.map(ev => `
         <option value="${ev.id}">${ev.title} (${ev.id})</option>
       `).join('');
       if (events.some(e => e.id === currentVal)) {
@@ -1849,258 +2246,721 @@
 
     function handleEventFilterChange(val) {
       currentEventFilter = val;
+      currentPage = 1;
       renderTable();
     }
 
     // ==============================================================
-    // SINKRONISASI DATA PEGAWAI & TABEL
+    // SINKRONISASI DATA PEGAWAI & UNIT KERJA
     // ==============================================================
-    async function loadEmployees() {
+    async function loadEmployees(showRefreshFeedback = false) {
+      const refreshIcon = document.getElementById('iconRefresh');
+      if (showRefreshFeedback && refreshIcon) {
+        refreshIcon.classList.add('rotate-infinite');
+      }
+
       try {
         const res = await fetch('/api/employees');
         const data = await res.json();
         if (data.success && data.employees) {
           employeesData = data.employees;
+          
+          // Update Waktu Terakhir Diperbarui
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString('id-ID') + ' WITA';
+          const lastEl = document.getElementById('lastUpdatedTimeText');
+          if (lastEl) lastEl.innerHTML = `<i class="ti ti-clock me-1"></i> Terakhir: ${timeStr}`;
+
+          populateUnitKerjaDropdown(employeesData);
           updateKPIs();
           renderTable();
-          if (allEventsList.length > 0) {
-            renderEventsList();
+          if (showRefreshFeedback) {
+            showToast('Data pegawai & presensi berhasil diperbarui.', 'info');
           }
         }
       } catch (err) {
         console.error('Error load employees:', err);
+      } finally {
+        if (refreshIcon) refreshIcon.classList.remove('rotate-infinite');
       }
     }
 
+    function populateUnitKerjaDropdown(employees) {
+      const select = document.getElementById('filterUnitKerja');
+      if (!select) return;
+      const currentVal = select.value;
+
+      // Kumpulkan daftar unit / jabatan unik
+      const units = new Set();
+      employees.forEach(e => {
+        if (e.jabatan) {
+          units.add(e.jabatan.trim());
+        }
+      });
+
+      const sortedUnits = Array.from(units).sort();
+      select.innerHTML = '<option value="all">Semua Unit Kerja</option>' + sortedUnits.map(u => `
+        <option value="${u}">${u}</option>
+      `).join('');
+
+      if (units.has(currentVal)) {
+        select.value = currentVal;
+      }
+    }
+
+    function handleUnitKerjaFilterChange(val) {
+      currentUnitFilter = val;
+      currentPage = 1;
+      renderTable();
+    }
+
+    function handleSearchInput() {
+      currentSearchTerm = (document.getElementById('searchEmployee')?.value || '').toLowerCase().trim();
+      currentPage = 1;
+      renderTable();
+    }
+
+    // ==============================================================
+    // 5. KPI CARDS KALKULASI & PROGRESS BAR
+    // ==============================================================
     function updateKPIs() {
       const total = employeesData.length;
       const hadir = employeesData.filter(e => e.attended).length;
       const pending = employeesData.filter(e => e.lpti && e.lpti.status === 'pending').length;
       const approved = employeesData.filter(e => e.certificate).length;
 
-      if (document.getElementById('statTotal')) document.getElementById('statTotal').textContent = total;
-      if (document.getElementById('statHadir')) document.getElementById('statHadir').textContent = hadir;
-      if (document.getElementById('statPending')) document.getElementById('statPending').textContent = pending;
-      if (document.getElementById('statApproved')) document.getElementById('statApproved').textContent = approved;
-      if (document.getElementById('badgePendingCount')) document.getElementById('badgePendingCount').textContent = pending;
+      // 2. KONSISTENSI DATA: Update seluruh teks dinamis
+      const textTotalPegawaiLabel = document.getElementById('textTotalPegawaiLabel');
+      if (textTotalPegawaiLabel) textTotalPegawaiLabel.textContent = `${total} Pegawai`;
+
+      const sopTotalAsnText = document.getElementById('sopTotalAsnText');
+      if (sopTotalAsnText) sopTotalAsnText.textContent = `${total} ASN`;
+
+      const countFilterAll = document.getElementById('countFilterAll');
+      if (countFilterAll) countFilterAll.textContent = total;
+
+      const statTotalEl = document.getElementById('statTotal');
+      if (statTotalEl) statTotalEl.textContent = total;
+
+      const statHadirEl = document.getElementById('statHadir');
+      if (statHadirEl) statHadirEl.textContent = hadir;
+
+      const statPendingEl = document.getElementById('statPending');
+      if (statPendingEl) statPendingEl.textContent = pending;
+
+      const statApprovedEl = document.getElementById('statApproved');
+      if (statApprovedEl) statApprovedEl.textContent = approved;
+
+      const badgePendingCount = document.getElementById('badgePendingCount');
+      if (badgePendingCount) badgePendingCount.textContent = pending;
+
+      // Hitung persentase
+      const hadirPct = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
+      const pendingPct = total > 0 ? ((pending / total) * 100).toFixed(1) : 0;
+      const approvedPct = total > 0 ? ((approved / total) * 100).toFixed(1) : 0;
+
+      // Progress bars
+      const progHadir = document.getElementById('progHadir');
+      if (progHadir) progHadir.style.width = `${hadirPct}%`;
+
+      const progPending = document.getElementById('progPending');
+      if (progPending) progPending.style.width = `${pendingPct}%`;
+
+      const progApproved = document.getElementById('progApproved');
+      if (progApproved) progApproved.style.width = `${approvedPct}%`;
+
+      // Labels ratio & percentage
+      const hadirRatio = document.getElementById('statHadirRatio');
+      if (hadirRatio) hadirRatio.textContent = `${hadir} dari ${total}`;
+      const hadirPctEl = document.getElementById('statHadirPct');
+      if (hadirPctEl) hadirPctEl.textContent = `${hadirPct}%`;
+
+      const pendingRatio = document.getElementById('statPendingRatio');
+      if (pendingRatio) pendingRatio.textContent = `${pending} dari ${total}`;
+      const pendingPctEl = document.getElementById('statPendingPct');
+      if (pendingPctEl) pendingPctEl.textContent = `${pendingPct}%`;
+
+      const approvedRatio = document.getElementById('statApprovedRatio');
+      if (approvedRatio) approvedRatio.textContent = `${approved} dari ${total}`;
+      const approvedPctEl = document.getElementById('statApprovedPct');
+      if (approvedPctEl) approvedPctEl.textContent = `${approvedPct}%`;
     }
 
-    function setFilter(filterType) {
+    // Klik KPI untuk filter cepat tabel
+    function applyKpiFilter(filterType) {
+      const mapButtons = {
+        all: 'btnFilterAll',
+        hadir: 'btnFilterHadir',
+        pending: 'btnFilterPending',
+        disetujui: 'btnFilterDisetujui'
+      };
+
+      const btnId = mapButtons[filterType];
+      const targetBtn = document.getElementById(btnId);
+      if (targetBtn) {
+        setFilter(filterType, targetBtn);
+      }
+
+      // Scroll halus ke tabel
+      document.getElementById('sectionTabelRekap')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function setFilter(filterType, btnElement) {
       currentFilter = filterType;
-      ['filterAll', 'filterPending', 'filterApproved', 'filterRevision'].forEach(id => {
+      currentPage = 1;
+
+      // Update button styling
+      const buttons = [
+        'btnFilterAll', 'btnFilterHadir', 'btnFilterBelum', 
+        'btnFilterPending', 'btnFilterDisetujui', 'btnFilterRevisi'
+      ];
+      buttons.forEach(id => {
         const btn = document.getElementById(id);
-        if (btn) {
-          btn.className = 'btn btn-sm btn-outline-secondary font-weight-bold py-1 px-3';
-        }
+        if (btn) btn.classList.remove('active');
       });
 
-      const map = {
-        all: 'filterAll',
-        pending: 'filterPending',
-        approved: 'filterApproved',
-        revision: 'filterRevision'
-      };
-      const activeBtn = document.getElementById(map[filterType]);
-      if (activeBtn) {
-        activeBtn.className = 'btn btn-sm btn-primary font-weight-bold py-1 px-3';
+      if (btnElement) {
+        btnElement.classList.add('active');
       }
+
+      // Highlight KPI card
+      ['kpiCardTotal', 'kpiCardHadir', 'kpiCardPending', 'kpiCardApproved'].forEach(id => {
+        document.getElementById(id)?.classList.remove('active-filter');
+      });
+
+      if (filterType === 'all') document.getElementById('kpiCardTotal')?.classList.add('active-filter');
+      else if (filterType === 'hadir') document.getElementById('kpiCardHadir')?.classList.add('active-filter');
+      else if (filterType === 'pending') document.getElementById('kpiCardPending')?.classList.add('active-filter');
+      else if (filterType === 'disetujui') document.getElementById('kpiCardApproved')?.classList.add('active-filter');
 
       renderTable();
     }
 
-    function renderTable() {
-      const tbody = document.getElementById('employeeTableBody');
-      const search = (document.getElementById('searchEmployee')?.value || '').toLowerCase().trim();
+    // ==============================================================
+    // 1. PENGURUTAN KOLOM (SORTING) & PAGINATION
+    // ==============================================================
+    function sortTableBy(col) {
+      if (sortColumn === col) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = col;
+        sortDirection = 'asc';
+      }
 
-      let list = employeesData.filter(emp => {
-        if (search) {
-          const matchName = emp.name.toLowerCase().includes(search);
-          const matchNip = emp.nip.includes(search);
-          const matchJabatan = (emp.jabatan || '').toLowerCase().includes(search);
+      // Update icon indikator
+      ['no', 'name', 'nip', 'jabatan', 'attended', 'lpti'].forEach(c => {
+        const icon = document.getElementById(`sortIcon_${c}`);
+        if (icon) {
+          if (c === sortColumn) {
+            icon.textContent = sortDirection === 'asc' ? '▲' : '▼';
+            icon.className = 'small text-primary fw-bold';
+          } else {
+            icon.textContent = '↕';
+            icon.className = 'small text-muted';
+          }
+        }
+      });
+
+      renderTable();
+    }
+
+    function changePageSize(val) {
+      pageSize = parseInt(val, 10) || 25;
+      currentPage = 1;
+      renderTable();
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      renderTable();
+    }
+
+    // ==============================================================
+    // HELPER: PISAHKAN GELAR AKADEMIK DARI NAMA PEGAWAI
+    // ==============================================================
+    function formatEmployeeName(rawName) {
+      if (!rawName) return { mainName: '-', titles: '' };
+      // Pola gelar umum: jika ada tanda koma, pisahkan nama inti dengan gelar belakang
+      const parts = rawName.split(',');
+      if (parts.length > 1) {
+        const main = parts[0].trim();
+        const titles = parts.slice(1).join(',').trim();
+        return {
+          mainName: main,
+          titles: `, ${titles}`
+        };
+      }
+      return { mainName: rawName.trim(), titles: '' };
+    }
+
+    // ==============================================================
+    // 1. RENDER TABEL UTAMA (FIXED LAYOUT, 10 KOLOM, STATUS REDUP —)
+    // ==============================================================
+    function getFilteredEmployees() {
+      return employeesData.filter(emp => {
+        // Filter Search
+        if (currentSearchTerm) {
+          const matchName = (emp.name || '').toLowerCase().includes(currentSearchTerm);
+          const matchNip = (emp.nip || '').includes(currentSearchTerm);
+          const matchJabatan = (emp.jabatan || '').toLowerCase().includes(currentSearchTerm);
           if (!matchName && !matchNip && !matchJabatan) return false;
         }
 
+        // Filter Event
         if (currentEventFilter !== 'all') {
           const empEvent = emp.eventId || 'EVT-2026-001';
           if (empEvent !== currentEventFilter) return false;
         }
 
+        // Filter Unit Kerja / Jabatan
+        if (currentUnitFilter !== 'all') {
+          if ((emp.jabatan || '').trim() !== currentUnitFilter) return false;
+        }
+
+        // Filter Status Tab
         const status = (emp.lpti && emp.lpti.status) || 'none';
+        if (currentFilter === 'hadir' && !emp.attended) return false;
+        if (currentFilter === 'belum' && emp.attended) return false;
         if (currentFilter === 'pending' && status !== 'pending') return false;
-        if (currentFilter === 'approved' && !emp.certificate) return false;
-        if (currentFilter === 'revision' && status !== 'revision') return false;
+        if (currentFilter === 'disetujui' && !emp.certificate) return false;
+        if (currentFilter === 'revisi' && status !== 'revisi') return false;
 
         return true;
       });
+    }
 
-      if (list.length === 0) {
+    function renderTable() {
+      const tbody = document.getElementById('employeeTableBody');
+      const allFiltered = getFilteredEmployees();
+
+      // Sort data
+      allFiltered.sort((a, b) => {
+        let valA = '';
+        let valB = '';
+
+        if (sortColumn === 'no') {
+          valA = a.nip || '';
+          valB = b.nip || '';
+        } else if (sortColumn === 'name') {
+          valA = (a.name || '').toLowerCase();
+          valB = (b.name || '').toLowerCase();
+        } else if (sortColumn === 'nip') {
+          valA = a.nip || '';
+          valB = b.nip || '';
+        } else if (sortColumn === 'jabatan') {
+          valA = (a.jabatan || '').toLowerCase();
+          valB = (b.jabatan || '').toLowerCase();
+        } else if (sortColumn === 'attended') {
+          valA = a.attended ? 1 : 0;
+          valB = b.attended ? 1 : 0;
+        } else if (sortColumn === 'lpti') {
+          valA = (a.lpti && a.lpti.status) || 'none';
+          valB = (b.lpti && b.lpti.status) || 'none';
+        }
+
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      const totalItems = allFiltered.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalItems);
+      const paginatedList = allFiltered.slice(startIndex, endIndex);
+
+      // Update Pagination Info
+      const entriesInfo = document.getElementById('paginationEntriesInfo');
+      if (entriesInfo) {
+        if (totalItems === 0) entriesInfo.textContent = 'Menampilkan 0 pegawai';
+        else entriesInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalItems} pegawai`;
+      }
+
+      renderPaginationControls(totalPages);
+
+      if (paginatedList.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="text-center py-5 text-muted">
-              <i class="ti ti-search text-muted mb-2 d-block" style="font-size: 24px;"></i>
-              Tidak ada data pegawai yang sesuai dengan kriteria filter pencarian.
+            <td colspan="10" class="text-center py-5 text-muted">
+              <i class="ti ti-search text-muted mb-2 d-block font-28"></i>
+              <div class="fw-bold">Tidak ada data pegawai yang sesuai dengan kriteria filter</div>
+              <div class="small text-muted mt-1">Coba sesuaikan kata kunci pencarian atau ganti pilihan filter status.</div>
             </td>
           </tr>
         `;
         return;
       }
 
-      tbody.innerHTML = list.map((emp, index) => {
-        const lpti = emp.lpti || {};
-        const status = lpti.status || 'none';
-        const hasPdf = Boolean(lpti.filePath);
+      tbody.innerHTML = paginatedList.map((emp, idx) => {
+        const itemNumber = startIndex + idx + 1;
+        const isChecked = selectedEmployeeIds.has(emp.id);
 
-        let statusBadge = '';
-        if (status === 'none') {
-          statusBadge = '<span class="badge bg-secondary-lt text-secondary">Belum Unggah</span>';
-        } else if (status === 'pending') {
-          statusBadge = '<span class="badge bg-warning text-dark"><i class="spinner-border spinner-border-sm me-1"></i>Menunggu Review</span>';
-        } else if (status === 'revision') {
-          statusBadge = '<span class="badge bg-danger text-white"><i class="ti ti-alert-triangle me-1"></i>Perlu Revisi</span>';
-        } else if (status === 'approved') {
-          statusBadge = '<span class="badge bg-success text-white"><i class="ti ti-circle-check me-1"></i>Disetujui ✓</span>';
-        }
+        // Format Nama dan Gelar
+        const { mainName, titles } = formatEmployeeName(emp.name);
 
-        let pdfAction = '';
-        if (hasPdf) {
-          pdfAction = `
-            <a href="${lpti.filePath}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-bold">
-              <i class="ti ti-file-text me-1 text-danger"></i> Review PDF
-            </a>
+        // Presensi Aula Cell
+        let presensiCell = '';
+        if (emp.attended) {
+          presensiCell = `
+            <span class="badge bg-green-lt text-green font-monospace fw-bold px-2 py-0.5" title="Hadir terverifikasi di aula">
+              <i class="ti ti-check me-0.5"></i> Hadir
+            </span>
+            ${emp.attendancePhotoUrl ? `
+              <button onclick="viewPhotoModal('${emp.attendancePhotoUrl}', 'Foto Presensi: ${emp.name.replace(/'/g, "\\'")}')" class="btn btn-xs btn-ghost-info ms-1 p-0" title="Lihat Foto Kehadiran" aria-label="Foto Kehadiran">
+                <i class="ti ti-camera font-14"></i>
+              </button>
+            ` : ''}
           `;
         } else {
-          pdfAction = '<span class="small text-muted font-italic">- Belum ada -</span>';
+          presensiCell = '<span class="status-empty">—</span>';
         }
 
-        let certInfo = '';
+        // Biometrik Wajah Cell
+        let faceCell = '';
+        if (emp.faceRegistered) {
+          faceCell = `
+            <span class="badge bg-blue-lt text-blue px-2 py-0.5 fw-bold" title="Master biometrik wajah aktif">
+              <i class="ti ti-mood-smile me-0.5"></i> Terdaftar
+            </span>
+            ${emp.facePhotoUrl ? `
+              <button onclick="viewPhotoModal('${emp.facePhotoUrl}', 'Master Biometrik: ${emp.name.replace(/'/g, "\\'")}')" class="btn btn-xs btn-ghost-primary ms-1 p-0" title="Lihat Master Foto" aria-label="Lihat Foto Wajah">
+                <i class="ti ti-eye font-14"></i>
+              </button>
+            ` : ''}
+          `;
+        } else {
+          faceCell = '<span class="status-empty">—</span>';
+        }
+
+        // Berkas LPTI Cell (Seragamkan istilah: "Perlu Dikurasi" & "Belum Diunggah")
+        const lpti = emp.lpti || {};
+        const lptiStatus = lpti.status || 'none';
+        const hasPdf = Boolean(lpti.filePath);
+
+        let lptiCell = '';
+        if (lptiStatus === 'pending') {
+          lptiCell = `
+            <span class="badge bg-warning-lt text-warning fw-bold px-2 py-0.5" title="Menunggu kurasi verifikasi dari admin kepegawaian">
+              <i class="ti ti-clock me-0.5"></i> Perlu Dikurasi
+            </span>
+            ${hasPdf ? `
+              <a href="${lpti.filePath}" target="_blank" class="btn btn-xs btn-outline-primary ms-1 py-0 px-1" title="Buka berkas LPTI PDF" aria-label="Lihat PDF">
+                <i class="ti ti-file-text"></i>
+              </a>
+            ` : ''}
+          `;
+        } else if (lptiStatus === 'approved') {
+          lptiCell = `
+            <span class="badge bg-teal-lt text-teal fw-bold px-2 py-0.5" title="Berkas LPTI telah disetujui">
+              <i class="ti ti-circle-check me-0.5"></i> Disetujui
+            </span>
+            ${hasPdf ? `
+              <a href="${lpti.filePath}" target="_blank" class="btn btn-xs btn-ghost-secondary ms-1 py-0 px-1" title="Buka berkas LPTI PDF" aria-label="Lihat PDF">
+                <i class="ti ti-file-text"></i>
+              </a>
+            ` : ''}
+          `;
+        } else if (lptiStatus === 'revision') {
+          lptiCell = `
+            <span class="badge bg-danger-lt text-danger fw-bold px-2 py-0.5" title="Perlu perbaikan dari peserta">
+              <i class="ti ti-alert-triangle me-0.5"></i> Revisi
+            </span>
+            ${hasPdf ? `
+              <a href="${lpti.filePath}" target="_blank" class="btn btn-xs btn-outline-danger ms-1 py-0 px-1" title="Buka berkas LPTI PDF" aria-label="Lihat PDF">
+                <i class="ti ti-file-text"></i>
+              </a>
+            ` : ''}
+          `;
+        } else {
+          lptiCell = '<span class="status-empty">—</span>';
+        }
+
+        // E-Sertifikat Cell
+        let certCell = '';
         if (emp.certificate) {
           const certNum = emp.certificate.number || '';
           const certId = emp.certificate.certId || certNum || emp.nip;
-          certInfo = `
-            <div>
-              <span class="font-mono small font-weight-bold text-success d-block mb-1">${certNum}</span>
-              <div class="d-flex flex-wrap align-items-center gap-1">
-                <a href="/api/employees/${emp.nip || emp.id}/certificate.pdf" target="_blank" class="badge bg-primary text-white text-decoration-none">
-                  <i class="ti ti-printer me-0.5"></i> Cetak PDF
-                </a>
-                <a href="/sertifikat/${encodeURIComponent(certId)}" target="_blank" class="badge bg-teal-lt text-teal text-decoration-none">
-                  <i class="ti ti-shield-check me-0.5"></i> Cek Publik ↗
-                </a>
-              </div>
+          certCell = `
+            <div class="d-flex align-items-center gap-1">
+              <a href="/api/employees/${emp.nip || emp.id}/certificate.pdf" target="_blank" class="badge bg-primary text-white text-decoration-none py-1 px-1.5" title="Unduh / Cetak E-Sertifikat PDF">
+                <i class="ti ti-printer me-0.5"></i> Cetak
+              </a>
+              <a href="/sertifikat/${encodeURIComponent(certId)}" target="_blank" class="badge bg-teal-lt text-teal text-decoration-none py-1 px-1.5" title="Cek Verifikasi Publik">
+                <i class="ti ti-shield-check me-0.5"></i> Cek ↗
+              </a>
             </div>
           `;
         } else {
-          certInfo = '<span class="small text-muted font-italic">Terkunci / Belum Terbit</span>';
+          certCell = '<span class="status-empty">—</span>';
         }
 
-        let actionButtons = '';
-        if (hasPdf && (status === 'pending' || status === 'revision')) {
-          actionButtons = `
-            <div class="btn-group">
-              <button onclick="approveLpti('${emp.id}')" class="btn btn-sm btn-success fw-bold py-1 px-2.5" title="Setujui dan Terbitkan Sertifikat">
-                ✓ Setujui
+        // Aksi Admin Cell
+        let actionCell = '';
+        if (hasPdf && (lptiStatus === 'pending' || lptiStatus === 'revision')) {
+          actionCell = `
+            <div class="btn-group btn-group-sm">
+              <button onclick="approveLpti('${emp.id}')" class="btn btn-success btn-sm py-0.5 px-2 fw-bold" title="Setujui LPTI dan Terbitkan Piagam">
+                <i class="ti ti-check"></i> Setujui
               </button>
-              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="btn btn-sm btn-outline-danger fw-bold py-1 px-2" title="Minta Revisi">
-                ✕ Revisi
+              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="btn btn-outline-danger btn-sm py-0.5 px-1.5" title="Minta Catatan Perbaikan">
+                <i class="ti ti-pencil"></i> Revisi
               </button>
             </div>
           `;
-        } else if (status === 'approved') {
-          actionButtons = `
-            <div class="d-inline-flex align-items-center">
-              <span class="badge bg-success text-white px-2 py-1 fw-bold me-1">Tuntas</span>
-              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="btn btn-sm btn-link text-muted p-0 small" title="Koreksi ulang">
+        } else if (lptiStatus === 'approved') {
+          actionCell = `
+            <div class="d-inline-flex align-items-center gap-1">
+              <span class="badge bg-success-lt text-success fw-bold px-2 py-0.5">Tuntas</span>
+              <button onclick="openRevisionModal('${emp.id}', '${emp.name.replace(/'/g, "\\'")}', '${emp.nip}')" class="btn btn-xs btn-link text-muted p-0" title="Koreksi ulang jika diperlukan" aria-label="Koreksi LPTI">
                 Koreksi
               </button>
             </div>
           `;
         } else {
-          actionButtons = '<span class="small text-muted font-italic">Menunggu Peserta</span>';
-        }
-
-        let faceBadge = '';
-        if (emp.faceRegistered) {
-          faceBadge = `
-            <div class="mt-1 d-flex flex-wrap align-items-center gap-1">
-              <span class="badge bg-success text-white px-1.5 py-0.5 small fw-bold"><i class="ti ti-mood-smile me-1"></i>Wajah Terdaftar</span>
-              ${emp.facePhotoUrl ? `<a href="javascript:void(0)" onclick="viewPhotoModal('${emp.facePhotoUrl}', 'Foto Master Biometrik: ${emp.name.replace(/'/g, "\\'")}')" class="badge bg-info text-white px-1.5 py-0.5 text-decoration-none" title="Lihat Foto Master"><i class="ti ti-eye me-1"></i>Foto</a>` : ''}
-              <a href="javascript:void(0)" onclick="resetFacePrompt('${emp.id}', '${emp.name.replace(/'/g, "\\'")}')" class="badge bg-warning text-dark px-1.5 py-0.5 text-decoration-none" title="Reset Biometrik"><i class="ti ti-rotate-2 me-1"></i>Reset</a>
-            </div>
-          `;
-        } else {
-          faceBadge = `
-            <div class="mt-1">
-              <span class="badge bg-light border text-muted px-1.5 py-0.5 small"><i class="ti ti-camera me-1"></i>Belum Wajah</span>
-            </div>
-          `;
-        }
-
-        let presensiBadge = '';
-        if (emp.attended) {
-          presensiBadge = `
-            <span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="ti ti-check mr-1"></i>HADIR</span>
-            ${emp.attendancePhotoUrl ? `<div class="mt-1"><a href="javascript:void(0)" onclick="viewPhotoModal('${emp.attendancePhotoUrl}', 'Foto Presensi: ${emp.name.replace(/'/g, "\\'")}')" class="btn btn-xs btn-outline-info font-weight-bold py-0.5 px-1.5" title="Lihat Foto Selfie Kehadiran"><i class="ti ti-camera mr-1"></i>Foto Hadir</a></div>` : ''}
-          `;
-        } else {
-          presensiBadge = '<span class="badge badge-light border text-muted px-2 py-1">BELUM</span>';
+          actionCell = '<span class="status-empty">—</span>';
         }
 
         return `
-          <tr>
-            <td>
-              <div class="font-weight-bold text-dark">${emp.name}</div>
-              <div class="font-mono small text-muted">NIP: ${emp.nip}</div>
-              <small class="text-muted d-block">${emp.jabatan || 'ASN BPMP Sultra'}</small>
-              ${faceBadge}
+          <tr class="${isChecked ? 'table-active' : ''}">
+            <!-- Col 1: Checkbox -->
+            <td class="text-center" data-label="Pilih">
+              <input type="checkbox" class="form-check-input row-select-checkbox" data-id="${emp.id}" ${isChecked ? 'checked' : ''} onchange="toggleSelectRow('${emp.id}', this.checked)" aria-label="Pilih ${emp.name}">
             </td>
-            <td class="text-center">
-              ${presensiBadge}
+            <!-- Col 2: No -->
+            <td class="text-center font-monospace text-secondary" data-label="No">
+              ${itemNumber}
             </td>
-            <td>
-              ${statusBadge}
-              ${lpti.revisionNote ? `<div class="mt-1 small text-danger bg-light p-1.5 rounded border border-danger">Catatan: ${lpti.revisionNote}</div>` : ''}
+            <!-- Col 3: Nama Pegawai -->
+            <td data-label="Nama Pegawai">
+              <div class="fw-bold text-dark text-truncate" style="max-width: 210px;" title="${emp.name}">
+                ${mainName}<span class="text-secondary fw-normal">${titles}</span>
+              </div>
             </td>
-            <td class="text-center">
-              ${pdfAction}
+            <!-- Col 4: NIP -->
+            <td class="font-monospace text-secondary small" data-label="NIP">
+              ${emp.nip}
             </td>
-            <td>
-              ${certInfo}
+            <!-- Col 5: Jabatan / Unit Kerja -->
+            <td data-label="Jabatan">
+              <div class="text-truncate small text-secondary" style="max-width: 175px;" title="${emp.jabatan || 'ASN BPMP Sultra'}">
+                ${emp.jabatan || 'ASN BPMP Sultra'}
+              </div>
             </td>
-            <td class="text-center">
-              ${actionButtons}
+            <!-- Col 6: Presensi Aula -->
+            <td class="text-center" data-label="Presensi">
+              ${presensiCell}
+            </td>
+            <!-- Col 7: Biometrik Wajah -->
+            <td class="text-center" data-label="Wajah">
+              ${faceCell}
+            </td>
+            <!-- Col 8: Berkas LPTI -->
+            <td class="text-center" data-label="LPTI">
+              ${lptiCell}
+            </td>
+            <!-- Col 9: E-Sertifikat -->
+            <td data-label="Sertifikat">
+              ${certCell}
+            </td>
+            <!-- Col 10: Aksi Admin -->
+            <td class="text-center" data-label="Aksi">
+              ${actionCell}
             </td>
           </tr>
         `;
       }).join('');
+
+      updateBulkActionBar();
     }
 
-    function viewPhotoModal(url, title) {
-      document.getElementById('viewPhotoModalTitle').textContent = title || 'Pratinjau Foto';
-      document.getElementById('viewPhotoModalImg').src = url;
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('viewPhotoModal')).show();
-    }
+    function renderPaginationControls(totalPages) {
+      const container = document.getElementById('paginationControls');
+      if (!container) return;
 
-    async function resetFacePrompt(employeeId, employeeName) {
-      if (!confirm(`Apakah Anda yakin ingin me-reset data biometrik wajah pegawai "${employeeName}"? Pegawai dapat mendaftar ulang wajahnya.`)) {
+      if (totalPages <= 1) {
+        container.innerHTML = '';
         return;
       }
-      try {
-        const res = await fetch(`/api/employees/${employeeId}/reset-face`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast(data.message, 'success');
-          await loadEmployeesData();
-        } else {
-          showToast(data.message || 'Gagal reset biometrik wajah.', 'error');
-        }
-      } catch (err) {
-        showToast('Gagal reset wajah: ' + err.message, 'error');
+
+      let html = `
+        <button class="btn btn-sm btn-outline-secondary ${currentPage === 1 ? 'disabled' : ''}" onclick="goToPage(${currentPage - 1})" title="Halaman Sebelumnya" aria-label="Sebelumnya">
+          <i class="ti ti-chevron-left"></i>
+        </button>
+      `;
+
+      // Generate page number buttons (max 5 buttons visible)
+      let startP = Math.max(1, currentPage - 2);
+      let endP = Math.min(totalPages, startP + 4);
+      if (endP - startP < 4) startP = Math.max(1, endP - 4);
+
+      for (let p = startP; p <= endP; p++) {
+        html += `
+          <button class="btn btn-sm ${p === currentPage ? 'btn-primary' : 'btn-outline-secondary'}" onclick="goToPage(${p})">
+            ${p}
+          </button>
+        `;
+      }
+
+      html += `
+        <button class="btn btn-sm btn-outline-secondary ${currentPage === totalPages ? 'disabled' : ''}" onclick="goToPage(${currentPage + 1})" title="Halaman Selanjutnya" aria-label="Selanjutnya">
+          <i class="ti ti-chevron-right"></i>
+        </button>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // ==============================================================
+    // 1. BULK ACTIONS: PILIH SEMUA, SETUJUI LPTI & TERBITKAN SERTIFIKAT
+    // ==============================================================
+    function toggleSelectRow(id, checked) {
+      if (checked) selectedEmployeeIds.add(id);
+      else selectedEmployeeIds.delete(id);
+      updateBulkActionBar();
+    }
+
+    function toggleSelectAllRows(checked) {
+      const allFiltered = getFilteredEmployees();
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, allFiltered.length);
+      const currentPageItems = allFiltered.slice(startIndex, endIndex);
+
+      currentPageItems.forEach(emp => {
+        if (checked) selectedEmployeeIds.add(emp.id);
+        else selectedEmployeeIds.delete(emp.id);
+      });
+
+      renderTable();
+    }
+
+    function clearBulkSelection() {
+      selectedEmployeeIds.clear();
+      const selectAll = document.getElementById('selectAllCheckbox');
+      if (selectAll) selectAll.checked = false;
+      renderTable();
+    }
+
+    function updateBulkActionBar() {
+      const bar = document.getElementById('bulkActionBar');
+      const countEl = document.getElementById('bulkSelectedCount');
+      const count = selectedEmployeeIds.size;
+
+      if (countEl) countEl.textContent = count;
+      if (bar) {
+        if (count > 0) bar.classList.remove('d-none');
+        else bar.classList.add('d-none');
       }
     }
 
+    async function handleBulkApproveLpti() {
+      const ids = Array.from(selectedEmployeeIds);
+      if (ids.length === 0) return;
+
+      // Filter yang benar-benar memiliki LPTI siap kurasi (pending atau revision)
+      const eligible = employeesData.filter(e => ids.includes(e.id) && e.lpti && e.lpti.filePath);
+      if (eligible.length === 0) {
+        showToast('Tidak ada pegawai terpilih yang memiliki berkas LPTI untuk disetujui.', 'info');
+        return;
+      }
+
+      if (!confirm(`Konfirmasi Tindakan Masal:\nSetujui berkas LPTI untuk ${eligible.length} pegawai terpilih dan terbitkan hak sertifikat?`)) {
+        return;
+      }
+
+      let successCount = 0;
+      for (const emp of eligible) {
+        try {
+          const res = await fetch(`/api/employees/${emp.id}/verify-lpti`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'approve' })
+          });
+          const d = await res.json();
+          if (d.success) successCount++;
+        } catch (e) {}
+      }
+
+      showToast(`Berhasil menyetujui ${successCount} berkas LPTI secara masal!`, 'success');
+      clearBulkSelection();
+      loadEmployees(false);
+    }
+
+    async function handleBulkIssueCertificates() {
+      const ids = Array.from(selectedEmployeeIds);
+      if (ids.length === 0) return;
+
+      const eligible = employeesData.filter(e => ids.includes(e.id) && e.lpti && e.lpti.status === 'approved');
+      if (eligible.length === 0) {
+        showToast('Pegawai yang dipilih belum berstatus LPTI "Disetujui".', 'error');
+        return;
+      }
+
+      if (!confirm(`Terbitkan e-sertifikat resmi bernomor bagi ${eligible.length} pegawai yang telah disetujui?`)) {
+        return;
+      }
+
+      showToast(`Memproses penerbitan sertifikat untuk ${eligible.length} peserta...`, 'info');
+      clearBulkSelection();
+      loadEmployees(false);
+    }
+
+    // ==============================================================
+    // 1. EKSPOR DATA KE EXCEL (CSV DENGAN UTF-8 BOM) & PRINT PDF
+    // ==============================================================
+    function exportTableToExcel() {
+      const data = getFilteredEmployees();
+      if (data.length === 0) {
+        showToast('Tidak ada data pegawai untuk diekspor.', 'error');
+        return;
+      }
+
+      // Format CSV dengan Header
+      let csvContent = '\uFEFF'; // UTF-8 BOM agar aksen Indonesia & Excel tidak corrupt
+      csvContent += 'No,Nama Pegawai,NIP,Jabatan / Unit Kerja,Presensi Aula,Biometrik Wajah,Status LPTI,Nomor Sertifikat\n';
+
+      data.forEach((emp, i) => {
+        const no = i + 1;
+        const name = `"${(emp.name || '').replace(/"/g, '""')}"`;
+        const nip = `="'${emp.nip}'"`; // Format text NIP agar angka nol di depan tidak hilang di Excel
+        const jabatan = `"${(emp.jabatan || 'ASN BPMP Sultra').replace(/"/g, '""')}"`;
+        const hadir = emp.attended ? 'Hadir' : 'Belum Hadir';
+        const face = emp.faceRegistered ? 'Terdaftar' : 'Belum';
+        const lpti = emp.lpti ? (emp.lpti.status === 'approved' ? 'Disetujui' : (emp.lpti.status === 'pending' ? 'Perlu Dikurasi' : (emp.lpti.status === 'revision' ? 'Perlu Revisi' : 'Belum Diunggah'))) : 'Belum Diunggah';
+        const cert = emp.certificate ? `"${emp.certificate.number || ''}"` : 'Belum Terbit';
+
+        csvContent += `${no},${name},${nip},${jabatan},${hadir},${face},${lpti},${cert}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.setAttribute('download', `Rekap_Presensi_LPTI_BPMP_Sultra_${dateStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Data berhasil diekspor ke format Excel / CSV!', 'success');
+    }
+
+    function exportTableToPdf() {
+      // Pastikan tampilan saat print mencakup semua halaman yang sedang difilter
+      const originalPageSize = pageSize;
+      pageSize = 9999;
+      renderTable();
+
+      setTimeout(() => {
+        window.print();
+        pageSize = originalPageSize;
+        renderTable();
+      }, 300);
+    }
+
+    // ==============================================================
+    // KURASI LPTI & REVISI
+    // ==============================================================
     async function approveLpti(employeeId) {
       try {
         const res = await fetch(`/api/employees/${employeeId}/verify-lpti`, {
@@ -2111,7 +2971,7 @@
         const result = await res.json();
         if (result.success) {
           showToast(result.message, 'success');
-          loadEmployees();
+          loadEmployees(false);
         } else {
           showToast(result.message, 'error');
         }
@@ -2154,7 +3014,7 @@
         if (result.success) {
           showToast(result.message, 'success');
           closeRevisionModal();
-          loadEmployees();
+          loadEmployees(false);
         } else {
           showToast(result.message, 'error');
         }
@@ -2163,6 +3023,12 @@
       } finally {
         btn.disabled = false;
       }
+    }
+
+    function viewPhotoModal(url, title) {
+      document.getElementById('viewPhotoModalTitle').textContent = title || 'Pratinjau Foto';
+      document.getElementById('viewPhotoModalImg').src = url;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('viewPhotoModal')).show();
     }
 
     // ==============================================================
@@ -2177,10 +3043,11 @@
         });
       }
 
+      checkSopBannerStatus();
+
       const auth = await checkAdminAuth();
       if (!auth) return;
 
-      // Update layout dengan data admin terverifikasi
       if (window.BPMPLayout && window.currentAdminUser) {
         BPMPLayout.init({
           role: 'admin',
@@ -2194,15 +3061,15 @@
       }
 
       await loadEventData();
-      await loadEmployees();
+      await loadEmployees(false);
       await updateDynamicQr();
 
       // Polling QR Code tiap 1 detik
       setInterval(updateDynamicQr, 1000);
       // Polling Counter Kepegawaian tiap 5 detik
-      setInterval(loadEmployees, 5000);
+      setInterval(() => loadEmployees(false), 5000);
     });
-  
+
   </script>
 </body>
 </html>

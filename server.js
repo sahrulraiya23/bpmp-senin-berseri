@@ -339,7 +339,8 @@ app.get('/api/auth/admin-check', (req, res) => {
   if (!admin) {
     return res.status(401).json({ success: false, authenticated: false, message: 'Sesi admin tidak valid atau telah berakhir.' });
   }
-  res.json({ success: true, authenticated: true, admin });
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production' || Boolean(process.env.VERCEL);
+  res.json({ success: true, authenticated: true, admin, isProduction });
 });
 
 // 3. Admin Logout

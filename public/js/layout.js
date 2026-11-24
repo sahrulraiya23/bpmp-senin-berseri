@@ -175,8 +175,7 @@ const BPMPLayout = {
           <div class="row text-center align-items-center flex-row-reverse">
             <div class="col-lg-auto ms-lg-auto">
               <ul class="list-inline list-inline-dots mb-0 small text-muted">
-                <li class="list-inline-item"><span class="badge bg-teal-lt"><i class="ti ti-check me-1"></i> Tabler Bootstrap 5</span></li>
-                <li class="list-inline-item"><span class="badge bg-blue-lt"><i class="ti ti-database me-1"></i> Supabase Cloud</span></li>
+                <li class="list-inline-item">BPMP Provinsi Sulawesi Tenggara &bull; Kementerian Pendidikan Dasar dan Menengah</li>
               </ul>
             </div>
             <div class="col-12 col-lg-auto mt-3 mt-lg-0">
