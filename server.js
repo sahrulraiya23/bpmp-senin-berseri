@@ -354,33 +354,190 @@ app.post('/api/auth/admin-logout', (req, res) => {
   res.json({ success: true, message: 'Anda telah berhasil keluar dari dashboard admin.' });
 });
 
+// ==============================================================
+// 0. PASSWORD HASHING & RATE LIMITING SECURITY HELPERS
+// ==============================================================
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(String(password).trim(), salt, 10000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedPassword) {
+  if (!storedPassword || !password) return false;
+  const cleanPass = String(password).trim();
+  const cleanStored = String(storedPassword).trim();
+
+  // Format salt:hash
+  if (cleanStored.includes(':')) {
+    const [salt, key] = cleanStored.split(':');
+    const hash = crypto.pbkdf2Sync(cleanPass, salt, 10000, 64, 'sha512').toString('hex');
+    return key === hash;
+  }
+
+  // Fallback plain text legacy
+  return cleanPass === cleanStored;
+}
+
+// In-memory Rate Limiter: Map<identifier, { count, firstAttempt, lockedUntil }>
+const loginAttemptTracker = new Map();
+
+function checkLoginRateLimit(identifier) {
+  const now = Date.now();
+  const record = loginAttemptTracker.get(identifier);
+  if (!record) return { allowed: true };
+
+  if (record.lockedUntil && record.lockedUntil > now) {
+    const remainingSeconds = Math.ceil((record.lockedUntil - now) / 1000);
+    const remainingMinutes = Math.ceil(remainingSeconds / 60);
+    return {
+      allowed: false,
+      message: `Terlalu banyak percobaan login yang gagal. Akun dikunci sementara selama ${remainingMinutes} menit demi keamanan. Silakan coba kembali nanti.`
+    };
+  }
+
+  // Reset setelah jendela 5 menit lewat
+  if (now - record.firstAttempt > 300000) {
+    loginAttemptTracker.delete(identifier);
+    return { allowed: true };
+  }
+
+  return { allowed: true };
+}
+
+function recordLoginFailure(identifier) {
+  const now = Date.now();
+  const record = loginAttemptTracker.get(identifier) || { count: 0, firstAttempt: now, lockedUntil: null };
+  record.count += 1;
+  if (record.count >= 5) {
+    record.lockedUntil = now + 300000; // 5 menit
+  }
+  loginAttemptTracker.set(identifier, record);
+}
+
+function clearLoginAttempts(identifier) {
+  loginAttemptTracker.delete(identifier);
+}
+
+// ==============================================================
+// 0. EVENT STATUS DERIVATION & TIME WINDOW HELPERS
+// ==============================================================
+function getEventDerivedStatus(event) {
+  if (!event) return { status: 'none', label: 'Tidak Ada Kegiatan', isPresensiAllowed: false, reason: 'Belum ada kegiatan pelatihan yang aktif.' };
+
+  // Status Selesai / Arsip
+  if (event.status === 'completed') {
+    return {
+      status: 'Selesai',
+      label: 'Selesai (Arsip Kegiatan)',
+      isPresensiAllowed: false,
+      reason: 'Kegiatan pelatihan telah selesai dilaksanakan dan diarsipkan oleh Administrator.'
+    };
+  }
+
+  const now = new Date();
+  const scheduleStr = String(event.schedule || '');
+
+  // Deteksi tahun / tanggal masa depan dalam jadwal
+  const matchYear = scheduleStr.match(/\b(20\d\d)\b/);
+  if (matchYear) {
+    const year = parseInt(matchYear[1], 10);
+    if (year > now.getFullYear()) {
+      return {
+        status: 'Akan Datang',
+        label: 'Akan Datang',
+        isPresensiAllowed: false,
+        reason: `Kegiatan pelatihan dijadwalkan pada ${event.schedule}. Sesi presensi belum dibuka.`
+      };
+    }
+  }
+
+  // Jika status dinonaktifkan / jeda oleh admin
+  if (!event.active) {
+    return {
+      status: 'Akan Datang',
+      label: 'Akan Datang (Presensi Ditutup)',
+      isPresensiAllowed: false,
+      reason: 'Sesi presensi aula saat ini sedang dijeda atau belum dibuka oleh Administrator.'
+    };
+  }
+
+  // Sedang berlangsung
+  return {
+    status: 'Berlangsung',
+    label: 'Sedang Berlangsung',
+    isPresensiAllowed: true,
+    reason: 'Sesi presensi di aula sedang aktif.'
+  };
+}
+
 // 4. Employee Login (Mandiri Pegawai dengan NIP & Password)
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { nip, password } = req.body || {};
+    const { nip, password, isTestUser } = req.body || {};
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production' || Boolean(process.env.VERCEL);
+
     if (!nip || !password) {
       return res.status(400).json({ success: false, message: 'NIP dan Password wajib diisi!' });
     }
 
     const cleanNip = String(nip).trim();
     const cleanPassword = String(password).trim();
+    const rateLimitKey = `${cleanNip}_${ip}`;
+
+    // 1. Tolak login 1-klik / akun testing di lingkungan produksi
+    if (isProduction && (isTestUser || ['sahrul', 'rafli', 'user'].includes(cleanNip.toLowerCase()))) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses uji coba cepat (1-klik) dinonaktifkan di lingkungan produksi.'
+      });
+    }
+
+    // 2. Periksa Rate Limit (5x gagal -> kunci 5 menit)
+    const rateCheck = checkLoginRateLimit(rateLimitKey);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({ success: false, message: rateCheck.message });
+    }
 
     const employee = await db.getEmployeeByIdOrNip(cleanNip);
     if (!employee) {
+      recordLoginFailure(rateLimitKey);
       return res.status(401).json({
         success: false,
-        message: `NIP "${cleanNip}" tidak terdaftar dalam pangkalan data pegawai BPMP Sulawesi Tenggara.`
+        message: 'NIP atau kata sandi tidak valid. Silakan periksa kembali.'
       });
     }
 
     const defaultPassword = 'Bpmp2026!';
-    const expectedPassword = employee.password || defaultPassword;
+    const storedPassword = employee.password || defaultPassword;
 
-    if (cleanPassword !== expectedPassword && cleanPassword !== defaultPassword && cleanPassword !== 'bpmp123') {
+    // Verifikasi Password (hash atau legacy default)
+    let isPasswordCorrect = verifyPassword(cleanPassword, storedPassword);
+    if (!isPasswordCorrect && (cleanPassword === defaultPassword || cleanPassword === 'bpmp123')) {
+      isPasswordCorrect = true;
+    }
+
+    if (!isPasswordCorrect) {
+      recordLoginFailure(rateLimitKey);
       return res.status(401).json({
         success: false,
-        message: 'Password salah! (Gunakan password: bpmp123 atau Bpmp2026!).'
+        message: 'NIP atau kata sandi tidak valid. Silakan periksa kembali.'
       });
+    }
+
+    // Login berhasil -> Bersihkan tracker kegagalan
+    clearLoginAttempts(rateLimitKey);
+
+    // Deteksi apakah pegawai harus ganti kata sandi
+    const isDefaultPass = (cleanPassword === 'bpmp123' || cleanPassword === 'Bpmp2026!' || !String(storedPassword).includes(':'));
+    const mustChangePassword = Boolean(employee.mustChangePassword || isDefaultPass);
+
+    // Auto-hash password legacy di latar belakang
+    if (!String(storedPassword).includes(':')) {
+      try {
+        await db.updateEmployee(employee.id, { password: hashPassword(cleanPassword) });
+      } catch (eHash) {}
     }
 
     const activeEvent = await db.getActiveEvent();
@@ -389,16 +546,69 @@ app.post('/api/auth/login', async (req, res) => {
     return res.json({
       success: true,
       message: `Login berhasil! Selamat datang, ${employee.name}.`,
+      mustChangePassword,
+      isProduction,
       employee: {
         ...safeEmployee,
-        needsFaceRegistration: false
+        needsFaceRegistration: false,
+        faceRegistered: Boolean(employee.faceRegistered)
       },
       redirectUrl: '/pegawai',
       event: activeEvent
     });
   } catch (err) {
     console.error('Error in /api/auth/login:', err);
-    return res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem: ' + err.message });
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem. Silakan coba kembali.' });
+  }
+});
+
+// 5. Ganti Kata Sandi Pegawai (Wajib saat login pertama atau mandiri)
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const { nip, oldPassword, newPassword } = req.body || {};
+    if (!nip || !oldPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'NIP, kata sandi lama, dan kata sandi baru wajib diisi!' });
+    }
+
+    const cleanNip = String(nip).trim();
+    const cleanOld = String(oldPassword).trim();
+    const cleanNew = String(newPassword).trim();
+
+    if (cleanNew.length < 6) {
+      return res.status(400).json({ success: false, message: 'Kata sandi baru minimal 6 karakter!' });
+    }
+    if (cleanNew === 'bpmp123' || cleanNew === 'Bpmp2026!') {
+      return res.status(400).json({ success: false, message: 'Kata sandi baru tidak boleh menggunakan kata sandi default!' });
+    }
+
+    const employee = await db.getEmployeeByIdOrNip(cleanNip);
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
+    }
+
+    const storedPassword = employee.password || 'Bpmp2026!';
+    let isOldValid = verifyPassword(cleanOld, storedPassword);
+    if (!isOldValid && (cleanOld === 'bpmp123' || cleanOld === 'Bpmp2026!')) {
+      isOldValid = true;
+    }
+
+    if (!isOldValid) {
+      return res.status(401).json({ success: false, message: 'Kata sandi lama yang Anda masukkan tidak sesuai.' });
+    }
+
+    const hashedNew = hashPassword(cleanNew);
+    await db.updateEmployee(employee.id, {
+      password: hashedNew,
+      mustChangePassword: false
+    });
+
+    return res.json({
+      success: true,
+      message: 'Kata sandi berhasil diperbarui dengan aman!'
+    });
+  } catch (err) {
+    console.error('Error in /api/auth/change-password:', err);
+    return res.status(500).json({ success: false, message: 'Gagal memperbarui kata sandi: ' + err.message });
   }
 });
 
@@ -429,6 +639,15 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       return res.status(400).json({
         success: false,
         message: 'Presensi ditolak: Belum ada event kegiatan pelatihan yang aktif di aula!'
+      });
+    }
+
+    // Validasi status turunan event & jendela waktu presensi (Server-Side)
+    const derivedStatus = getEventDerivedStatus(activeEvent);
+    if (!derivedStatus.isPresensiAllowed) {
+      return res.status(400).json({
+        success: false,
+        message: `Presensi ditolak: ${derivedStatus.reason}`
       });
     }
 
@@ -977,7 +1196,106 @@ app.get('/api/employees/:id', async (req, res) => {
   if (!targetEvent) {
     targetEvent = await db.getActiveEvent();
   }
-  res.json({ success: true, employee: emp, event: targetEvent });
+  const derivedStatus = getEventDerivedStatus(targetEvent);
+  res.json({ success: true, employee: emp, event: targetEvent, derivedStatus });
+});
+
+// Endpoint Event Mendatang (Akan Datang)
+app.get('/api/events/upcoming', async (req, res) => {
+  try {
+    const allEvents = await db.getAllEvents();
+    const upcomingEvents = (allEvents || [])
+      .filter(ev => ev.status !== 'completed')
+      .map(ev => {
+        const derived = getEventDerivedStatus(ev);
+        return {
+          id: ev.id,
+          title: ev.title,
+          schedule: ev.schedule,
+          location: ev.location,
+          jp: ev.jp || 2,
+          category: ev.category || 'Pelatihan ASN',
+          status: ev.status,
+          active: ev.active,
+          derivedStatus: derived
+        };
+      })
+      .slice(0, 10);
+
+    res.json({ success: true, events: upcomingEvents });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal mengambil event mendatang: ' + err.message });
+  }
+});
+
+// Endpoint Riwayat Pelatihan Khusus Pegawai Login
+app.get('/api/employees/:id/history', async (req, res) => {
+  try {
+    const cleanId = String(req.params.id).trim();
+    const emp = await db.getEmployeeByIdOrNip(cleanId);
+    if (!emp) return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
+
+    const requestedYear = req.query.year ? String(req.query.year).trim() : null;
+    const allEvents = await db.getAllEvents();
+
+    // Bangun daftar riwayat pelatihan yang relevan
+    const historyItems = [];
+    (allEvents || []).forEach(ev => {
+      // Event yang belum lewat tanggal atau dibatalkan dan belum pernah dihadiri pegawai tidak masuk Riwayat
+      const isAttended = Boolean(emp.attended && (emp.eventId === ev.id || !emp.eventId));
+      const isCompleted = ev.status === 'completed';
+      const hasCertificate = Boolean(emp.certificate && (emp.eventId === ev.id || !emp.eventId));
+
+      if (isCompleted || isAttended || hasCertificate) {
+        const yearMatch = (ev.schedule || '').match(/\b(20\d\d)\b/);
+        const itemYear = yearMatch ? yearMatch[1] : '2026';
+
+        if (!requestedYear || requestedYear === 'all' || itemYear === requestedYear) {
+          const lptiStatus = (emp.eventId === ev.id || !emp.eventId) ? (emp.lpti?.status || 'none') : 'none';
+          const lptiNote = (emp.eventId === ev.id || !emp.eventId) ? (emp.lpti?.revisionNote || '') : '';
+          const cert = (emp.eventId === ev.id || !emp.eventId) ? emp.certificate : null;
+
+          historyItems.push({
+            eventId: ev.id,
+            title: ev.title,
+            schedule: ev.schedule,
+            location: ev.location,
+            jp: ev.jp || 2,
+            category: ev.category || 'Pelatihan ASN',
+            year: itemYear,
+            attended: isAttended,
+            attendedAt: isAttended ? (emp.attendedAt || ev.completedAt || 'Terverifikasi') : null,
+            lptiStatus: lptiStatus,
+            lptiRevisionNote: lptiNote,
+            certificate: cert,
+            certificatePdfUrl: cert ? `/api/employees/${emp.nip || emp.id}/certificate.pdf` : null
+          });
+        }
+      }
+    });
+
+    // Hitung total JP yang berhasil diselesaikan (Hadir dan LPTI disetujui / sertifikat terbit)
+    const targetYearJp = parseInt(process.env.TARGET_ANNUAL_JP || '20', 10);
+    const totalJpCompleted = historyItems
+      .filter(item => item.attended && (item.lptiStatus === 'approved' || item.certificate))
+      .reduce((sum, item) => sum + (item.jp || 0), 0);
+
+    res.json({
+      success: true,
+      employee: {
+        id: emp.id,
+        nip: emp.nip,
+        name: emp.name,
+        jabatan: emp.jabatan,
+        faceRegistered: emp.faceRegistered
+      },
+      targetYearJp,
+      totalJpCompleted,
+      history: historyItems
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memuat riwayat pegawai: ' + err.message });
+  }
 });
 
 app.post('/api/employees/:id/upload-lpti', (req, res) => {
