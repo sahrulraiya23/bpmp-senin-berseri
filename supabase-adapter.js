@@ -2692,6 +2692,10 @@ async function saveCertificate(certData) {
     pdf_url: certData.pdfUrl || null,
     crypto_hash: certData.cryptoHash || null,
     crypto_signature: certData.cryptoSignature || null,
+    is_dummy: Boolean(certData.is_dummy || certData.isDummy || false),
+    status: certData.status || 'valid',
+    revoked_at: certData.revoked_at || certData.revokedAt || null,
+    revocation_reason: certData.revocation_reason || certData.revocationReason || null,
     updated_at: now
   };
 
@@ -2748,20 +2752,58 @@ async function getCertificateByIdOrNumber(query) {
   return found || null;
 }
 
-async function getAllCertificates() {
+async function getAllCertificates(includeDummy = false) {
   const client = getClient();
   if (client) {
     try {
-      const { data, error } = await client
-        .from('certificates')
-        .select('*')
-        .order('issued_at', { ascending: false });
+      let query = client.from('certificates').select('*');
+      if (!includeDummy) {
+        query = query.or('is_dummy.is.null,is_dummy.eq.false');
+      }
+      const { data, error } = await query.order('issued_at', { ascending: false });
 
       if (!error && data) return data;
     } catch (e) {}
   }
   const mem = getMemoryStore();
-  return mem.certificates || [];
+  const list = mem.certificates || [];
+  if (!includeDummy) {
+    return list.filter(c => !c.is_dummy && !String(c.id).startsWith('TEST'));
+  }
+  return list;
+}
+
+async function deleteDummyCertificates() {
+  const client = getClient();
+  let deletedCount = 0;
+  if (client) {
+    try {
+      const { error } = await client
+        .from('certificates')
+        .delete()
+        .or('is_dummy.eq.true,id.like.TEST%');
+      if (!error) deletedCount++;
+    } catch (e) {}
+
+    try {
+      await client
+        .from('sertifikat')
+        .delete()
+        .or('is_dummy.eq.true,id.like.TEST%');
+    } catch (e) {}
+  }
+
+  const mem = getMemoryStore();
+  if (mem.certificates) {
+    const before = mem.certificates.length;
+    mem.certificates = mem.certificates.filter(c => !c.is_dummy && !String(c.id).startsWith('TEST'));
+    deletedCount += (before - mem.certificates.length);
+  }
+  if (mem.issuedCertificates) {
+    mem.issuedCertificates = mem.issuedCertificates.filter(c => !c.is_dummy && !String(c.id).startsWith('TEST'));
+  }
+
+  return { success: true, deleted: deletedCount };
 }
 
 // ==============================================================
@@ -3101,6 +3143,7 @@ module.exports = {
   saveCertificate,
   getCertificateByIdOrNumber,
   getAllCertificates,
+  deleteDummyCertificates,
   saveCertificateTemplate,
   getAllCertificateTemplates,
   getCertificateTemplateById,

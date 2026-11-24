@@ -315,8 +315,9 @@ async function generateCertificatePdf({
       const targetVerifyUrl = verifyUrl || `https://bpmp-senin-berseri.vercel.app/sertifikat/${displayCertId}`;
 
       const qrDataUrl = await QRCode.toDataURL(targetVerifyUrl, {
-        margin: 1,
-        width: 180,
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 250,
         color: { dark: '#0c233c', light: '#ffffff' }
       });
       const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');

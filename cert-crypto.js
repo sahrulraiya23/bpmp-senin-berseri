@@ -51,18 +51,59 @@ function initEcdsaKeys() {
   }
 }
 
+// Alfabet 32 karakter bersih tanpa karakter ambigu (tanpa 0, O, 1, I)
+const CLEAN_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
 // Generate clean 12-char alphanumeric ID (Dicoding style e.g. 6RPNYVJL4Z2M)
 function generateCertId(certNumber, nip) {
   const seed = `${String(certNumber).trim().toUpperCase()}|${String(nip).trim()}|BPMP-SULTRA-SALT-2026`;
   const hash = crypto.createHash('sha256').update(seed).digest('hex').toUpperCase();
-  // Filter only clean uppercase alphanumeric without ambiguous characters (O/0, I/1)
-  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let certId = '';
   for (let i = 0; i < 12; i++) {
     const byte = parseInt(hash.substr(i * 2, 2), 16);
-    certId += alphabet[byte % alphabet.length];
+    certId += CLEAN_ALPHABET[byte % CLEAN_ALPHABET.length];
   }
   return certId;
+}
+
+/**
+ * Generate 12-char cryptographically random unique certificate ID
+ * Optional prefix (e.g. 'TEST' for dummy certificates)
+ */
+function generateRandomCertId(prefix = '') {
+  const targetLen = 12;
+  const cleanPrefix = String(prefix || '').toUpperCase().replace(/[^23456789ABCDEFGHJKLMNPQRSTUVWXYZ]/g, '');
+  const neededRandom = Math.max(0, targetLen - cleanPrefix.length);
+  const randomBytes = crypto.randomBytes(neededRandom);
+  let id = cleanPrefix;
+  for (let i = 0; i < neededRandom; i++) {
+    id += CLEAN_ALPHABET[randomBytes[i] % CLEAN_ALPHABET.length];
+  }
+  return id;
+}
+
+/**
+ * Validasi format ID sertifikat (12 karakter aman atau format uji coba resmi SUPA-)
+ */
+function isValidCertIdFormat(id) {
+  if (!id || typeof id !== 'string') return false;
+  const clean = id.trim().toUpperCase();
+  // Standard 12-karakter clean Crockford Base32 (Dicoding-style)
+  if (/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{12}$/.test(clean)) return true;
+  // Format identitas pengujian sistem internal
+  if (/^SUPA-[A-Z0-9-]+$/.test(clean)) return true;
+  return false;
+}
+
+/**
+ * URL basis resmi untuk QR (selalu menggunakan domain produksi bukan preview)
+ */
+function getProductionBaseUrl() {
+  const envUrl = process.env.APP_BASE_URL || process.env.BASE_URL;
+  if (envUrl && !envUrl.includes('vercel.app/preview') && !envUrl.includes('-git-')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  return 'https://bpmp-senin-berseri.vercel.app';
 }
 
 /**
@@ -131,5 +172,9 @@ module.exports = {
   signCertificate,
   verifyCertificateSignature,
   generateCertId,
+  generateRandomCertId,
+  isValidCertIdFormat,
+  getProductionBaseUrl,
+  CLEAN_ALPHABET,
   getPublicKeyPem: () => { initEcdsaKeys(); return bpmpPublicKey; }
 };

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Uji Coba & Pindai E-Sertifikat Dummy - BPMP Provinsi Sulawesi Tenggara</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0c233c">
+
+  <!-- Tabler Core CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+
+  <style>
+    body {
+      background-color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .dummy-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(12, 35, 60, 0.05);
+      transition: all 0.2s ease;
+    }
+    .dummy-card:hover {
+      box-shadow: 0 8px 24px rgba(12, 35, 60, 0.1);
+      transform: translateY(-2px);
+    }
+    .qr-scan-box {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body class="py-4">
+  <div class="container-xl">
+    
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="avatar avatar-md rounded bg-warning text-dark fw-bold">
+            <i class="ti ti-qrcode font-24"></i>
+          </span>
+          <div>
+            <h3 class="fw-bold text-dark mb-0">Konsol Pengujian Verifikasi E-Sertifikat</h3>
+            <span class="badge bg-warning-lt text-warning font-monospace">ZONA PENGUJIAN TEKNIS (DUMMY TESTING)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
+        <a href="/sertifikat" target="_blank" class="btn btn-outline-primary btn-sm">
+          <i class="ti ti-external-link me-1"></i> Buka Portal Publik (/sertifikat)
+        </a>
+        <a href="/admin" class="btn btn-outline-secondary btn-sm">
+          <i class="ti ti-arrow-left me-1"></i> Dashboard Admin
+        </a>
+      </div>
+    </div>
+
+    <!-- Alert Informasi Pengujian -->
+    <div class="alert alert-info border-info-subtle shadow-xs mb-4">
+      <div class="d-flex gap-2">
+        <i class="ti ti-info-circle fs-2 text-info flex-shrink-0"></i>
+        <div>
+          <strong class="d-block text-dark">Panduan Uji Coba Pindai QR dari HP:</strong>
+          <span class="small text-secondary">
+            Di bawah ini adalah 6 variasi sertifikat dummy standar (berawalan <code>TEST</code>). Arahkan kamera ponsel pintar Anda ke kode QR pada masing-masing kartu untuk menguji pemindaian otomatis ke halaman verifikasi resmi berdomain produksi.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid 6 Kartu Sertifikat Dummy -->
+    <div class="row g-3" id="dummyGridContainer">
+      <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="text-secondary small mt-2">Memuat daftar sertifikat dummy...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tabler Core JS & QRCode JS Lib -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    // 6 Variasi Sertifikat Dummy Standar
+    const DEFAULT_DUMMIES = [
+      {
+        id: 'TEST2VALD222',
+        title: 'Kasus 1: Valid, Nama Biasa, QR Sisi Kiri',
+        name: 'Budi Santoso, S.Pd.',
+        eventTitle: 'Pemanfaatan Platform Digital Kepegawaian ASN',
+        dates: '14 April 2026',
+        jp: 2,
+        qrPos: 'kiri',
+        status: 'valid',
+        badge: 'bg-success'
+      },
+      {
+        id: 'TEST3LNGNM33',
+        title: 'Kasus 2: Valid, Nama Sangat Panjang & Bergelar, QR Kanan',
+        name: 'Prof. Dr. Ir. H. Raden Mas Bagus Cokroaminoto Hadiningrat, M.Si., M.Ed., Ph.D.',
+        eventTitle: 'Transformasi Layanan Publik Berkelanjutan',
+        dates: '21 April 2026',
+        jp: 4,
+        qrPos: 'kanan',
+        status: 'valid',
+        badge: 'bg-success'
+      },
+      {
+        id: 'TEST4JUDL444',
+        title: 'Kasus 3: Valid, Judul Pelatihan Panjang (Dua Baris)',
+        name: 'Siti Rahmawati, S.Kom.',
+        eventTitle: 'Pengembangan dan Peningkatan Kompetensi Terpadu Tata Kelola Kepegawaian Berbasis Kecerdasan Buatan dan Big Data Mutu Pendidikan ASN Sulawesi Tenggara',
+        dates: '28 April 2026',
+        jp: 4,
+        qrPos: 'kanan',
+        status: 'valid',
+        badge: 'bg-success'
+      },
+      {
+        id: 'TEST5DTEGP55',
+        title: 'Kasus 4: Valid, Rentang Tanggal Pelatihan',
+        name: 'Ahmad Fauzi, S.T.',
+        eventTitle: 'Lokakarya Penguatan Budaya Kerja BerAKHLAK',
+        dates: '04 s.d. 06 Mei 2026',
+        jp: 12,
+        qrPos: 'kiri',
+        status: 'valid',
+        badge: 'bg-success'
+      },
+      {
+        id: 'TEST6REVKD66',
+        title: 'Kasus 5: Sertifikat Dicabut (Revoked)',
+        name: 'Dewi Sartika Putri, M.A.',
+        eventTitle: 'Strategi Komunikasi Efektif ASN',
+        dates: '11 Mei 2026',
+        jp: 2,
+        qrPos: 'kanan',
+        status: 'revoked',
+        badge: 'bg-danger'
+      },
+      {
+        id: 'TEST7TPLB777',
+        title: 'Kasus 6: Valid, Template Berbeda (Preset B Emerald)',
+        name: 'Hendrik Pratama, S.Sos.',
+        eventTitle: 'Pengelolaan Kinerja Pegawai dan Disiplin ASN',
+        dates: '18 Mei 2026',
+        jp: 2,
+        qrPos: 'kiri',
+        status: 'valid',
+        badge: 'bg-teal'
+      }
+    ];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      let baseUrl = window.location.origin;
+      try {
+        const res = await fetch('/api/admin/dummy-certificates');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.baseUrl) baseUrl = data.baseUrl;
+        }
+      } catch (_) {}
+
+      renderDummyCards(DEFAULT_DUMMIES, baseUrl);
+    });
+
+    function renderDummyCards(dummies, baseUrl) {
+      const container = document.getElementById('dummyGridContainer');
+      container.innerHTML = '';
+
+      dummies.forEach((item, index) => {
+        const verifyUrl = `${baseUrl.replace(/\/$/, '')}/sertifikat/${item.id}`;
+        const isRevoked = item.status === 'revoked';
+
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+        col.innerHTML = `
+          <div class="dummy-card p-3.5 h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge ${item.badge} text-white font-monospace fw-bold">
+                  ${isRevoked ? 'DICABUT' : 'VALID'}
+                </span>
+                <span class="badge bg-light text-dark font-monospace border">
+                  ${item.id}
+                </span>
+              </div>
+
+              <h5 class="fw-bold text-dark mb-1">${item.title}</h5>
+              <div class="text-secondary small mb-2">
+                <strong>Penerima:</strong> <span class="text-dark">${item.name}</span>
+              </div>
+              <div class="text-secondary small mb-2 lh-sm">
+                <strong>Kegiatan:</strong> <span class="text-dark">${item.eventTitle}</span>
+              </div>
+              <div class="text-secondary small mb-3">
+                <strong>Waktu:</strong> ${item.dates} &bull; <strong>Bobot:</strong> ${item.jp} JP
+              </div>
+
+              <!-- Box QR Code untuk dipindai -->
+              <div class="text-center my-3">
+                <div class="qr-scan-box shadow-xs" id="qrContainer_${index}"></div>
+                <div class="text-secondary small mt-1 font-monospace" style="font-size: 0.72rem;">
+                  Pindai dari Kamera HP
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-top d-grid gap-2">
+              <a href="${verifyUrl}" target="_blank" class="btn btn-primary btn-sm fw-bold">
+                <i class="ti ti-external-link me-1"></i> Buka Verifikasi Langsung
+              </a>
+              ${!isRevoked ? `
+                <a href="/api/certificates/${item.id}/preview.pdf" target="_blank" class="btn btn-outline-secondary btn-sm">
+                  <i class="ti ti-download me-1"></i> Unduh PDF Asli
+                </a>
+              ` : `
+                <button class="btn btn-outline-danger btn-sm" disabled>
+                  <i class="ti ti-ban me-1"></i> Berkas PDF Ditiadakan (Dicabut)
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+        container.appendChild(col);
+
+        // Render QR Code pada box
+        setTimeout(() => {
+          const qrBox = document.getElementById(`qrContainer_${index}`);
+          if (qrBox && typeof QRCode !== 'undefined') {
+            qrBox.innerHTML = '';
+            new QRCode(qrBox, {
+              text: verifyUrl,
+              width: 140,
+              height: 140,
+              colorDark: '#0c233c',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          }
+        }, 100);
+      });
+    }
+  </script>
+</body>
+</html>

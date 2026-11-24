@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "seed:sertifikat-dummy": "node scripts/seed-dummy-certificates.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

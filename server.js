@@ -8,7 +8,14 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { generateCertificatePdf } = require('./certificate-generator');
 const certificateService = require('./services/certificate');
-const { signCertificate, generateCertId, verifyCertificateSignature } = require('./cert-crypto');
+const { 
+  signCertificate, 
+  generateCertId, 
+  generateRandomCertId, 
+  isValidCertIdFormat, 
+  getProductionBaseUrl, 
+  verifyCertificateSignature 
+} = require('./cert-crypto');
 // Auto-load .env environment file (Node.js 20+)
 if (typeof process.loadEnvFile === 'function') {
   try {
@@ -2196,166 +2203,229 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
 });
 
 // ========================================================
-// API Verifikasi Data Sertifikat (Kriptografi ECDSA & Dicoding Style)
+// RATE LIMITING & KEAMANAN VERIFIKASI E-SERTIFIKAT PUBLIK
 // ========================================================
-app.get('/api/verify-certificate-data/:query', async (req, res) => {
+const verifyRateLimitMap = new Map();
+function checkVerifyRateLimit(req, res, next) {
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxReq = 40;
+
+  const record = verifyRateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
+  if (now > record.resetTime) {
+    record.count = 1;
+    record.resetTime = now + windowMs;
+  } else {
+    record.count++;
+  }
+  verifyRateLimitMap.set(ip, record);
+
+  // Bersihkan entri kedaluwarsa berkala
+  if (verifyRateLimitMap.size > 1000) {
+    for (const [k, v] of verifyRateLimitMap.entries()) {
+      if (now > v.resetTime) verifyRateLimitMap.delete(k);
+    }
+  }
+
+  if (record.count > maxReq) {
+    return res.status(429).json({
+      success: false,
+      message: 'Terlalu banyak permintaan verifikasi sertifikat dari alamat IP Anda. Silakan coba kembali dalam 1 menit.'
+    });
+  }
+  next();
+}
+
+// ========================================================
+// API Verifikasi Data Sertifikat (Dicoding-Style & Kriptografi)
+// ========================================================
+app.get('/api/verify-certificate-data/:query', checkVerifyRateLimit, async (req, res) => {
   try {
     const rawQuery = decodeURIComponent(req.params.query || '').trim();
     const upperQuery = rawQuery.toUpperCase();
 
-    // 1. CARI LANGSUNG KE TABEL DATABASE 'certificates'
+    // 1. Validasi Format ID: 12 karakter aman tanpa karakter mirip (0/O, 1/I)
+    // Jika tidak valid, kembalikan 404 seragam tanpa membedakan "format salah" vs "tidak ada" (anti-enumerasi)
+    if (!isValidCertIdFormat(upperQuery)) {
+      return res.status(404).json({
+        success: false,
+        found: false,
+        message: 'Sertifikat dengan ID verifikasi tersebut tidak ditemukan dalam pangkalan data resmi.'
+      });
+    }
+
+    // 2. Cari di database certificates
     let dbCert = null;
     if (typeof db.getCertificateByIdOrNumber === 'function') {
       try {
-        dbCert = await db.getCertificateByIdOrNumber(rawQuery);
+        dbCert = await db.getCertificateByIdOrNumber(upperQuery);
       } catch (e) {}
     }
 
-    if (dbCert) {
-      const emp = await db.getEmployeeByIdOrNip(dbCert.nip || dbCert.employee_id);
-      const allEvents = await db.getAllEvents();
-      const event = allEvents.find(ev => ev.id === dbCert.event_id) || (await db.getActiveEvent()) || {};
-      
-      const certCrypto = signCertificate({
-        certNumber: dbCert.certificate_number,
-        employeeNip: dbCert.nip,
-        employeeName: dbCert.name || (emp ? emp.name : 'Pegawai BPMP Sultra'),
-        eventTitle: dbCert.event_title || event.title || 'Pelatihan Kepegawaian ASN',
-        eventJp: event.jp || 32,
-        issuedAt: dbCert.issued_at
-      });
+    // Fallback: periksa token
+    if (!dbCert && typeof db.getCertificateByToken === 'function') {
+      try {
+        dbCert = await db.getCertificateByToken(upperQuery);
+      } catch (e) {}
+    }
 
-      return res.json({
-        success: true,
-        verified: true,
-        certificate: {
-          certId: dbCert.id || certCrypto.certId,
-          number: dbCert.certificate_number,
-          employeeName: dbCert.name || (emp ? emp.name : 'Pegawai BPMP Sultra'),
-          employeeNip: dbCert.nip,
-          employeeJabatan: emp ? emp.jabatan : '',
-          employeeInstansi: emp ? emp.instansi : 'BPMP Provinsi Sulawesi Tenggara',
-          employeePhotoUrl: (emp ? (emp.facePhotoUrl || emp.attendancePhotoUrl) : null),
-          eventTitle: dbCert.event_title || event.title || 'Pelatihan Kepegawaian ASN',
-          eventJp: event.jp || 32,
-          eventCategory: event.category || 'Teknis & Manajerial Kepegawaian',
-          eventSchedule: event.schedule || 'Jadwal Ditentukan',
-          eventLocation: event.location || 'Auditorium BPMP Sultra',
-          issuedAt: dbCert.issued_at,
-          verifier: dbCert.verifier || 'Junaiddin Pagala, S.T., M.T.',
-          verifierTitle: dbCert.verifier_title || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
-          verifierNip: '197606122002121004',
-          cryptoHash: dbCert.crypto_hash || certCrypto.sha256Digest,
-          cryptoSignature: dbCert.crypto_signature || certCrypto.signatureHex,
-          cryptoAlgorithm: 'SHA-256 with ECDSA (secp256k1)',
-          pdfUrl: dbCert.pdf_url || `/api/employees/${dbCert.nip}/certificate.pdf`
+    // Fallback: cari di profil pegawai
+    if (!dbCert) {
+      const employees = await db.getAllEmployees();
+      for (const emp of employees) {
+        if (!emp.certificate || !emp.certificate.number) continue;
+        const certId = generateCertId(emp.certificate.number, emp.nip);
+        if (certId === upperQuery) {
+          dbCert = {
+            id: certId,
+            certificate_number: emp.certificate.number,
+            name: emp.name,
+            nip: emp.nip,
+            event_id: emp.eventId,
+            event_title: emp.eventTitle,
+            issued_at: emp.certificate.issuedAt || new Date().toISOString(),
+            status: 'valid',
+            is_dummy: false
+          };
+          break;
         }
-      });
-    }
-
-    const employees = await db.getAllEmployees();
-    const allEvents = await db.getAllEvents();
-
-    let matchedEmployee = null;
-    let matchedEvent = null;
-
-    // 2. Fallback: Cari di profil tabel employees
-    for (const emp of employees) {
-      if (!emp.certificate || !emp.certificate.number) continue;
-
-      const certNo = String(emp.certificate.number).trim();
-      const certId = generateCertId(certNo, emp.nip);
-
-      if (
-        certId === upperQuery ||
-        certNo === rawQuery ||
-        emp.nip === rawQuery ||
-        certNo.replace(/[^a-zA-Z0-9]/g, '') === rawQuery.replace(/[^a-zA-Z0-9]/g, '')
-      ) {
-        matchedEmployee = emp;
-        matchedEvent = allEvents.find(ev => ev.id === emp.eventId) || (await db.getActiveEvent());
-        break;
       }
     }
 
-    // 2. Fallback / Sample jika belum ada sertifikat terbit di database
-    if (!matchedEmployee) {
-      const sampleCertNo = '0031/C6.26/Sertifikat/KP.04.00/2026';
-      const sampleNip = '198503152010011012';
-      const sampleCertId = generateCertId(sampleCertNo, sampleNip);
-
-      if (
-        upperQuery === sampleCertId ||
-        rawQuery === sampleCertNo ||
-        rawQuery === sampleNip ||
-        upperQuery.includes('6RPNY') ||
-        upperQuery.includes('SAMPLE')
-      ) {
-        matchedEmployee = {
-          name: 'Sri Wahyudi, S.Sos.',
-          nip: sampleNip,
-          jabatan: 'Subbagian Tata Usaha & Kepegawaian',
-          panggol: 'Penata Muda Tk.I (III/b)',
-          instansi: 'Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara',
-          facePhotoUrl: null,
-          certificate: {
-            number: sampleCertNo,
-            issuedAt: '2026-04-22T08:00:00.000Z',
-            verifier: 'Junaiddin Pagala, S.T., M.T.',
-            verifierTitle: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
-            verifierNip: '197606122002121004'
-          }
-        };
-        matchedEvent = (await db.getActiveEvent()) || {};
-      }
-    }
-
-    if (!matchedEmployee || !matchedEmployee.certificate) {
+    if (!dbCert) {
       return res.status(404).json({
         success: false,
-        message: `Sertifikat dengan ID / Nomor '${rawQuery}' tidak ditemukan dalam pangkalan data resmi BPMP Sultra.`
+        found: false,
+        message: 'Sertifikat dengan ID verifikasi tersebut tidak ditemukan dalam pangkalan data resmi.'
       });
     }
 
-    const certData = matchedEmployee.certificate;
-    const event = matchedEvent || {};
+    // Ambil metadata event jika tersedia
+    let eventTitle = dbCert.event_title || 'Pengembangan Kompetensi ASN: Senin Berseri';
+    let eventDates = 'Tahun 2026';
+    let eventJp = 2;
 
-    const certCrypto = signCertificate({
-      certNumber: certData.number,
-      employeeNip: matchedEmployee.nip,
-      employeeName: matchedEmployee.name,
-      eventTitle: event.title || matchedEmployee.eventTitle || 'Pengembangan Kompetensi Senin Berseri: Pemanfaatan Papan Interaktif Digital',
-      eventJp: event.jp || 2,
-      issuedAt: certData.issuedAt
-    });
+    if (dbCert.event_id) {
+      try {
+        const ev = await db.getEventById(dbCert.event_id);
+        if (ev) {
+          eventTitle = ev.title || eventTitle;
+          eventDates = ev.schedule || ev.date || eventDates;
+          eventJp = ev.jp || eventJp;
+        }
+      } catch (_) {}
+    }
+
+    const isDummy = Boolean(dbCert.is_dummy || String(dbCert.id).startsWith('TEST'));
+    const isRevoked = dbCert.status === 'revoked';
+
+    // Respons Publik Ter-sanitasi: TIDAK MENGIRIM NIP ATAU DATA INTERNAL KE KLIEN
+    const publicCertificate = {
+      certId: dbCert.id,
+      number: dbCert.certificate_number,
+      recipientName: dbCert.name || 'Aparatur Sipil Negara',
+      eventTitle: eventTitle,
+      eventDates: eventDates,
+      eventJp: eventJp,
+      issuedAt: dbCert.issued_at,
+      verifier: dbCert.verifier || 'Junaiddin Pagala, S.T., M.T.',
+      verifierTitle: dbCert.verifier_title || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+      status: isRevoked ? 'revoked' : 'valid',
+      isDummy: isDummy,
+      cryptoHash: dbCert.crypto_hash,
+      cryptoSignature: dbCert.crypto_signature
+    };
+
+    if (isRevoked) {
+      publicCertificate.revokedAt = dbCert.revoked_at || dbCert.updated_at || dbCert.issued_at;
+      publicCertificate.revocationReason = dbCert.revocation_reason || 'Pencabutan dokumen resmi: Terdapat pembaharuan data kompetensi atau penerbitan sertifikat versi revisi.';
+      publicCertificate.previewUrl = null;
+      publicCertificate.pdfUrl = null;
+    } else {
+      publicCertificate.previewUrl = dbCert.pdf_url || `/api/certificates/${dbCert.id}/preview.pdf`;
+      publicCertificate.pdfUrl = dbCert.pdf_url || `/api/certificates/${dbCert.id}/preview.pdf`;
+    }
 
     res.json({
       success: true,
-      certificate: {
-        certId: certCrypto.certId,
-        number: certData.number,
-        employeeName: matchedEmployee.name,
-        employeeNip: matchedEmployee.nip,
-        employeeJabatan: matchedEmployee.jabatan || matchedEmployee.position || 'Aparatur Sipil Negara',
-        employeeInstansi: matchedEmployee.instansi || 'BPMP Provinsi Sulawesi Tenggara',
-        employeePhotoUrl: matchedEmployee.facePhotoUrl || matchedEmployee.attendancePhotoUrl || null,
-        eventTitle: event.title || matchedEmployee.eventTitle || 'Pengembangan Kompetensi Senin Berseri: Pemanfaatan Papan Interaktif Digital',
-        eventJp: event.jp || 2,
-        eventCategory: event.category || 'Peningkatan Mutu Pendidikan & Kompetensi ASN',
-        eventDescription: event.description || 'Pengembangan Kompetensi Senin Berseri diselenggarakan oleh Balai Penjaminan Mutu Pendidikan Provinsi Sulawesi Tenggara guna meningkatkan literasi digital dan kapabilitas teknis pegawai dalam mendukung transformasi pembelajaran.',
-        issuedAt: certData.issuedAt,
-        verifier: certData.verifier || 'Junaiddin Pagala, S.T., M.T.',
-        verifierTitle: certData.verifierTitle || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
-        verifierNip: certData.verifierNip || '197606122002121004',
-        cryptoHash: certCrypto.sha256Digest,
-        cryptoSignature: certCrypto.signatureHex,
-        cryptoAlgorithm: certCrypto.algorithm,
-        status: 'Resmi Terverifikasi (Valid)'
-      }
+      found: true,
+      certificate: publicCertificate
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Gagal memverifikasi sertifikat: ' + err.message });
   }
+});
+
+// Endpoint Pratinjau PDF Sertifikat Publik / Verifikasi
+app.get('/api/certificates/:id/preview.pdf', async (req, res) => {
+  try {
+    const certId = decodeURIComponent(req.params.id || '').trim().toUpperCase();
+    let cert = await db.getCertificateByIdOrNumber(certId);
+    if (!cert && typeof db.getCertificateByToken === 'function') {
+      cert = await db.getCertificateByToken(certId);
+    }
+
+    if (!cert || cert.status === 'revoked') {
+      return res.status(404).send('Berkas sertifikat tidak ditemukan atau telah dicabut.');
+    }
+
+    if (cert.pdf_url && (cert.pdf_url.startsWith('http://') || cert.pdf_url.startsWith('https://'))) {
+      return res.redirect(cert.pdf_url);
+    }
+
+    // Buat pratinjau PDF on the fly jika belum ada file statis
+    const certPdf = await certificateService.generateCertificatePdf({
+      template: { presetKey: cert.template_id?.includes('b') ? 'B' : 'A', qrPosition: 'kanan' },
+      data: {
+        certId: cert.id,
+        nomor: cert.certificate_number,
+        nama: cert.name,
+        nip: cert.nip || '-',
+        judul: cert.event_title || 'Pengembangan Kompetensi ASN Senin Berseri',
+        tanggal: 'Tahun 2026',
+        jp: 2,
+        lokasi_instansi: 'Aula Utama BPMP Provinsi Sulawesi Tenggara'
+      },
+      token: cert.id,
+      baseUrl: getProductionBaseUrl()
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Sertifikat-${cert.id}.pdf"`);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(certPdf.pdfBuffer);
+  } catch (err) {
+    res.status(500).send('Gagal memuat pratinjau sertifikat: ' + err.message);
+  }
+});
+
+// Halaman Uji Coba Sertifikat Dummy Admin
+app.get('/admin/uji-sertifikat', (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production' || Boolean(process.env.VERCEL);
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  const isSuperadmin = admin && (admin.role === 'superadmin' || admin.peran === 'superadmin');
+
+  if (isProduction && !isSuperadmin) {
+    return res.status(403).send('Akses Ditolak: Halaman uji coba sertifikat hanya dapat diakses di lingkungan pengujian atau oleh Superadmin.');
+  }
+
+  res.sendFile(path.join(PUBLIC_DIR, 'admin-uji-sertifikat.html'));
+});
+
+// API Daftar Sertifikat Dummy untuk Halaman Uji Coba
+app.get('/api/admin/dummy-certificates', async (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production' || Boolean(process.env.VERCEL);
+  const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+  const isSuperadmin = admin && (admin.role === 'superadmin' || admin.peran === 'superadmin');
+
+  if (isProduction && !isSuperadmin) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+  }
+
+  const all = await db.getAllCertificates(true);
+  const dummyList = all.filter(c => c.is_dummy || String(c.id).startsWith('TEST'));
+  res.json({ success: true, certificates: dummyList, baseUrl: getProductionBaseUrl() });
 });
 
 // Verifikasi Publik Keabsahan Sertifikat (Redirect ke Halaman Publik Dicoding-Style)

@@ -6,6 +6,7 @@ const certificateService = require('../services/certificate');
 const db = require('../supabase-adapter');
 
 test('SUITE: Fitur E-Sertifikat Terkunci & Keabsahan Verifikasi', async (t) => {
+  db.setSupabaseInstance(null);
 
   await t.test('1. Preset Templates: Menyiapkan 4 preset (A, B, C, D) dengan QR kiri/kanan', async () => {
     const presets = certificateService.PRESET_TEMPLATES;

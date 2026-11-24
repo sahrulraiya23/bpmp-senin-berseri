@@ -1407,15 +1407,32 @@ async function getCertificateByIdOrNumber(query) {
   return null;
 }
 
-async function getAllCertificates() {
+async function getAllCertificates(includeDummy = false) {
   const pool = getPool();
   if (pool) {
     try {
-      const [rows] = await pool.query(`SELECT * FROM certificates ORDER BY issued_at DESC`);
+      let sql = `SELECT * FROM certificates`;
+      if (!includeDummy) {
+        sql += ` WHERE is_dummy IS NULL OR is_dummy = 0`;
+      }
+      sql += ` ORDER BY issued_at DESC`;
+      const [rows] = await pool.query(sql);
       return rows;
     } catch (err) {}
   }
   return [];
+}
+
+async function deleteDummyCertificates() {
+  const pool = getPool();
+  let deleted = 0;
+  if (pool) {
+    try {
+      const [res] = await pool.query(`DELETE FROM certificates WHERE is_dummy = 1 OR id LIKE 'TEST%'`);
+      deleted = res.affectedRows || 0;
+    } catch (err) {}
+  }
+  return { success: true, deleted };
 }
 
 // Memory fallback store untuk MySQL mode
@@ -1680,6 +1697,7 @@ module.exports = {
   saveCertificate,
   getCertificateByIdOrNumber,
   getAllCertificates,
+  deleteDummyCertificates,
   saveCertificateTemplate,
   getAllCertificateTemplates,
   getCertificateTemplateById,
