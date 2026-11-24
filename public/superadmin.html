@@ -65,6 +65,11 @@
               <i class="ti ti-database-cog"></i> <span>Basis Data &amp; Backup</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger fw-bold d-inline-flex align-items-center gap-1" href="javascript:void(0)" onclick="handleLogout()" title="Keluar dari sesi Superadmin">
+              <i class="ti ti-logout"></i> <span>Keluar</span>
+            </a>
+          </li>
         </ul>
       </div>
     </div>
@@ -1573,12 +1578,28 @@
       window.location.href = '/api/superadmin/export-data';
     }
 
-    function handleLogout() {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminUser');
-      sessionStorage.removeItem('adminToken');
-      sessionStorage.removeItem('adminUser');
-      window.location.href = '/admin/login';
+    async function handleLogout() {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || (window.appState && window.appState.adminToken);
+      try {
+        if (token) {
+          await fetch('/api/auth/admin-logout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Logout error:', e);
+      } finally {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        sessionStorage.removeItem('adminToken');
+        sessionStorage.removeItem('adminUser');
+        document.cookie = 'admin_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        window.location.replace('/admin/login');
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {

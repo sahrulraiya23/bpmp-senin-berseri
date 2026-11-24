@@ -382,16 +382,27 @@ app.get('/api/auth/admin-check', (req, res) => {
   res.json({ success: true, authenticated: true, admin, isProduction });
 });
 
-// 3. Admin Logout
-app.post('/api/auth/admin-logout', (req, res) => {
+// 3. Admin Logout (Support both POST, GET, and direct browser redirect)
+const handleAdminLogout = (req, res) => {
+  let token = null;
   const authHeader = req.headers.authorization;
-  if (authHeader) {
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  } else if (req.cookies && req.cookies.admin_token) {
+    token = req.cookies.admin_token;
+  }
+  if (token) {
     adminSessions.delete(token);
   }
   res.setHeader('Set-Cookie', 'admin_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+  if (req.method === 'GET' && !req.xhr && !req.headers.accept?.includes('application/json')) {
+    return res.redirect('/admin/login');
+  }
   res.json({ success: true, message: 'Anda telah berhasil keluar dari dashboard admin.' });
-});
+};
+app.post('/api/auth/admin-logout', handleAdminLogout);
+app.get('/api/auth/admin-logout', handleAdminLogout);
+app.get('/admin/logout', handleAdminLogout);
 
 // ==============================================================
 // 0. PASSWORD HASHING & RATE LIMITING SECURITY HELPERS

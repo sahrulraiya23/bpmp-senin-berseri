@@ -248,8 +248,15 @@
                 <li><a class="dropdown-item" href="javascript:void(0)" onclick="openActivityLogModal()"><i class="ti ti-activity me-2 text-info"></i> Log Aktivitas (Audit Trail)</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openSystemSettingsModal()"><i class="ti ti-database-cog me-2"></i> Sistem & Reset Data</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger fw-bold" href="javascript:void(0)" onclick="handleLogout()"><i class="ti ti-logout me-2"></i> Keluar (Logout)</a></li>
               </ul>
             </div>
+
+            <!-- Tombol Keluar Langsung (Mudah diakses di mobile & desktop) -->
+            <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()" title="Keluar dari sesi admin" aria-label="Keluar">
+              <i class="ti ti-logout me-1"></i> Keluar
+            </button>
 
             <!-- Live Clock Badge WITA -->
             <div id="liveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Indonesia Tengah">
@@ -1775,6 +1782,32 @@
         }
       }
     }
+
+    // 0.1 Handler Keluar / Logout Admin
+    async function handleLogout() {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      try {
+        if (token) {
+          await fetch('/api/auth/admin-logout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Gagal memanggil endpoint logout:', err);
+      } finally {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        sessionStorage.removeItem('adminToken');
+        sessionStorage.removeItem('adminUser');
+        document.cookie = 'admin_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        window.location.replace('/admin/login');
+      }
+    }
+    window.handleLogout = handleLogout;
 
     // Modal Pengaturan Sistem
     function openSystemSettingsModal() {

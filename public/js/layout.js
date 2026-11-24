@@ -210,4 +210,28 @@ const BPMPLayout = {
   }
 };
 
+// Global Fallback for handleLogout across all pages using BPMPLayout
+if (typeof window.handleLogout !== 'function') {
+  window.handleLogout = async function() {
+    const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+    try {
+      if (token) {
+        await fetch('/api/auth/admin-logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
+    } catch (_) {}
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    sessionStorage.removeItem('adminToken');
+    sessionStorage.removeItem('adminUser');
+    localStorage.removeItem('bpmp_auth_nip');
+    localStorage.removeItem('bpmp_auth_user');
+    sessionStorage.removeItem('bpmp_auth_user');
+    document.cookie = 'admin_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    window.location.replace('/admin/login');
+  };
+}
+
 window.BPMPLayout = BPMPLayout;
