@@ -3,7 +3,7 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { getProductionBaseUrl } = require('../cert-crypto');
+const { getProductionBaseUrl, generateCertId, generateRandomCertId } = require('../cert-crypto');
 
 // Dimensi Standar A4 Landscape (Point: 72 dpi)
 const PAGE_WIDTH = 841.89; // 297 mm
@@ -717,7 +717,7 @@ async function generateCertificatePdf({ template = {}, data = {}, token = '', ba
   }
 
   // 8. QR Code Verifikasi (Ukuran terkunci 75x75 pt, URL: {BASE_URL}/sertifikat/{id})
-  const verificationId = data.certId || data.id || token || data.token || crypto.randomBytes(16).toString('hex');
+  const verificationId = data.certId || data.id || token || data.token || (data.nomor && data.nip ? generateCertId(data.nomor, data.nip) : generateRandomCertId());
   const verificationToken = verificationId;
   const targetBaseUrl = (baseUrl && !baseUrl.includes('vercel.app/preview') && !baseUrl.includes('-git-')) ? baseUrl.replace(/\/$/, '') : getProductionBaseUrl();
   const verifyUrl = `${targetBaseUrl}/sertifikat/${verificationId}`;

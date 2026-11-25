@@ -92,6 +92,8 @@ function isValidCertIdFormat(id) {
   if (/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{12}$/.test(clean)) return true;
   // Format identitas pengujian sistem internal
   if (/^SUPA-[A-Z0-9-]+$/.test(clean)) return true;
+  // Format legacy 32-karakter MD5 / Hex token (kompatibilitas sertifikat yang telah diunduh)
+  if (/^[A-F0-9]{32}$/.test(clean)) return true;
   return false;
 }
 

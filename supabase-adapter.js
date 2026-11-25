@@ -2706,7 +2706,20 @@ async function saveCertificate(certData) {
         .upsert(payload, { onConflict: 'id' });
 
       if (error) {
-        console.warn('[Supabase Warning] saveCertificate error:', error.message);
+        if (error.message && (error.message.includes('column') || error.message.includes('schema cache'))) {
+          // Fallback kompatibilitas jika migrasi kolom is_dummy/status belum dijalankan
+          const safePayload = { ...payload };
+          delete safePayload.is_dummy;
+          delete safePayload.status;
+          delete safePayload.revoked_at;
+          delete safePayload.revocation_reason;
+          const { error: err2 } = await client.from('certificates').upsert(safePayload, { onConflict: 'id' });
+          if (err2) {
+            console.warn('[Supabase Warning] saveCertificate safe retry:', err2.message);
+          }
+        } else {
+          console.warn('[Supabase Warning] saveCertificate error:', error.message);
+        }
       }
     } catch (e) {
       console.warn('[Supabase Exception] saveCertificate:', e.message);

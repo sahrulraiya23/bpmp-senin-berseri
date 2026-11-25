@@ -2161,7 +2161,30 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
     const certList = await db.getCertificatesByEmployeeId(employee.id);
     const certRecord = certList.find(c => c.status === 'valid') || {};
     const certNumber = certRecord.nomor || employee.certificate.number || '0001/C6.26/Sertifikat/KP.04.00/2026';
-    const certToken = certRecord.token || employee.certificate.token || crypto.createHash('md5').update(`${employee.nip}-${certNumber}`).digest('hex');
+    
+    // Gunakan ID verifikasi 12 karakter Crockford Base32 yang konsisten & deterministik
+    const cleanCertId = certRecord.id || certRecord.cert_id || (certRecord.token && certRecord.token.length === 12 ? certRecord.token : generateCertId(certNumber, employee.nip));
+    const certToken = cleanCertId;
+
+    // Pastikan tersimpan dan terindeks di pangkalan data certificates
+    try {
+      await db.saveCertificate({
+        id: cleanCertId,
+        certId: cleanCertId,
+        number: certNumber,
+        certificate_number: certNumber,
+        name: employee.name,
+        nip: employee.nip,
+        eventId: employee.eventId,
+        eventTitle: event.title || 'Pengembangan Kompetensi ASN BPMP Sultra',
+        issuedAt: employee.certificate.issuedAt || certRecord.issued_at || new Date().toISOString(),
+        status: 'valid',
+        token: certToken,
+        is_dummy: false
+      });
+    } catch (saveErr) {
+      console.warn('Auto-index certificate notice:', saveErr.message);
+    }
 
     // Dapatkan template yang ditentukan event atau preset default
     const templateId = event.templateId || certRecord.template_id;
@@ -2196,8 +2219,12 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
 
     const result = await certificateService.generateCertificatePdf({
       template: templateObj,
-      data: certData,
-      token: certToken,
+      data: {
+        ...certData,
+        certId: cleanCertId,
+        id: cleanCertId
+      },
+      token: cleanCertId,
       baseUrl: baseUrl
     });
 
@@ -2298,11 +2325,20 @@ app.get('/api/verify-certificate-data/:query', checkVerifyRateLimit, async (req,
       const employees = await db.getAllEmployees();
       for (const emp of employees) {
         if (!emp.certificate || !emp.certificate.number) continue;
-        const certId = generateCertId(emp.certificate.number, emp.nip);
-        if (certId === upperQuery) {
+        const certNum = emp.certificate.number;
+        const certId = generateCertId(certNum, emp.nip);
+        const legacyMd5 = crypto.createHash('md5').update(`${emp.nip}-${certNum}`).digest('hex').toUpperCase();
+        const storedToken = String(emp.certificate.token || '').trim().toUpperCase();
+
+        if (
+          certId === upperQuery || 
+          legacyMd5 === upperQuery || 
+          (storedToken && storedToken === upperQuery) ||
+          String(certNum).trim().toUpperCase() === upperQuery
+        ) {
           dbCert = {
             id: certId,
-            certificate_number: emp.certificate.number,
+            certificate_number: certNum,
             name: emp.name,
             nip: emp.nip,
             event_id: emp.eventId,
@@ -2311,6 +2347,10 @@ app.get('/api/verify-certificate-data/:query', checkVerifyRateLimit, async (req,
             status: 'valid',
             is_dummy: false
           };
+          // Simpan ke database certificates agar berikutnya instan
+          try {
+            await db.saveCertificate(dbCert);
+          } catch (_) {}
           break;
         }
       }
