@@ -1873,8 +1873,20 @@
     async function handleUploadLpti(e) {
       e.preventDefault();
       const fileInput = document.getElementById('lptiFileInput');
-      const file = fileInput.files[0];
-      if (!file || !currentAuthUser) return;
+      const file = fileInput?.files?.[0];
+      if (!file) {
+        showToast('Silakan pilih berkas PDF LPTI terlebih dahulu.', 'warning');
+        return;
+      }
+      if (!currentAuthUser) {
+        showToast('Sesi Anda tidak ditemukan. Silakan muat ulang halaman.', 'error');
+        return;
+      }
+
+      if (file.size > 15 * 1024 * 1024) {
+        showToast('Ukuran berkas melebihi batas maksimal 15 MB.', 'error');
+        return;
+      }
 
       const btn = document.getElementById('btnUploadSubmit');
       btn.disabled = true;
@@ -1884,23 +1896,35 @@
       formData.append('lptiFile', file);
       if (currentEvent?.id) formData.append('eventId', currentEvent.id);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       try {
-        const res = await fetch('/api/employees/' + currentAuthUser.nip + '/upload-lpti', {
+        const empId = currentAuthUser.nip || currentAuthUser.id;
+        const res = await fetch('/api/employees/' + encodeURIComponent(empId) + '/upload-lpti', {
           method: 'POST',
-          body: formData
+          body: formData,
+          signal: controller.signal
         });
-        const data = await res.json();
-        if (data.success) {
+        clearTimeout(timeoutId);
+
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.success) {
           showToast('Berkas LPTI berhasil diunggah! Menunggu kurasi admin.', 'success');
           fileInput.value = '';
           document.getElementById('fileUploadPrompt').classList.remove('d-none');
           document.getElementById('fileSelectedInfo').classList.add('d-none');
           await syncCurrentProfile();
         } else {
-          showToast(data.message || 'Gagal mengunggah berkas LPTI.', 'error');
+          showToast(data?.message || ('Gagal mengunggah berkas LPTI (Kode ' + res.status + ').'), 'error');
         }
       } catch (err) {
-        showToast('Kesalahan unggah: ' + err.message, 'error');
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          showToast('Waktu unggah habis (timeout). Periksa koneksi internet Anda dan coba lagi.', 'error');
+        } else {
+          showToast('Kesalahan unggah: ' + err.message, 'error');
+        }
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-send me-1"></i> Unggah Laporan LPTI';

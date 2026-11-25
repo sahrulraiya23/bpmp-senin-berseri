@@ -24,7 +24,8 @@ if (typeof process.loadEnvFile === 'function') {
 }
 
 const DB_DRIVER = process.env.DB_DRIVER || 'supabase';
-const db = DB_DRIVER === 'mysql' ? require('./mysql-adapter') : require('./supabase-adapter');
+const supabaseAdapter = require('./supabase-adapter');
+const db = DB_DRIVER === 'mysql' ? require('./mysql-adapter') : supabaseAdapter;
 const sqliteDb = db;
 
 const app = express();
@@ -1032,52 +1033,63 @@ app.post('/api/event/toggle-status', async (req, res) => {
 // ========================================================
 app.post('/api/event/upload-template', (req, res) => {
   uploadTemplate.single('templateFile')(req, res, async function (err) {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ success: false, message: 'Ukuran file template melebihi batas 20MB!' });
+    try {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ success: false, message: 'Ukuran file template melebihi batas 20MB!' });
+        }
+        return res.status(400).json({ success: false, message: 'Kesalahan unggah: ' + err.message });
+      } else if (err) {
+        return res.status(400).json({ success: false, message: err.message });
       }
-      return res.status(400).json({ success: false, message: 'Kesalahan unggah: ' + err.message });
-    } else if (err) {
-      return res.status(400).json({ success: false, message: err.message });
-    }
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Silakan pilih berkas Foto (.PNG, .JPG) atau Dokumen PDF (.PDF) terlebih dahulu!' });
-    }
-
-    const targetEventId = req.body?.eventId || req.query?.eventId;
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    const fileType = ext === '.pdf' ? 'pdf' : 'image';
-
-    let templateFilePath = `/uploads/templates/${req.file.filename}`;
-    if (supabaseAdapter.isSupabaseAvailable() && fs.existsSync(req.file.path)) {
-      try {
-        const fileBuffer = fs.readFileSync(req.file.path);
-        const storageUrl = await supabaseAdapter.uploadToStorage('templates', req.file.filename, fileBuffer, req.file.mimetype);
-        if (storageUrl) templateFilePath = storageUrl;
-      } catch (storageErr) {
-        console.warn('Gagal upload template ke Supabase Storage:', storageErr.message);
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Silakan pilih berkas Foto (.PNG, .JPG) atau Dokumen PDF (.PDF) terlebih dahulu!' });
       }
+
+      const targetEventId = req.body?.eventId || req.query?.eventId;
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const fileType = ext === '.pdf' ? 'pdf' : 'image';
+
+      let templateFilePath = `/uploads/templates/${req.file.filename}`;
+      if (supabaseAdapter && typeof supabaseAdapter.isSupabaseAvailable === 'function' && supabaseAdapter.isSupabaseAvailable() && req.file.path && fs.existsSync(req.file.path)) {
+        try {
+          const fileBuffer = fs.readFileSync(req.file.path);
+          const storageUrl = await supabaseAdapter.uploadToStorage('templates', req.file.filename, fileBuffer, req.file.mimetype);
+          if (storageUrl) templateFilePath = storageUrl;
+        } catch (storageErr) {
+          console.warn('Gagal upload template ke Supabase Storage:', storageErr.message);
+        }
+      }
+
+      const newTemplate = {
+        hasCustomTemplate: true,
+        fileType: fileType,
+        fileName: req.file.filename,
+        fileOriginalName: req.file.originalname,
+        filePath: templateFilePath,
+        fileSize: req.file.size,
+        uploadedAt: new Date().toISOString()
+      };
+
+      const updatedEvent = await db.updateEventTemplate(targetEventId, newTemplate);
+
+      return res.json({
+        success: true,
+        message: `Template sertifikat (${fileType === 'pdf' ? 'Dokumen PDF' : 'Foto/Gambar'}) berhasil diunggah & diterapkan!`,
+        template: newTemplate,
+        event: updatedEvent
+      });
+    } catch (unhandledErr) {
+      console.error('Unhandled upload-template error:', unhandledErr);
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch (_) {}
+      }
+      return res.status(500).json({
+        success: false,
+        message: 'Terjadi kesalahan sistem saat memproses template sertifikat: ' + unhandledErr.message
+      });
     }
-
-    const newTemplate = {
-      hasCustomTemplate: true,
-      fileType: fileType,
-      fileName: req.file.filename,
-      fileOriginalName: req.file.originalname,
-      filePath: templateFilePath,
-      fileSize: req.file.size,
-      uploadedAt: new Date().toISOString()
-    };
-
-    const updatedEvent = await db.updateEventTemplate(targetEventId, newTemplate);
-
-    res.json({
-      success: true,
-      message: `Template sertifikat (${fileType === 'pdf' ? 'Dokumen PDF' : 'Foto/Gambar'}) berhasil diunggah & diterapkan!`,
-      template: newTemplate,
-      event: updatedEvent
-    });
   });
 });
 
@@ -1690,56 +1702,67 @@ app.get('/api/employees/:id/history', async (req, res) => {
 
 app.post('/api/employees/:id/upload-lpti', (req, res) => {
   upload.single('lptiFile')(req, res, async function (err) {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ success: false, message: 'Ukuran file melebihi batas 15MB!' });
+    try {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ success: false, message: 'Ukuran file melebihi batas 15MB!' });
+        }
+        return res.status(400).json({ success: false, message: 'Kesalahan unggah: ' + err.message });
+      } else if (err) {
+        return res.status(400).json({ success: false, message: err.message });
       }
-      return res.status(400).json({ success: false, message: 'Kesalahan unggah: ' + err.message });
-    } else if (err) {
-      return res.status(400).json({ success: false, message: err.message });
-    }
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Silakan pilih berkas PDF asli LPTI terlebih dahulu!' });
-    }
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Silakan pilih berkas PDF asli LPTI terlebih dahulu!' });
+      }
 
-    const employee = await db.getEmployeeByIdOrNip(req.params.id);
-    if (!employee) {
-      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-      return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
-    }
+      const employee = await db.getEmployeeByIdOrNip(req.params.id);
+      if (!employee) {
+        if (req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
+      }
 
-    if (!employee.attended) {
-      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-      return res.status(400).json({
+      if (!employee.attended) {
+        if (req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        return res.status(400).json({
+          success: false,
+          message: 'Anda belum melakukan Presensi Kehadiran. Silakan scan Dynamic QR Code di aula terlebih dahulu!'
+        });
+      }
+
+      let uploadedFilePath = `/uploads/lpti/${req.file.filename}`;
+      if (supabaseAdapter && typeof supabaseAdapter.isSupabaseAvailable === 'function' && supabaseAdapter.isSupabaseAvailable() && req.file.path && fs.existsSync(req.file.path)) {
+        try {
+          const fileBuffer = fs.readFileSync(req.file.path);
+          const storageUrl = await supabaseAdapter.uploadToStorage('lpti', req.file.filename, fileBuffer, req.file.mimetype);
+          if (storageUrl) uploadedFilePath = storageUrl;
+        } catch (storageErr) {
+          console.warn('Gagal upload LPTI ke Supabase Storage:', storageErr.message);
+        }
+      }
+
+      const updatedEmployee = await db.updateEmployeeLpti(employee.id, {
+        fileName: req.file.filename,
+        fileOriginalName: req.file.originalname,
+        filePath: uploadedFilePath,
+        fileSize: req.file.size
+      });
+
+      return res.json({
+        success: true,
+        message: 'Berkas LPTI berhasil diunggah! Berkas Anda saat ini berstatus "Menunggu Persetujuan Kepegawaian".',
+        employee: updatedEmployee
+      });
+    } catch (unhandledErr) {
+      console.error('Unhandled upload-lpti error:', unhandledErr);
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch (_) {}
+      }
+      return res.status(500).json({
         success: false,
-        message: 'Anda belum melakukan Presensi Kehadiran. Silakan scan Dynamic QR Code di aula terlebih dahulu!'
+        message: 'Terjadi kesalahan sistem saat memproses berkas LPTI: ' + unhandledErr.message
       });
     }
-
-    let uploadedFilePath = `/uploads/lpti/${req.file.filename}`;
-    if (supabaseAdapter.isSupabaseAvailable() && fs.existsSync(req.file.path)) {
-      try {
-        const fileBuffer = fs.readFileSync(req.file.path);
-        const storageUrl = await supabaseAdapter.uploadToStorage('lpti', req.file.filename, fileBuffer, req.file.mimetype);
-        if (storageUrl) uploadedFilePath = storageUrl;
-      } catch (storageErr) {
-        console.warn('Gagal upload LPTI ke Supabase Storage:', storageErr.message);
-      }
-    }
-
-    const updatedEmployee = await db.updateEmployeeLpti(employee.id, {
-      fileName: req.file.filename,
-      fileOriginalName: req.file.originalname,
-      filePath: uploadedFilePath,
-      fileSize: req.file.size
-    });
-
-    res.json({
-      success: true,
-      message: 'Berkas LPTI berhasil diunggah! Berkas Anda saat ini berstatus "Menunggu Persetujuan Kepegawaian".',
-      employee: updatedEmployee
-    });
   });
 });
 
