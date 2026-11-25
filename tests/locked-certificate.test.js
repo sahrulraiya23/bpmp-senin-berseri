@@ -8,17 +8,19 @@ const db = require('../supabase-adapter');
 test('SUITE: Fitur E-Sertifikat Terkunci & Keabsahan Verifikasi', async (t) => {
   db.setSupabaseInstance(null);
 
-  await t.test('1. Preset Templates: Menyiapkan 4 preset (A, B, C, D) dengan QR kiri/kanan', async () => {
+  await t.test('1. Preset Templates: Menyiapkan preset resmi (A, B, C, D, E) dengan QR kiri/kanan', async () => {
     const presets = certificateService.PRESET_TEMPLATES;
     assert.ok(presets['A'], 'Preset A harus tersedia');
     assert.ok(presets['B'], 'Preset B harus tersedia');
     assert.ok(presets['C'], 'Preset C harus tersedia');
     assert.ok(presets['D'], 'Preset D harus tersedia');
+    assert.ok(presets['E'], 'Preset E harus tersedia');
 
     assert.equal(presets['A'].defaultQrPosition, 'kanan');
     assert.equal(presets['B'].defaultQrPosition, 'kiri');
     assert.equal(presets['C'].defaultQrPosition, 'kanan');
     assert.equal(presets['D'].defaultQrPosition, 'kiri');
+    assert.equal(presets['E'].defaultQrPosition, 'kiri');
   });
 
   await t.test('2. Layout Terkunci: Zona QR memenuhi standar minimal 25 x 25 mm (~71 pt)', async () => {
@@ -132,6 +134,25 @@ test('SUITE: Fitur E-Sertifikat Terkunci & Keabsahan Verifikasi', async (t) => {
 
     const checkedV2 = await db.getCertificateByToken(token2);
     assert.equal(checkedV2.status, 'valid');
+  });
+
+  await t.test('6. Preset E: Render template Kemendikdasmen Modern (Ramah & Bermutu)', async () => {
+    const res = await certificateService.generateCertificatePdf({
+      template: { id: 'preset-e', presetKey: 'E' },
+      data: {
+        nomor: '00110/C6.26/Sertifikat/KP.04.00/2026',
+        nama: 'Rika Ernita Mekuo, S.Si. M.Si.',
+        judul: 'Peningkatan Kompetensi FGD dengan tema Kearsipan dan Tata Naskah Persuratan Dinas',
+        tanggal: '19 s.d. 20 September 2026',
+        jp: 8,
+        lokasi: 'BPMP Provinsi Sulawesi Tenggara'
+      },
+      token: 'TESTPRESETE12'
+    });
+
+    assert.ok(res.pdfBuffer instanceof Buffer, 'Harus menghasilkan buffer PDF');
+    assert.ok(res.pdfBuffer.length > 20000, 'Ukuran PDF harus memuat template gambar');
+    assert.equal(res.token, 'TESTPRESETE12');
   });
 
 });

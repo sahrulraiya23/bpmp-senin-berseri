@@ -99,6 +99,27 @@ const PRESET_TEMPLATES = {
       instansi: 'BPMP Provinsi Sulawesi Tenggara'
     },
     patternIsi: 'Telah mengikuti dan menyelesaikan seluruh rangkaian Pengembangan Kompetensi ASN Senin Berseri dengan topik "{judul}" bertempat di {lokasi_instansi} tanggal {tanggal} dengan total bobot {jp} JP.'
+  },
+  'E': {
+    id: 'preset-e',
+    nama: 'Preset E - Kemendikdasmen Modern (Ramah & Bermutu)',
+    theme: 'kemendikdasmen-modern',
+    defaultQrPosition: 'kiri',
+    primaryColor: COLORS.royalBlue,
+    accentColor: COLORS.gold,
+    textColor: COLORS.charcoal,
+    subTextColor: COLORS.slate,
+    hasPreprintedHeader: true,
+    hasPreprintedSignatures: true,
+    hasPreprintedUnderline: true,
+    file_latar: 'public/templates/template-kemendikdasmen-modern.png',
+    defaultPejabat: {
+      nama: 'Junaiddin Pagala, S.T., M.T.',
+      nip: '197606122002121004',
+      jabatan: 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
+      instansi: 'BPMP Provinsi Sulawesi Tenggara'
+    },
+    patternIsi: 'Peserta dalam Pengembangan Kompetensi ASN "Senin Berseri" dengan tema "{judul}" yang diselenggarakan oleh {lokasi_instansi} pada tanggal {tanggal} selama {jp} JP.'
   }
 };
 
@@ -106,8 +127,78 @@ const PRESET_TEMPLATES = {
  * Konfigurasi Zona Tata Letak Terkunci (Locked Grid Layout)
  * Satuan dalam Point (A4 Landscape: 841.89 x 595.28)
  */
-function getLockedLayoutConfig(qrPosition = 'kanan') {
+function getLockedLayoutConfig(qrPosition = 'kanan', presetKey = 'A') {
   const isQrLeft = qrPosition === 'kiri';
+  const isPresetE = String(presetKey).toUpperCase() === 'E';
+
+  if (isPresetE) {
+    return {
+      pageWidth: PAGE_WIDTH,
+      pageHeight: PAGE_HEIGHT,
+      qrPosition: isQrLeft ? 'kiri' : 'kanan',
+      zones: {
+        header: {
+          y: 535,
+          title: 'SERTIFIKAT',
+          subTitle: ''
+        },
+        nomor: {
+          x: 100,
+          y: 421,
+          width: 641.89,
+          label: 'NOMOR SERTIFIKAT'
+        },
+        recipientPrompt: {
+          y: 380,
+          text: '' // Sudah tercetak "D I B E R I K A N   K E P A D A :" pada template gambar
+        },
+        nama: {
+          x: 60,
+          y: 332,
+          width: 721.89,
+          maxHeight: 50,
+          maxLines: 2,
+          baseFontSize: 28,
+          minFontSize: 16,
+          label: 'ZONA NAMA PEGAWAI & GELAR'
+        },
+        nipJabatan: {
+          x: 80,
+          y: 300,
+          width: 681.89,
+          fontSize: 11,
+          label: 'ZONA NIP & JABATAN / UNIT KERJA'
+        },
+        isiParagraf: {
+          x: 70,
+          y: 242,
+          width: 701.89,
+          lineHeight: 16,
+          maxLines: 4,
+          baseFontSize: 10.5,
+          minFontSize: 9,
+          label: 'ZONA PARAGRAF ISI KEGIATAN'
+        },
+        tanggalKota: {
+          x: 200,
+          y: 158,
+          width: 441.89,
+          fontSize: 10,
+          label: 'ZONA TANGGAL KOTA DI ATAS TTD'
+        },
+        qr: isQrLeft
+          ? { x: 75, y: 65, size: 75, label: 'ZONA QR VERIFIKASI (KIRI)' }
+          : { x: 671.89, y: 65, size: 75, label: 'ZONA QR VERIFIKASI (KANAN)' },
+        qrText: isQrLeft
+          ? { x: 75, y: 53, width: 75, fontSize: 7, label: 'Keterangan QR' }
+          : { x: 671.89, y: 53, width: 75, fontSize: 7, label: 'Keterangan QR' },
+        ttd: isQrLeft
+          ? { x: 520, y: 78, width: 240, label: 'ZONA TTD & STEMPEL (KANAN)' }
+          : { x: 100, y: 78, width: 240, label: 'ZONA TTD & STEMPEL (KIRI)' }
+      }
+    };
+  }
+
   return {
     pageWidth: PAGE_WIDTH,
     pageHeight: PAGE_HEIGHT,
@@ -459,20 +550,27 @@ async function generateCertificatePdf({ template = {}, data = {}, token = '', ba
   let page;
   let hasBackgroundCustom = false;
 
-  const presetKey = (template.presetKey || 'A').toUpperCase();
+  let presetKey = (template.presetKey || 'A').toUpperCase();
+  if (template.id && template.id.startsWith('preset-')) {
+    presetKey = template.id.replace('preset-', '').toUpperCase();
+  }
+  if (template.id === 'tpl-kemendikdasmen-modern' || template.basePreset === 'E' || template.base_preset === 'E') {
+    presetKey = 'E';
+  }
   const presetConfig = PRESET_TEMPLATES[presetKey] || PRESET_TEMPLATES['A'];
 
   // Posisi QR ditentukan oleh template (default: dari template atau preset)
   const qrPosition = template.qrPosition || presetConfig.defaultQrPosition || 'kanan';
-  const layout = getLockedLayoutConfig(qrPosition);
+  const layout = getLockedLayoutConfig(qrPosition, presetKey);
   const zones = layout.zones;
 
   // 1. Cek apakah ada file latar kustom (PDF atau Gambar)
   let backgroundBytes = null;
   let bgExt = '';
 
-  if (template.file_latar || template.filePath) {
-    const rawPath = template.file_latar || template.filePath;
+  const latarSource = template.file_latar || template.filePath || presetConfig.file_latar;
+  if (latarSource) {
+    const rawPath = latarSource;
     if (typeof rawPath === 'string') {
       if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
         try {
@@ -620,16 +718,18 @@ async function generateCertificatePdf({ template = {}, data = {}, token = '', ba
     color: textCol
   });
 
-  // Teks Pengantar: "Diberikan Kepada:"
-  const promptText = zones.recipientPrompt.text;
-  const wPrompt = fontRegular.widthOfTextAtSize(promptText, 12);
-  page.drawText(promptText, {
-    x: (PAGE_WIDTH - wPrompt) / 2,
-    y: zones.recipientPrompt.y,
-    size: 12,
-    font: fontRegular,
-    color: subTextCol
-  });
+  // Teks Pengantar: "Diberikan Kepada:" (hanya dicetak jika tidak ada kop/judul bawaan di gambar latar)
+  if (!presetConfig.hasPreprintedHeader && zones.recipientPrompt && zones.recipientPrompt.text) {
+    const promptText = zones.recipientPrompt.text;
+    const wPrompt = fontRegular.widthOfTextAtSize(promptText, 12);
+    page.drawText(promptText, {
+      x: (PAGE_WIDTH - wPrompt) / 2,
+      y: zones.recipientPrompt.y,
+      size: 12,
+      font: fontRegular,
+      color: subTextCol
+    });
+  }
 
   // 5. Nama Pegawai & Gelar (Auto-Scale & Auto-Wrap Terkunci)
   const rawNama = data.nama || data.employeeName || 'Nama Pegawai Lengkap, S.Pd., M.Pd.';
@@ -654,8 +754,8 @@ async function generateCertificatePdf({ template = {}, data = {}, token = '', ba
       color: primaryCol
     });
 
-    // Garis Bawah Nama pada baris terakhir
-    if (i === namaFit.lines.length - 1) {
+    // Garis Bawah Nama pada baris terakhir (hanya jika belum tercetak pada template latar)
+    if (i === namaFit.lines.length - 1 && !presetConfig.hasPreprintedUnderline) {
       const underlineY = currentNamaY - 4;
       page.drawLine({
         start: { x: (PAGE_WIDTH - wLine) / 2 - 8, y: underlineY },
@@ -667,19 +767,21 @@ async function generateCertificatePdf({ template = {}, data = {}, token = '', ba
     currentNamaY -= (namaFit.size + 4);
   }
 
-  // 6. NIP & Jabatan / Unit Kerja
-  const nip = data.nip || data.employeeNip || '-';
-  const jabatan = data.jabatan || data.employeeJabatan || 'Aparatur Sipil Negara';
-  const instansi = data.instansi || data.employeeInstansi || 'BPMP Provinsi Sulawesi Tenggara';
-  const nipJabatanText = `NIP. ${nip}  •  ${jabatan}  •  ${instansi}`;
-  const wNipJabatan = fontRegular.widthOfTextAtSize(nipJabatanText, zones.nipJabatan.fontSize);
-  page.drawText(nipJabatanText, {
-    x: (PAGE_WIDTH - wNipJabatan) / 2,
-    y: currentNamaY - 8,
-    size: zones.nipJabatan.fontSize,
-    font: fontRegular,
-    color: subTextCol
-  });
+  // 6. NIP & Jabatan / Unit Kerja (Hanya jika bukan template berformat khusus seperti Preset E)
+  if (!presetConfig.hasPreprintedHeader) {
+    const nip = data.nip || data.employeeNip || '-';
+    const jabatan = data.jabatan || data.employeeJabatan || 'Aparatur Sipil Negara';
+    const instansi = data.instansi || data.employeeInstansi || 'BPMP Provinsi Sulawesi Tenggara';
+    const nipJabatanText = `NIP. ${nip}  •  ${jabatan}  •  ${instansi}`;
+    const wNipJabatan = fontRegular.widthOfTextAtSize(nipJabatanText, zones.nipJabatan.fontSize);
+    page.drawText(nipJabatanText, {
+      x: (PAGE_WIDTH - wNipJabatan) / 2,
+      y: currentNamaY - 8,
+      size: zones.nipJabatan.fontSize,
+      font: fontRegular,
+      color: subTextCol
+    });
+  }
 
   // 7. Paragraf Isi Kegiatan (Auto-Wrapping)
   const judul = data.judul || data.eventTitle || 'Transformasi Digital dan Tata Kelola ASN';
@@ -703,7 +805,7 @@ async function generateCertificatePdf({ template = {}, data = {}, token = '', ba
     zones.isiParagraf.minFontSize
   );
 
-  let curParaY = currentNamaY - 34;
+  let curParaY = presetKey === 'E' ? zones.isiParagraf.y : (currentNamaY - 34);
   for (const pLine of paraFit.lines) {
     const wP = fontRegular.widthOfTextAtSize(pLine, paraFit.size);
     page.drawText(pLine, {
@@ -767,79 +869,93 @@ async function generateCertificatePdf({ template = {}, data = {}, token = '', ba
   const tanggalTerbit = formatTanggalIndonesia(data.issuedAt || new Date());
   const pejabat = template.pejabat || presetConfig.defaultPejabat;
 
-  // Stempel Digital Transparan (Digambar sebelum teks nama agar teks tetap di depan)
-  if (template.stempelPath) {
-    const stempelImg = await embedImageSafe(doc, template.stempelPath);
-    if (stempelImg) {
-      page.drawImage(stempelImg, {
-        x: ttdX - 25,
-        y: ttdY - 15,
-        width: 85,
-        height: 85,
-        opacity: 0.85
-      });
+  if (presetConfig.hasPreprintedSignatures) {
+    // Template berstempel & tanda tangan resmi bawaan (Preset E / Kemendikdasmen Modern)
+    // Cukup cetak tanggal terbit resmi di atas tanda tangan Kepala BPMP
+    const lineTanggal = `Kendari, ${tanggalTerbit}`;
+    const wTgl = fontRegular.widthOfTextAtSize(lineTanggal, zones.tanggalKota?.fontSize || 10);
+    page.drawText(lineTanggal, {
+      x: (PAGE_WIDTH - wTgl) / 2,
+      y: zones.tanggalKota?.y || 158,
+      size: zones.tanggalKota?.fontSize || 10,
+      font: fontRegular,
+      color: textCol
+    });
+  } else {
+    // Stempel Digital Transparan (Digambar sebelum teks nama agar teks tetap di depan)
+    if (template.stempelPath) {
+      const stempelImg = await embedImageSafe(doc, template.stempelPath);
+      if (stempelImg) {
+        page.drawImage(stempelImg, {
+          x: ttdX - 25,
+          y: ttdY - 15,
+          width: 85,
+          height: 85,
+          opacity: 0.85
+        });
+      }
     }
-  }
 
-  // Tanda Tangan Digital Transparan (Digambar sebelum teks nama)
-  if (template.tandaTanganPath) {
-    const ttdImg = await embedImageSafe(doc, template.tandaTanganPath);
-    if (ttdImg) {
-      page.drawImage(ttdImg, {
-        x: ttdX + 20,
-        y: ttdY + 8,
-        width: 110,
-        height: 55,
-        opacity: 0.95
-      });
+    // Tanda Tangan Digital Transparan (Digambar sebelum teks nama)
+    if (template.tandaTanganPath) {
+      const ttdImg = await embedImageSafe(doc, template.tandaTanganPath);
+      if (ttdImg) {
+        page.drawImage(ttdImg, {
+          x: ttdX + 20,
+          y: ttdY + 8,
+          width: 110,
+          height: 55,
+          opacity: 0.95
+        });
+      }
     }
+
+    // Teks Pejabat (Selalu berada di layer paling atas / foreground)
+    const line1 = `Kendari, ${tanggalTerbit}`;
+    const line2 = pejabat.jabatan || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra';
+    const lineNamaPejabat = pejabat.nama || 'Junaiddin Pagala, S.T., M.T.';
+    const lineNipPejabat = `NIP. ${pejabat.nip || '197606122002121004'}`;
+
+    page.drawText(line1, {
+      x: ttdX,
+      y: ttdY + 70,
+      size: 10,
+      font: fontRegular,
+      color: textCol
+    });
+
+    page.drawText(line2, {
+      x: ttdX,
+      y: ttdY + 58,
+      size: 9.5,
+      font: fontBold,
+      color: textCol
+    });
+
+    page.drawText(lineNamaPejabat, {
+      x: ttdX,
+      y: ttdY + 10,
+      size: 10.5,
+      font: fontBold,
+      color: primaryCol
+    });
+
+    const wPejabat = fontBold.widthOfTextAtSize(lineNamaPejabat, 10.5);
+    page.drawLine({
+      start: { x: ttdX, y: ttdY + 8 },
+      end: { x: ttdX + wPejabat, y: ttdY + 8 },
+      thickness: 1,
+      color: textCol
+    });
+
+    page.drawText(lineNipPejabat, {
+      x: ttdX,
+      y: ttdY - 4,
+      size: 9,
+      font: fontRegular,
+      color: subTextCol
+    });
   }
-
-  // Teks Pejabat (Selalu berada di layer paling atas / foreground)
-  const line1 = `Kendari, ${tanggalTerbit}`;
-  const line2 = pejabat.jabatan || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra';
-  const lineNamaPejabat = pejabat.nama || 'Junaiddin Pagala, S.T., M.T.';
-  const lineNipPejabat = `NIP. ${pejabat.nip || '197606122002121004'}`;
-
-  page.drawText(line1, {
-    x: ttdX,
-    y: ttdY + 70,
-    size: 10,
-    font: fontRegular,
-    color: textCol
-  });
-
-  page.drawText(line2, {
-    x: ttdX,
-    y: ttdY + 58,
-    size: 9.5,
-    font: fontBold,
-    color: textCol
-  });
-
-  page.drawText(lineNamaPejabat, {
-    x: ttdX,
-    y: ttdY + 10,
-    size: 10.5,
-    font: fontBold,
-    color: primaryCol
-  });
-
-  const wPejabat = fontBold.widthOfTextAtSize(lineNamaPejabat, 10.5);
-  page.drawLine({
-    start: { x: ttdX, y: ttdY + 8 },
-    end: { x: ttdX + wPejabat, y: ttdY + 8 },
-    thickness: 1,
-    color: textCol
-  });
-
-  page.drawText(lineNipPejabat, {
-    x: ttdX,
-    y: ttdY - 4,
-    size: 9,
-    font: fontRegular,
-    color: subTextCol
-  });
 
   const pdfBytes = await doc.save();
   return {

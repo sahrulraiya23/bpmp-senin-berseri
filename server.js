@@ -1103,6 +1103,8 @@ function resolveTemplatePath(filePath) {
   const candidates = [
     path.join(DATA_DIR, cleanPath),
     path.join(BASE_DIR, cleanPath),
+    path.join(PUBLIC_DIR, cleanPath),
+    path.join(PUBLIC_DIR, 'templates', basename),
     path.join(TEMPLATE_DIR, basename),
     path.join(DATA_DIR, 'uploads', 'templates', basename),
     path.join(BASE_DIR, 'uploads', 'templates', basename)
@@ -1238,13 +1240,20 @@ app.get('/api/admin/certificate-templates/overlay', async (req, res) => {
 // 4. Pratinjau Template Sertifikat dengan Sampel Data ASN
 app.get('/api/admin/certificate-templates/preview-sample.pdf', async (req, res) => {
   try {
-    const presetKey = (req.query.preset || 'A').toUpperCase();
+    let presetKey = (req.query.preset || 'A').toUpperCase();
     const qrPosition = req.query.qrPosition === 'kiri' ? 'kiri' : 'kanan';
     const templateId = req.query.templateId;
 
     let customTpl = null;
-    if (templateId && templateId.startsWith('tpl-')) {
-      customTpl = await db.getCertificateTemplateById(templateId);
+    if (templateId) {
+      if (templateId.startsWith('tpl-')) {
+        customTpl = await db.getCertificateTemplateById(templateId);
+        if (customTpl) {
+          presetKey = (customTpl.base_preset || customTpl.config_json?.basePreset || 'A').toUpperCase();
+        }
+      } else if (templateId.startsWith('preset-')) {
+        presetKey = templateId.replace('preset-', '').toUpperCase();
+      }
     }
 
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
@@ -1252,8 +1261,9 @@ app.get('/api/admin/certificate-templates/preview-sample.pdf', async (req, res) 
     const baseUrl = `${protocol}://${host}`;
 
     const templateObj = {
+      id: templateId || `preset-${presetKey.toLowerCase()}`,
       presetKey,
-      qrPosition,
+      qrPosition: customTpl?.qr_position || customTpl?.config_json?.qrPosition || (presetKey === 'E' || presetKey === 'B' || presetKey === 'D' ? 'kiri' : qrPosition),
       file_latar: customTpl ? resolveTemplatePath(customTpl.file_latar) : null,
       patternIsi: customTpl?.config_json?.patternIsi
     };
@@ -2237,8 +2247,14 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
     // Dapatkan template yang ditentukan event atau preset default
     const templateId = event.templateId || certRecord.template_id;
     let customTemplate = null;
+    let eventPreset = 'A';
     if (templateId && templateId.startsWith('tpl-')) {
       customTemplate = await db.getCertificateTemplateById(templateId);
+      if (customTemplate) {
+        eventPreset = (customTemplate.base_preset || customTemplate.config_json?.basePreset || 'A').toUpperCase();
+      }
+    } else if (templateId && templateId.startsWith('preset-')) {
+      eventPreset = templateId.replace('preset-', '').toUpperCase();
     }
 
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
@@ -2246,8 +2262,9 @@ app.get('/api/employees/:id/certificate.pdf', async (req, res) => {
     const baseUrl = `${protocol}://${host}`;
 
     const templateObj = {
-      presetKey: customTemplate?.config_json?.basePreset || 'A',
-      qrPosition: customTemplate?.config_json?.qrPosition || 'kanan',
+      id: templateId,
+      presetKey: eventPreset,
+      qrPosition: customTemplate?.qr_position || customTemplate?.config_json?.qrPosition || (eventPreset === 'E' || eventPreset === 'B' || eventPreset === 'D' ? 'kiri' : 'kanan'),
       file_latar: customTemplate ? resolveTemplatePath(customTemplate.file_latar) : resolveTemplatePath(event.certificateTemplate?.filePath),
       patternIsi: customTemplate?.config_json?.patternIsi
     };
@@ -2486,8 +2503,15 @@ app.get('/api/certificates/:id/preview.pdf', async (req, res) => {
     }
 
     // Buat pratinjau PDF on the fly jika belum ada file statis
+    let previewPreset = 'A';
+    const tplId = (cert.template_id || '').toLowerCase();
+    if (tplId.includes('e') || tplId.includes('modern')) previewPreset = 'E';
+    else if (tplId.includes('b')) previewPreset = 'B';
+    else if (tplId.includes('c')) previewPreset = 'C';
+    else if (tplId.includes('d')) previewPreset = 'D';
+
     const certPdf = await certificateService.generateCertificatePdf({
-      template: { presetKey: cert.template_id?.includes('b') ? 'B' : 'A', qrPosition: 'kanan' },
+      template: { id: cert.template_id, presetKey: previewPreset, qrPosition: previewPreset === 'E' || previewPreset === 'B' || previewPreset === 'D' ? 'kiri' : 'kanan' },
       data: {
         certId: cert.id,
         nomor: cert.certificate_number,
