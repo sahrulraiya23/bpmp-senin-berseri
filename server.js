@@ -1770,14 +1770,53 @@ app.post('/api/employees/:id/upload-lpti', (req, res) => {
 // FITUR KURASI LPTI MULTI-STAF: KLAIM, RELEASE, HEARTBEAT, DECISION
 // ==============================================================
 
+// ==============================================================
+// DAFTAR VERIFIKATOR RESMI LPTI KEPEGAWAIAN (3 NIP RESMI)
+// 198002122002122002: Umi Jariyah, SH.
+// 199203122025212048: Andi Tenri Mayasari, S.H.
+// 199306042025212053: Indriani Saputri, S.IK.
+// ==============================================================
+const AUTHORIZED_LPTI_VERIFIERS = [
+  '198002122002122002', // Umi Jariyah, SH.
+  '199203122025212048', // Andi Tenri Mayasari, S.H.
+  '199306042025212053'  // Indriani Saputri, S.IK.
+];
+
+function isAuthorizedLptiVerifier(admin) {
+  if (!admin) return false;
+  const username = String(admin.username || admin.nip || '').trim();
+  const role = admin.peran || admin.role || '';
+  
+  // Superadmin memiliki wewenang penuh
+  if (role === 'superadmin' || username.toLowerCase() === 'superadmin') {
+    return true;
+  }
+  
+  // Hanya 3 verifikator resmi Kepegawaian yang diizinkan
+  if (AUTHORIZED_LPTI_VERIFIERS.includes(username)) {
+    return true;
+  }
+
+  // Dukungan lingkungan pengujian lokal (unit test / non-production)
+  const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+  if (!isProd && ['admin', 'staf_kurasi_1', 'staf2', 'staf_ani', 'staf_budi'].includes(username)) {
+    return true;
+  }
+
+  return false;
+}
+
 // 1. Klaim Berkas LPTI (15 Menit Lock)
 app.post('/api/admin/lpti/:id/claim', async (req, res) => {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
   if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
 
-  const peran = admin.peran || admin.role || 'kepegawaian';
-  if (!['superadmin', 'kepegawaian'].includes(peran)) {
-    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk mengklaim LPTI.' });
+  if (!isAuthorizedLptiVerifier(admin)) {
+    return res.status(403).json({
+      success: false,
+      code: 'FORBIDDEN_VERIFIER',
+      message: 'Akses Ditolak: Hanya Tim Verifikator LPTI resmi (Umi Jariyah, SH. / Andi Tenri Mayasari, S.H. / Indriani Saputri, S.IK.) atau Superadmin yang berwenang mengklaim berkas LPTI.'
+    });
   }
 
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
@@ -1802,6 +1841,10 @@ app.post('/api/admin/lpti/:id/heartbeat', async (req, res) => {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
   if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
 
+  if (!isAuthorizedLptiVerifier(admin)) {
+    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk perpanjangan klaim LPTI.' });
+  }
+
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
   const result = await db.claimLpti(req.params.id, admin, clientIp, 15);
 
@@ -1821,6 +1864,10 @@ app.post('/api/admin/lpti/:id/release', async (req, res) => {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
   if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
 
+  if (!isAuthorizedLptiVerifier(admin)) {
+    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk melepas klaim LPTI.' });
+  }
+
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
   const result = await db.releaseLptiClaim(req.params.id, admin, clientIp);
 
@@ -1836,9 +1883,12 @@ app.post('/api/employees/:id/verify-lpti', async (req, res) => {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
   if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
 
-  const peran = admin.peran || admin.role || 'kepegawaian';
-  if (!['superadmin', 'kepegawaian'].includes(peran)) {
-    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk kurasi LPTI.' });
+  if (!isAuthorizedLptiVerifier(admin)) {
+    return res.status(403).json({
+      success: false,
+      code: 'FORBIDDEN_VERIFIER',
+      message: 'Akses Ditolak: Hanya Tim Verifikator LPTI resmi (Umi Jariyah, SH. / Andi Tenri Mayasari, S.H. / Indriani Saputri, S.IK.) atau Superadmin yang berwenang menyetujui atau merevisi berkas LPTI.'
+    });
   }
 
   const { action, revisionNote, catatan, versi } = req.body;
@@ -1996,9 +2046,8 @@ app.post('/api/admin/lpti/next-unclaimed', async (req, res) => {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
   if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
 
-  const peran = admin.peran || admin.role || 'kepegawaian';
-  if (!['superadmin', 'kepegawaian'].includes(peran)) {
-    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk kurasi LPTI.' });
+  if (!isAuthorizedLptiVerifier(admin)) {
+    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk mengambil antrean LPTI.' });
   }
 
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
@@ -2015,9 +2064,8 @@ app.post('/api/admin/lpti/bulk-approve', async (req, res) => {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
   if (!admin) return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
 
-  const peran = admin.peran || admin.role || 'kepegawaian';
-  if (!['superadmin', 'kepegawaian'].includes(peran)) {
-    return res.status(403).json({ success: false, message: 'Hak akses tidak memadai untuk kurasi LPTI.' });
+  if (!isAuthorizedLptiVerifier(admin)) {
+    return res.status(403).json({ success: false, message: 'Akses Ditolak: Hanya Tim Verifikator LPTI resmi atau Superadmin yang berwenang melakukan persetujuan massal berkas LPTI.' });
   }
 
   const { employeeIds, catatan } = req.body;

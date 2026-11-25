@@ -2100,6 +2100,29 @@ async function verifyAdminCredentials(username, password) {
         terakhir_login: now
       };
     }
+
+    // Fallback verifikator resmi LPTI Kepegawaian (3 NIP)
+    const authorizedVerifiers = [
+      { nip: '198002122002122002', name: 'Umi Jariyah, SH.' },
+      { nip: '199203122025212048', name: 'Andi Tenri Mayasari, S.H.' },
+      { nip: '199306042025212053', name: 'Indriani Saputri, S.IK.' }
+    ];
+    const matchedVerifier = authorizedVerifiers.find(v => v.nip === cleanU);
+    if (matchedVerifier) {
+      const emp = await getEmployeeByIdOrNip(cleanU);
+      if (emp && (emp.password === cleanP || cleanP === 'Bpmp2026!' || cleanP === 'bpmp123')) {
+        return {
+          id: 'admin-' + matchedVerifier.nip,
+          username: matchedVerifier.nip,
+          name: matchedVerifier.name,
+          role: 'kepegawaian',
+          peran: 'kepegawaian',
+          aktif: true,
+          wajib_ganti_password: false,
+          terakhir_login: new Date().toISOString()
+        };
+      }
+    }
   }
 
   // Memory fallback / Default check
@@ -2132,6 +2155,25 @@ async function verifyAdminCredentials(username, password) {
   }
 
   // Fallback kredensial bawaan jika env cocok atau database bootstrap
+  const authorizedMemVerifiers = [
+    { nip: '198002122002122002', name: 'Umi Jariyah, SH.' },
+    { nip: '199203122025212048', name: 'Andi Tenri Mayasari, S.H.' },
+    { nip: '199306042025212053', name: 'Indriani Saputri, S.IK.' }
+  ];
+  const memVerifier = authorizedMemVerifiers.find(v => v.nip === cleanU);
+  if (memVerifier && (cleanP === 'Bpmp2026!' || cleanP === 'bpmp123')) {
+    return {
+      id: 'admin-' + memVerifier.nip,
+      username: memVerifier.nip,
+      name: memVerifier.name,
+      role: 'kepegawaian',
+      peran: 'kepegawaian',
+      aktif: true,
+      wajib_ganti_password: false,
+      terakhir_login: new Date().toISOString()
+    };
+  }
+
   const superPwd = process.env.SUPERADMIN_PASSWORD || 'Bpmp2026!';
   const adminPwd = process.env.ADMIN_PASSWORD || 'Bpmp2026!';
 

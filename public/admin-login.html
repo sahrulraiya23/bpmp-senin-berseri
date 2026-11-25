@@ -62,13 +62,16 @@
           <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" autocomplete="off">
             <div class="mb-3">
               <label class="form-label required">
-                <i class="ti ti-user me-1 text-muted"></i> Username Administrator
+                <i class="ti ti-user me-1 text-muted"></i> Username / NIP Administrator
               </label>
               <div class="input-group input-group-flat">
                 <span class="input-group-text bg-white">
                   <i class="ti ti-user text-muted"></i>
                 </span>
-                <input type="text" id="adminUsername" required placeholder="Masukkan username" value="admin" class="form-control ps-1">
+                <input type="text" id="adminUsername" required placeholder="Masukkan NIP atau Username" class="form-control ps-1">
+              </div>
+              <div class="form-text small text-muted mt-1">
+                <i class="ti ti-shield-check me-1 text-success"></i> Masuk menggunakan 18 digit NIP verifikator atau username.
               </div>
             </div>
 
