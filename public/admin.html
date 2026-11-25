@@ -1660,6 +1660,18 @@
   <!-- APPLICATION JAVASCRIPT: LOGIKA ADMIN REVAMP                    -->
   <!-- ============================================================== -->
   <script>
+    // Helper Sanitisasi HTML / XSS
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+
     // State Utama Dashboard
     let eventData = null;
     let allEventsList = [];

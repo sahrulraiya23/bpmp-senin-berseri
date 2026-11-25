@@ -3,7 +3,18 @@
  * Satu sumber komponen reusable untuk semua peran: Pegawai, Admin, Superadmin.
  */
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 if (typeof window !== 'undefined') {
+  window.escapeHtml = escapeHtml;
   window.bootstrap = window.bootstrap || window.tabler?.bootstrap || window.tabler || {};
   if (!window.bootstrap.Modal && window.tabler?.Modal) {
     window.bootstrap.Modal = window.tabler.Modal;
