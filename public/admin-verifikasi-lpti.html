@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Verifikasi LPTI ASN - BPMP Provinsi Sulawesi Tenggara</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+
+  <!-- Tabler Core CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+
+  <style>
+    .lpti-table-wrapper {
+      background: #ffffff;
+      border: 1px solid rgba(98, 105, 118, 0.16);
+      border-radius: 4px;
+    }
+    
+    .lpti-table {
+      table-layout: fixed;
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .lpti-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: #f8fafc !important;
+      color: #334155 !important;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-top: none;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 0.65rem 0.5rem;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .lpti-table tbody tr {
+      transition: background-color 0.15s ease;
+    }
+
+    .lpti-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .lpti-table tbody tr.row-highlight {
+      background-color: #f0f7ff !important;
+      border-left: 3px solid #206bc4;
+    }
+
+    .lpti-table tbody td {
+      padding: 0.55rem 0.5rem;
+      vertical-align: middle;
+      font-size: 0.83rem;
+      border-bottom: 1px solid #edf2f7;
+    }
+
+    .emp-name-text {
+      max-width: 165px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .catatan-text {
+      max-width: 155px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+      vertical-align: middle;
+      font-size: 0.78rem;
+    }
+
+    /* Modal PDF Viewer Responsive */
+    .pdf-viewer-frame {
+      width: 100%;
+      height: 70vh;
+      border: none;
+      border-radius: 4px;
+    }
+
+    /* Timeline Riwayat Audit */
+    .timeline-event-card {
+      border-left: 2px solid #cbd5e1;
+      padding-left: 14px;
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .timeline-event-card::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 3px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #206bc4;
+      border: 2px solid #ffffff;
+    }
+
+    .timeline-event-card.event-approved::before { background: #2fb344; }
+    .timeline-event-card.event-revision::before { background: #d63939; }
+    .timeline-event-card.event-claim::before { background: #ae3ec9; }
+  </style>
+</head>
+<body class="bg-white">
+  <div class="page">
+    <!-- Top Identity Strip -->
+    <div id="bpmp-top-strip"></div>
+
+    <!-- Navigation Header -->
+    <div id="bpmp-navbar"></div>
+
+    <!-- Page Body -->
+    <div class="page-wrapper">
+      <div class="container-xl py-3">
+
+        <!-- Breadcrumb & Sub-Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-primary text-white d-inline-flex align-items-center px-2 py-1">
+              <i class="ti ti-file-certificate me-1"></i> Kepegawaian
+            </span>
+            <span class="badge bg-warning-lt text-warning fw-bold">Kurasi LPTI</span>
+            <span class="text-secondary small d-none d-md-inline">Verifikasi Notula & Validasi Dokumen Sebelum Penerbitan Sertifikat</span>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Active Claim Countdown Badge -->
+            <div id="activeClaimBadge" class="badge bg-purple-lt text-purple font-monospace px-2 py-1 d-none" title="Anda sedang mengunci berkas LPTI">
+              <i class="ti ti-lock me-1"></i> Sedang Diklaim: <span id="claimTimerText">15:00</span>
+            </div>
+
+            <!-- Live Clock Badge WITA -->
+            <div class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Terakhir Pembaruan">
+              <i class="ti ti-clock me-1"></i> Terakhir: <span id="textLastUpdated">--:--:-- WITA</span>
+            </div>
+
+            <!-- Refresh Button -->
+            <button class="btn btn-outline-secondary btn-sm" onclick="loadLptiData(true)" title="Segarkan Data" aria-label="Segarkan Data">
+              <i class="ti ti-refresh" id="iconRefresh"></i>
+            </button>
+
+            <!-- Navigasi ke Rekap Presensi -->
+            <a href="/admin/rekap-presensi" class="btn btn-outline-primary btn-sm fw-bold">
+              <i class="ti ti-clipboard-check me-1"></i> Rekap Presensi &rarr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header d-print-none mb-3">
+          <div class="row g-2 align-items-center justify-content-between">
+            <div class="col">
+              <div class="page-pretitle text-secondary">BPMP PROVINSI SULAWESI TENGGARA</div>
+              <h2 class="page-title text-primary fw-bold d-flex align-items-center gap-2">
+                <i class="ti ti-file-check text-warning"></i>
+                <span>Verifikasi LPTI ASN BPMP Sultra</span>
+              </h2>
+              <p class="text-secondary mb-0 small">
+                Kurasi notula atau resume laporan materi pelatihan ASN. Persetujuan LPTI membuka hak unduh e-sertifikat resmi.
+              </p>
+            </div>
+
+            <!-- TOMBOL AMBIL LPTI BERIKUTNYA -->
+            <div class="col-12 col-md-auto">
+              <button type="button" class="btn btn-primary btn-md fw-bold shadow-sm d-inline-flex align-items-center gap-2" id="btnClaimNextLpti" onclick="handleClaimNext()">
+                <i class="ti ti-player-track-next font-18"></i>
+                <span>Ambil LPTI Berikutnya</span>
+                <span class="badge bg-warning text-dark font-monospace" id="badgePendingCount">0</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN TABLE CARD -->
+        <div class="card shadow-sm border-0 mb-4">
+          <!-- Toolbar Filter Tabs & Search -->
+          <div class="card-body border-bottom py-2 bg-light-subtle">
+            <div class="row g-2 align-items-center justify-content-between">
+              <!-- Filter Tabs: Semua / Perlu Dikurasi / Disetujui / Revisi -->
+              <div class="col-12 col-lg-auto">
+                <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Filter LPTI">
+                  <button type="button" id="btnTabAll" class="btn btn-outline-primary active" onclick="setTabFilter('all')">
+                    Semua (<span id="countTabAll">105</span>)
+                  </button>
+                  <button type="button" id="btnTabPending" class="btn btn-outline-warning" onclick="setTabFilter('pending')">
+                    <i class="ti ti-clock me-1"></i> Perlu Dikurasi (<span id="countTabPending">0</span>)
+                  </button>
+                  <button type="button" id="btnTabApproved" class="btn btn-outline-teal" onclick="setTabFilter('approved')">
+                    <i class="ti ti-circle-check me-1"></i> Disetujui (<span id="countTabApproved">0</span>)
+                  </button>
+                  <button type="button" id="btnTabRevision" class="btn btn-outline-danger" onclick="setTabFilter('revision')">
+                    <i class="ti ti-alert-triangle me-1"></i> Revisi (<span id="countTabRevision">0</span>)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Search Box -->
+              <div class="col-12 col-lg-auto d-flex align-items-center gap-2 flex-wrap">
+                <!-- Search Input with Debounce -->
+                <div class="input-icon" style="min-width: 250px;">
+                  <span class="input-icon-addon">
+                    <i class="ti ti-search"></i>
+                  </span>
+                  <input type="text" id="searchLpti" class="form-control form-control-sm" placeholder="Cari nama pegawai atau NIP..." oninput="handleSearchDebounced(this.value)">
+                </div>
+
+                <button class="btn btn-outline-secondary btn-sm" onclick="resetSearchFilter()" title="Reset Filter" id="btnResetFilter" style="display: none;">
+                  <i class="ti ti-x"></i> Reset
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabel Verifikasi LPTI (Table-layout fixed, responsif ≥1280px tanpa horizontal scroll) -->
+          <div class="table-responsive lpti-table-wrapper">
+            <table class="table table-vcenter lpti-table" id="mainLptiTable">
+              <thead>
+                <tr>
+                  <th style="width: 44px;" class="text-center">No</th>
+                  <th style="width: 185px;">Nama Pegawai</th>
+                  <th style="width: 145px;">NIP</th>
+                  <th style="width: 155px;">Jabatan / Unit</th>
+                  <th style="width: 110px;" class="text-center">Berkas LPTI</th>
+                  <th style="width: 120px;" class="text-center">Status</th>
+                  <th style="width: 145px;">Diputuskan Oleh</th>
+                  <th style="width: 150px;">Catatan Revisi</th>
+                  <th style="width: 140px;" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="lptiTableBody">
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    Memuat antrean berkas LPTI...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="card-footer d-flex flex-wrap align-items-center justify-content-between py-2 bg-light-subtle gap-2">
+            <div class="text-secondary small" id="paginationInfoText">
+              Menampilkan 0 dari 0 pegawai
+            </div>
+            <ul class="pagination pagination-sm m-0" id="paginationUl">
+              <!-- Rendered via JS -->
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="bpmp-footer"></div>
+  </div>
+
+  <!-- MODAL 1: PREVIEW DOKUMEN BERKAS LPTI -->
+  <div class="modal fade" id="modalLptiPreview" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header py-2 bg-light">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ti ti-file-text fs-2 text-primary"></i>
+            <div>
+              <h5 class="modal-title mb-0 fw-bold" id="previewModalTitle">Pratinjau Berkas LPTI</h5>
+              <div class="small text-secondary" id="previewModalMeta">-</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0 bg-dark-subtle text-center">
+          <div id="previewLoading" class="py-5 text-muted">
+            <div class="spinner-border text-primary mb-2"></div>
+            <div>Memuat dokumen...</div>
+          </div>
+          <iframe id="previewIframe" class="pdf-viewer-frame d-none" src=""></iframe>
+          <img id="previewImage" class="img-fluid d-none mx-auto my-3 rounded shadow" src="" alt="Pratinjau Gambar" style="max-height: 70vh;">
+        </div>
+        <div class="modal-footer py-2 justify-content-between">
+          <a id="btnDownloadPreview" href="#" target="_blank" download class="btn btn-outline-secondary btn-sm">
+            <i class="ti ti-download me-1"></i> Unduh Berkas Asli
+          </a>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CATATAN REVISI LPTI (WAJIB MINIMAL 5 KARAKTER) -->
+  <div class="modal fade" id="modalRevisionInput" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2 bg-danger-lt">
+          <h5 class="modal-title text-danger fw-bold d-flex align-items-center gap-1">
+            <i class="ti ti-alert-triangle"></i> Minta Revisi Berkas LPTI
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small fw-bold text-dark">Pegawai:</label>
+            <div id="revisionTargetName" class="fw-bold text-primary p-2 bg-light rounded small">-</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark" for="revisionNoteInput">
+              Alasan / Catatan Perbaikan <span class="text-danger">*</span>
+            </label>
+            <textarea id="revisionNoteInput" class="form-control" rows="4" placeholder="Tuliskan dengan jelas bagian notula/resume materi yang perlu diperbaiki (contoh: 'Format notula kurang lengkap pada bagian kesimpulan narasumber')..."></textarea>
+            <div class="form-text small text-secondary">
+              Catatan ini akan langsung tampil di akun portal ASN pegawai bersangkutan dan tersimpan permanen di riwayat audit.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-danger btn-sm fw-bold" id="btnSubmitRevision" onclick="submitRevisionDecision()">
+            <i class="ti ti-send me-1"></i> Kirim Permintaan Revisi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: RIWAYAT TIMELINE AUDIT KURASI (lpti_riwayat) -->
+  <div class="modal fade" id="modalLptiHistory" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header py-2 bg-light">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ti ti-history fs-2 text-primary"></i>
+            <div>
+              <h5 class="modal-title mb-0 fw-bold" id="historyModalTitle">Riwayat Kurasi LPTI</h5>
+              <div class="small text-secondary" id="historyModalSubTitle">-</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3" style="max-height: 65vh; overflow-y: auto;">
+          <div id="historyTimelineContainer">
+            <!-- Timeline items rendered here -->
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabler & Application Scripts -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
+
+  <script>
+    // State Halaman Verifikasi LPTI
+    let currentFilter = 'all';      // 'all', 'pending', 'approved', 'revision'
+    let currentSearch = '';
+    let targetNipParam = '';
+    let currentPage = 1;
+    let searchDebounceTimer = null;
+    let currentAdminUser = null;
+
+    // Revision state
+    let targetEmployeeForRevision = null;
+
+    // Helper Sanitisasi HTML
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+
+    // 0. Autentikasi Admin
+    async function checkAdminAuth() {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      if (!token) {
+        window.location.replace('/admin/login');
+        return false;
+      }
+      currentAdminUser = JSON.parse(localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser') || '{}');
+      return true;
+    }
+
+    // Sinkronisasi Query String dari URL
+    function syncStateFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('filter')) currentFilter = params.get('filter');
+      if (params.get('search')) currentSearch = params.get('search');
+      if (params.get('nip')) targetNipParam = params.get('nip');
+      if (params.get('page')) currentPage = parseInt(params.get('page'), 10) || 1;
+
+      const sInput = document.getElementById('searchLpti');
+      if (sInput) {
+        if (targetNipParam) {
+          sInput.value = targetNipParam;
+          document.getElementById('btnResetFilter').style.display = 'inline-block';
+        } else if (currentSearch) {
+          sInput.value = currentSearch;
+        }
+      }
+      updateTabButtonUI();
+    }
+
+    function updateUrlState() {
+      const params = new URLSearchParams();
+      if (currentFilter !== 'all') params.set('filter', currentFilter);
+      if (currentSearch) params.set('search', currentSearch);
+      if (targetNipParam) params.set('nip', targetNipParam);
+      if (currentPage > 1) params.set('page', currentPage);
+
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    function updateTabButtonUI() {
+      document.querySelectorAll('[id^="btnTab"]').forEach(b => b.classList.remove('active'));
+      if (currentFilter === 'pending') document.getElementById('btnTabPending')?.classList.add('active');
+      else if (currentFilter === 'approved') document.getElementById('btnTabApproved')?.classList.add('active');
+      else if (currentFilter === 'revision') document.getElementById('btnTabRevision')?.classList.add('active');
+      else document.getElementById('btnTabAll')?.classList.add('active');
+    }
+
+    // 1. Muat Data Daftar LPTI
+    async function loadLptiData(showSpinner = false) {
+      if (showSpinner) {
+        const icon = document.getElementById('iconRefresh');
+        if (icon) icon.classList.add('ti-spin');
+      }
+
+      try {
+        const params = new URLSearchParams({
+          filter: currentFilter,
+          search: targetNipParam || currentSearch,
+          nip: targetNipParam,
+          page: currentPage,
+          limit: 25
+        });
+
+        const resp = await fetch(`/api/admin/verifikasi-lpti?${params.toString()}`);
+        const data = await resp.json();
+
+        if (data.success) {
+          renderLptiTableRows(data.employees);
+          renderPagination(data.pagination);
+          updateCounts(data.counts);
+          updateClockBadge();
+          updateUrlState();
+        } else {
+          document.getElementById('lptiTableBody').innerHTML = `
+            <tr><td colspan="9" class="text-center py-4 text-danger"><i class="ti ti-alert-triangle me-1"></i> ${escapeHtml(data.message)}</td></tr>
+          `;
+        }
+      } catch (err) {
+        console.error('Gagal memuat LPTI:', err);
+        document.getElementById('lptiTableBody').innerHTML = `
+          <tr><td colspan="9" class="text-center py-4 text-danger"><i class="ti ti-wifi-off me-1"></i> Gagal terhubung ke server: ${escapeHtml(err.message)}</td></tr>
+        `;
+      } finally {
+        const icon = document.getElementById('iconRefresh');
+        if (icon) icon.classList.remove('ti-spin');
+      }
+    }
+
+    // 2. Render Baris Tabel LPTI
+    function renderLptiTableRows(employees) {
+      const tbody = document.getElementById('lptiTableBody');
+      if (!tbody) return;
+
+      if (!employees || employees.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="ti ti-check-double font-32 text-success mb-2 d-block"></i>
+              Tidak ada berkas LPTI dalam kategori ini atau seluruh antrean telah selesai diperiksa.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const myUsername = currentAdminUser ? (currentAdminUser.username || currentAdminUser.nip) : '';
+      const isSuperadmin = currentAdminUser && (currentAdminUser.role === 'superadmin' || currentAdminUser.peran === 'superadmin');
+
+      tbody.innerHTML = employees.map(emp => {
+        const lpti = emp.lpti;
+        const status = lpti.status;
+        const isLockedByOther = lpti.isLocked && lpti.diklaimOleh !== myUsername && !isSuperadmin;
+        const isLockedByMe = lpti.isLocked && lpti.diklaimOleh === myUsername;
+
+        // Berkas LPTI Column
+        let berkasHtml = '';
+        if (lpti.filePath) {
+          berkasHtml = `
+            <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2" onclick="openPreviewModal('${escapeHtml(lpti.filePath)}', '${escapeHtml(lpti.fileOriginalName || lpti.fileName)}', '${escapeHtml(emp.name)}', '${escapeHtml(lpti.uploadedAt)}')">
+              <i class="ti ti-file-text me-0.5"></i> Lihat PDF
+            </button>
+          `;
+        } else {
+          berkasHtml = '<span class="status-empty text-muted">Belum Ada</span>';
+        }
+
+        // Status LPTI Column
+        let statusBadge = '';
+        if (isLockedByOther) {
+          statusBadge = `
+            <span class="badge bg-purple-lt text-purple fw-bold px-2 py-0.5" title="Sedang diperiksa oleh ${escapeHtml(lpti.diklaimOleh)}">
+              <i class="ti ti-lock me-0.5"></i> Dikunci: ${escapeHtml(lpti.diklaimOleh)}
+            </span>
+          `;
+        } else if (isLockedByMe) {
+          statusBadge = `
+            <span class="badge bg-purple text-white fw-bold px-2 py-0.5" title="Sedang Anda periksa (Kunci aktif)">
+              <i class="ti ti-lock-open me-0.5"></i> Anda Periksa
+            </span>
+          `;
+        } else if (status === 'pending') {
+          statusBadge = `
+            <span class="badge bg-warning-lt text-warning fw-bold px-2 py-0.5">
+              <i class="ti ti-clock me-0.5"></i> Perlu Dikurasi
+            </span>
+          `;
+        } else if (status === 'approved') {
+          statusBadge = `
+            <span class="badge bg-teal-lt text-teal fw-bold px-2 py-0.5">
+              <i class="ti ti-circle-check me-0.5"></i> Disetujui
+            </span>
+          `;
+        } else if (status === 'revision') {
+          statusBadge = `
+            <span class="badge bg-danger-lt text-danger fw-bold px-2 py-0.5">
+              <i class="ti ti-alert-triangle me-0.5"></i> Revisi
+            </span>
+          `;
+        } else {
+          statusBadge = '<span class="badge bg-secondary-lt text-muted px-2 py-0.5">Belum Unggah</span>';
+        }
+
+        // Diputuskan Oleh Column
+        let decidedHtml = '';
+        if (lpti.diputuskanNama) {
+          const tglStr = lpti.diputuskanPada ? new Date(lpti.diputuskanPada).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '';
+          decidedHtml = `
+            <div class="fw-semibold text-truncate small" style="max-width: 140px;" title="${escapeHtml(lpti.diputuskanNama)}">
+              ${escapeHtml(lpti.diputuskanNama)}
+            </div>
+            <div class="text-muted font-monospace" style="font-size: 0.68rem;">${tglStr}</div>
+          `;
+        } else {
+          decidedHtml = '<span class="status-empty">—</span>';
+        }
+
+        // Catatan Revisi Column
+        let catatanHtml = '';
+        if (lpti.catatan || lpti.revisionNote) {
+          const cText = lpti.catatan || lpti.revisionNote;
+          catatanHtml = `
+            <span class="catatan-text text-danger-emphasis" title="${escapeHtml(cText)}">
+              ${escapeHtml(cText)}
+            </span>
+          `;
+        } else {
+          catatanHtml = '<span class="status-empty">—</span>';
+        }
+
+        // Action Column (Setujui / Revisi / Riwayat)
+        let actionButtons = '';
+        if (isLockedByOther) {
+          actionButtons = `
+            <button class="btn btn-xs btn-light text-muted" disabled title="Terkunci: Berkas sedang diperiksa oleh ${escapeHtml(lpti.diklaimOleh)}">
+              <i class="ti ti-lock me-0.5"></i> Terkunci
+            </button>
+            <button class="btn btn-xs btn-ghost-secondary ms-1 p-1" onclick="openHistoryModal('${emp.id}')" title="Lihat Riwayat Audit">
+              <i class="ti ti-history"></i>
+            </button>
+          `;
+        } else {
+          const canApprove = emp.attended && lpti.filePath && status !== 'approved';
+          const canRevise = lpti.filePath && status !== 'revision';
+
+          actionButtons = `
+            <div class="btn-list flex-nowrap justify-content-center">
+              ${canApprove ? `
+                <button type="button" class="btn btn-xs btn-outline-success px-1.5 py-0.5 fw-bold" onclick="handleApproveLpti('${emp.id}', '${escapeHtml(emp.name)}')" title="Setujui Berkas LPTI">
+                  <i class="ti ti-check"></i>
+                </button>
+              ` : ''}
+              ${canRevise ? `
+                <button type="button" class="btn btn-xs btn-outline-danger px-1.5 py-0.5 fw-bold ms-1" onclick="openRevisionModal('${emp.id}', '${escapeHtml(emp.name)}')" title="Minta Revisi Notula">
+                  <i class="ti ti-edit"></i>
+                </button>
+              ` : ''}
+              <button type="button" class="btn btn-xs btn-ghost-secondary px-1 py-0.5 ms-1" onclick="openHistoryModal('${emp.id}')" title="Lihat Riwayat Audit">
+                <i class="ti ti-history"></i>
+              </button>
+            </div>
+          `;
+        }
+
+        const isRowHighlight = targetNipParam && emp.nip === targetNipParam;
+
+        return `
+          <tr class="${isRowHighlight ? 'row-highlight' : ''}">
+            <td class="text-center font-monospace text-secondary">${emp.no}</td>
+            <td>
+              <span class="emp-name-text fw-bold text-dark" title="${escapeHtml(emp.name)}">
+                ${escapeHtml(emp.name)}
+              </span>
+            </td>
+            <td class="font-monospace small text-secondary">${escapeHtml(emp.nip)}</td>
+            <td>
+              <span class="text-truncate d-inline-block small text-secondary" style="max-width: 150px;" title="${escapeHtml(emp.jabatan)}">
+                ${escapeHtml(emp.jabatan)}
+              </span>
+            </td>
+            <td class="text-center">${berkasHtml}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td>${decidedHtml}</td>
+            <td>${catatanHtml}</td>
+            <td class="text-center">${actionButtons}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 3. Render Pagination
+    function renderPagination(p) {
+      const ul = document.getElementById('paginationUl');
+      const info = document.getElementById('paginationInfoText');
+      if (!p) return;
+
+      const start = (p.page - 1) * p.limit + 1;
+      const end = Math.min(p.page * p.limit, p.total);
+      if (info) {
+        info.textContent = p.total > 0 ? `Menampilkan ${start} - ${end} dari ${p.total} pegawai` : 'Tidak ada data LPTI';
+      }
+
+      if (!ul) return;
+      if (p.totalPages <= 1) {
+        ul.innerHTML = '';
+        return;
+      }
+
+      let pagesHtml = '';
+      pagesHtml += `
+        <li class="page-item ${p.page <= 1 ? 'disabled' : ''}">
+          <a class="page-link" href="javascript:void(0)" onclick="goToPage(${p.page - 1})"><i class="ti ti-chevron-left"></i></a>
+        </li>
+      `;
+
+      const startPage = Math.max(1, p.page - 2);
+      const endPage = Math.min(p.totalPages, p.page + 2);
+
+      for (let i = startPage; i <= endPage; i++) {
+        pagesHtml += `
+          <li class="page-item ${i === p.page ? 'active' : ''}">
+            <a class="page-link" href="javascript:void(0)" onclick="goToPage(${i})">${i}</a>
+          </li>
+        `;
+      }
+
+      pagesHtml += `
+        <li class="page-item ${p.page >= p.totalPages ? 'disabled' : ''}">
+          <a class="page-link" href="javascript:void(0)" onclick="goToPage(${p.page + 1})"><i class="ti ti-chevron-right"></i></a>
+        </li>
+      `;
+
+      ul.innerHTML = pagesHtml;
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      loadLptiData(false);
+    }
+
+    function updateCounts(c) {
+      if (!c) return;
+      document.getElementById('countTabAll').textContent = c.all || 0;
+      document.getElementById('countTabPending').textContent = c.pending || 0;
+      document.getElementById('countTabApproved').textContent = c.approved || 0;
+      document.getElementById('countTabRevision').textContent = c.revision || 0;
+      document.getElementById('badgePendingCount').textContent = c.pending || 0;
+    }
+
+    // 4. Tombol "Ambil LPTI Berikutnya"
+    async function handleClaimNext() {
+      const btn = document.getElementById('btnClaimNextLpti');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengambil Antrean...';
+
+      try {
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        const res = await fetch('/api/admin/verifikasi-lpti/claim-next', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (data.success && data.employee) {
+          const emp = data.employee;
+          alert(`✅ Berkas LPTI milik ${emp.name} berhasil diklaim!\nDokumen otomatis dibuka untuk kurasi.`);
+          
+          // Buka preview dokumen
+          if (emp.lpti?.filePath) {
+            openPreviewModal(emp.lpti.filePath, emp.lpti.fileOriginalName || 'Berkas LPTI', emp.name, emp.lpti.uploadedAt);
+          }
+          
+          targetNipParam = emp.nip;
+          document.getElementById('btnResetFilter').style.display = 'inline-block';
+          await loadLptiData(false);
+        } else {
+          alert(data.message || 'Tidak ada berkas LPTI yang menunggu kurasi saat ini.');
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan jaringan: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    // 5. Setujui LPTI
+    async function handleApproveLpti(id, name) {
+      if (!confirm(`Apakah Anda yakin ingin menyetujui berkas LPTI untuk ${name}?\n\nPersetujuan ini otomatis menerbitkan e-sertifikat resmi.`)) {
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        const res = await fetch(`/api/admin/verifikasi-lpti/${id}/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ catatan: 'LPTI memenuhi standar kelayakan materi pelatihan' })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert(`✅ Berkas LPTI milik ${name} berhasil disetujui!`);
+          loadLptiData(false);
+        } else {
+          alert('❌ Gagal: ' + (data.message || 'Persetujuan ditolak server.'));
+        }
+      } catch (err) {
+        alert('Kesalahan jaringan: ' + err.message);
+      }
+    }
+
+    // 6. Minta Revisi LPTI
+    function openRevisionModal(id, name) {
+      targetEmployeeForRevision = { id, name };
+      document.getElementById('revisionTargetName').textContent = name;
+      document.getElementById('revisionNoteInput').value = '';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRevisionInput')).show();
+    }
+
+    async function submitRevisionDecision() {
+      if (!targetEmployeeForRevision) return;
+      const note = document.getElementById('revisionNoteInput').value.trim();
+      if (!note || note.length < 5) {
+        alert('Harap masukkan catatan revisi minimal 5 karakter!');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitRevision');
+      btn.disabled = true;
+
+      try {
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        const res = await fetch(`/api/admin/verifikasi-lpti/${targetEmployeeForRevision.id}/revise`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ catatan: note })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modalRevisionInput')).hide();
+          alert(`✅ Catatan revisi berhasil dikirim kepada ${targetEmployeeForRevision.name}.`);
+          loadLptiData(false);
+        } else {
+          alert('❌ Gagal: ' + (data.message || 'Revisi ditolak server.'));
+        }
+      } catch (err) {
+        alert('Kesalahan jaringan: ' + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // 7. Modal Preview Dokumen
+    function openPreviewModal(url, filename, name, uploadedAt) {
+      document.getElementById('previewModalTitle').textContent = `Berkas LPTI: ${name}`;
+      document.getElementById('previewModalMeta').textContent = `${filename} • Diunggah: ${uploadedAt ? new Date(uploadedAt).toLocaleString('id-ID') : '-'}`;
+      document.getElementById('btnDownloadPreview').href = url;
+
+      const iframe = document.getElementById('previewIframe');
+      const img = document.getElementById('previewImage');
+      const loader = document.getElementById('previewLoading');
+
+      loader.classList.remove('d-none');
+      iframe.classList.add('d-none');
+      img.classList.add('d-none');
+
+      const isImg = /\.(png|jpe?g|webp)$/i.test(url);
+      if (isImg) {
+        img.src = url;
+        img.onload = () => {
+          loader.classList.add('d-none');
+          img.classList.remove('d-none');
+        };
+      } else {
+        iframe.src = url;
+        iframe.onload = () => {
+          loader.classList.add('d-none');
+          iframe.classList.remove('d-none');
+        };
+      }
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalLptiPreview')).show();
+    }
+
+    // 8. Modal Riwayat Timeline Audit
+    async function openHistoryModal(id) {
+      const container = document.getElementById('historyTimelineContainer');
+      container.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Memuat log audit riwayat...</div>';
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalLptiHistory')).show();
+
+      try {
+        const res = await fetch(`/api/admin/verifikasi-lpti/${id}/history`);
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('historyModalTitle').textContent = `Riwayat Kurasi: ${data.employee.name}`;
+          document.getElementById('historyModalSubTitle').textContent = `NIP: ${data.employee.nip} • ${data.employee.jabatan || 'ASN'}`;
+
+          const logs = data.history || [];
+          if (logs.length === 0) {
+            container.innerHTML = '<div class="text-center py-4 text-muted">Belum ada riwayat kurasi untuk berkas ini.</div>';
+            return;
+          }
+
+          container.innerHTML = logs.map(item => {
+            const timeStr = item.waktu || item.created_at ? new Date(item.waktu || item.created_at).toLocaleString('id-ID') : '-';
+            let eventClass = '';
+            let actionBadge = `<span class="badge bg-secondary-lt text-secondary">${escapeHtml(item.aksi)}</span>`;
+
+            if (item.aksi === 'approve') {
+              eventClass = 'event-approved';
+              actionBadge = '<span class="badge bg-success-lt text-success fw-bold"><i class="ti ti-check me-0.5"></i> Disetujui</span>';
+            } else if (item.aksi === 'revise') {
+              eventClass = 'event-revision';
+              actionBadge = '<span class="badge bg-danger-lt text-danger fw-bold"><i class="ti ti-alert-triangle me-0.5"></i> Minta Revisi</span>';
+            } else if (item.aksi === 'claim') {
+              eventClass = 'event-claim';
+              actionBadge = '<span class="badge bg-purple-lt text-purple fw-bold"><i class="ti ti-lock me-0.5"></i> Diklaim</span>';
+            }
+
+            return `
+              <div class="timeline-event-card ${eventClass}">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div>${actionBadge}</div>
+                  <div class="text-muted font-monospace small" style="font-size: 0.72rem;">${timeStr}</div>
+                </div>
+                <div class="small fw-bold text-dark">
+                  Oleh: <span class="text-primary">${escapeHtml(item.nama_snapshot || item.oleh || 'Sistem')}</span>
+                </div>
+                ${item.catatan ? `
+                  <div class="small text-secondary mt-1 bg-light p-2 rounded border-start border-2 border-primary">
+                    <em>"${escapeHtml(item.catatan)}"</em>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="text-danger py-3">Gagal memuat riwayat: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    // 9. Filter & Search Handlers
+    function setTabFilter(tab) {
+      currentFilter = tab;
+      currentPage = 1;
+      targetNipParam = '';
+      document.getElementById('btnResetFilter').style.display = 'none';
+      updateTabButtonUI();
+      loadLptiData(false);
+    }
+
+    function handleSearchDebounced(val) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        currentSearch = val.trim();
+        currentPage = 1;
+        targetNipParam = '';
+        document.getElementById('btnResetFilter').style.display = currentSearch ? 'inline-block' : 'none';
+        loadLptiData(false);
+      }, 300);
+    }
+
+    function resetSearchFilter() {
+      currentSearch = '';
+      targetNipParam = '';
+      document.getElementById('searchLpti').value = '';
+      document.getElementById('btnResetFilter').style.display = 'none';
+      currentPage = 1;
+      loadLptiData(false);
+    }
+
+    function updateClockBadge() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('id-ID', { hour12: false }) + ' WITA';
+      document.getElementById('textLastUpdated').textContent = timeStr;
+    }
+
+    // 10. Inisialisasi
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ok = await checkAdminAuth();
+      if (!ok) return;
+
+      BPMPLayout.init({
+        role: currentAdminUser.role === 'superadmin' ? 'superadmin' : 'admin',
+        activeMenu: 'verifikasi-lpti',
+        user: currentAdminUser
+      });
+
+      syncStateFromUrl();
+      loadLptiData(false);
+    });
+  </script>
+</body>
+</html>

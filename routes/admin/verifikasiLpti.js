@@ -1,0 +1,343 @@
+/**
+ * Router & Controller: Verifikasi LPTI ASN BPMP Sulawesi Tenggara
+ * Menangani antrean kurasi, kunci klaim 15 menit atomik, persetujuan, revisi, dan riwayat audit.
+ */
+
+const express = require('express');
+const path = require('path');
+
+function createVerifikasiLptiRouter(db, helpers = {}) {
+  const router = express.Router();
+  const { getAdminFromToken, isAuthorizedLptiVerifier, PUBLIC_DIR } = helpers;
+
+  // Middleware autentikasi admin
+  function requireAdminAuth(req, res, next) {
+    if (!getAdminFromToken) return next();
+    const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
+    if (!admin) {
+      return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
+    }
+    req.admin = admin;
+    next();
+  }
+
+  // 1. Tampilan Web Halaman Verifikasi LPTI
+  router.get('/admin/verifikasi-lpti', (req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'admin-verifikasi-lpti.html'));
+  });
+
+  // 2. API JSON Data Daftar LPTI (Filter, Search, & Pagination)
+  router.get('/api/admin/verifikasi-lpti', async (req, res) => {
+    try {
+      const filter = (req.query.filter || 'all').toLowerCase(); // 'all', 'pending', 'approved', 'revision'
+      const search = (req.query.search || '').trim().toLowerCase();
+      const targetNip = (req.query.nip || '').trim();
+      const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+      const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 25));
+
+      const allEmployees = await db.getAllEmployees();
+      const nowTs = Date.now();
+
+      // Ekstrak pegawai yang memiliki berkas LPTI atau seluruh pegawai
+      const mapped = allEmployees.map((emp, idx) => {
+        const lpti = emp.lpti || {};
+        const lptiStatus = lpti.status || 'none';
+        const isClaimed = lpti.diklaimOleh && lpti.diklaimSampai && new Date(lpti.diklaimSampai).getTime() > nowTs;
+
+        return {
+          id: emp.id,
+          noUrut: idx + 1,
+          name: emp.name,
+          nip: emp.nip,
+          jabatan: emp.jabatan || emp.position || 'Aparatur Sipil Negara',
+          instansi: emp.instansi || 'BPMP Provinsi Sulawesi Tenggara',
+          attended: Boolean(emp.attended),
+          lpti: {
+            status: lptiStatus, // 'none', 'pending', 'approved', 'revision'
+            fileName: lpti.fileName || lpti.fileOriginalName || null,
+            fileOriginalName: lpti.fileOriginalName || lpti.fileName || null,
+            filePath: lpti.filePath || null,
+            fileSize: lpti.fileSize || null,
+            uploadedAt: lpti.uploadedAt || null,
+            versi: parseInt(lpti.versi, 10) || 1,
+            catatan: lpti.catatan || lpti.revisionNote || '',
+            revisionNote: lpti.revisionNote || lpti.catatan || '',
+            diputuskanOleh: lpti.diputuskanOleh || null,
+            diputuskanNama: lpti.diputuskanNama || null,
+            diputuskanPada: lpti.diputuskanPada || null,
+            diklaimOleh: isClaimed ? lpti.diklaimOleh : null,
+            diklaimSampai: isClaimed ? lpti.diklaimSampai : null,
+            isLocked: isClaimed
+          }
+        };
+      });
+
+      // Hitung counts kategori
+      const countAll = mapped.length;
+      const countPending = mapped.filter(e => e.lpti.status === 'pending').length;
+      const countApproved = mapped.filter(e => e.lpti.status === 'approved').length;
+      const countRevision = mapped.filter(e => e.lpti.status === 'revision').length;
+
+      let filtered = mapped;
+
+      // Filter berdasarkan NIP spesifik jika diarahkan dari Rekap Presensi
+      if (targetNip) {
+        filtered = filtered.filter(e => String(e.nip).toLowerCase() === targetNip.toLowerCase());
+      } else {
+        // Filter Tab Status
+        if (filter === 'pending') {
+          filtered = filtered.filter(e => e.lpti.status === 'pending');
+        } else if (filter === 'approved') {
+          filtered = filtered.filter(e => e.lpti.status === 'approved');
+        } else if (filter === 'revision') {
+          filtered = filtered.filter(e => e.lpti.status === 'revision');
+        }
+
+        // Pencarian Nama / NIP
+        if (search) {
+          filtered = filtered.filter(e => 
+            String(e.name).toLowerCase().includes(search) ||
+            String(e.nip).toLowerCase().includes(search) ||
+            String(e.jabatan).toLowerCase().includes(search)
+          );
+        }
+      }
+
+      // Prioritas urutan: pending paling atas
+      filtered.sort((a, b) => {
+        if (a.lpti.status === 'pending' && b.lpti.status !== 'pending') return -1;
+        if (a.lpti.status !== 'pending' && b.lpti.status === 'pending') return 1;
+        return a.noUrut - b.noUrut;
+      });
+
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+      const offset = (page - 1) * limit;
+      const paginated = filtered.slice(offset, offset + limit);
+
+      const rows = paginated.map((r, i) => ({
+        ...r,
+        no: offset + i + 1
+      }));
+
+      res.json({
+        success: true,
+        employees: rows,
+        counts: {
+          all: countAll,
+          pending: countPending,
+          approved: countApproved,
+          revision: countRevision
+        },
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages
+        }
+      });
+    } catch (err) {
+      console.error('[Verifikasi LPTI API Error]:', err);
+      res.status(500).json({ success: false, message: 'Gagal memuat daftar LPTI: ' + err.message });
+    }
+  });
+
+  // 3. Tombol "Ambil LPTI Berikutnya" (Atomic Claim Next Unclaimed)
+  router.post('/api/admin/verifikasi-lpti/claim-next', requireAdminAuth, async (req, res) => {
+    try {
+      const admin = req.admin;
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+      const result = await db.getNextUnclaimedLpti(admin);
+      if (!result.success || !result.employee) {
+        return res.status(404).json({
+          success: false,
+          code: 'NO_PENDING_QUEUE',
+          message: 'Semua berkas LPTI saat ini telah selesai diverifikasi atau sedang diperiksa staf lain.'
+        });
+      }
+
+      // Kunci selama 15 menit
+      const claimResult = await db.claimLpti(result.employee.id, admin, clientIp, 15);
+      if (!claimResult.success) {
+        return res.status(409).json(claimResult);
+      }
+
+      const freshEmp = await db.getEmployeeByIdOrNip(result.employee.id);
+      res.json({
+        success: true,
+        message: `Berkas LPTI milik ${freshEmp.name} berhasil diambil dan dikunci selama 15 menit.`,
+        employee: freshEmp,
+        claimed_until: claimResult.diklaim_sampai
+      });
+    } catch (err) {
+      console.error('[Claim Next Error]:', err);
+      res.status(500).json({ success: false, message: 'Gagal mengambil berkas LPTI berikutnya: ' + err.message });
+    }
+  });
+
+  // 4. Klaim Berkas LPTI Pegawai Tertentu
+  router.post('/api/admin/verifikasi-lpti/:id/claim', requireAdminAuth, async (req, res) => {
+    try {
+      const admin = req.admin;
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+      const result = await db.claimLpti(req.params.id, admin, clientIp, 15);
+      if (!result.success) {
+        const statusCode = result.code === 'ALREADY_CLAIMED' ? 409 : 400;
+        return res.status(statusCode).json(result);
+      }
+
+      const freshEmp = await db.getEmployeeByIdOrNip(req.params.id);
+      res.json({
+        success: true,
+        message: 'Berkas LPTI berhasil diklaim untuk diperiksa selama 15 menit.',
+        employee: freshEmp,
+        ...result
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: 'Gagal mengklaim LPTI: ' + err.message });
+    }
+  });
+
+  // 5. Lepas Klaim LPTI
+  router.post('/api/admin/verifikasi-lpti/:id/release', requireAdminAuth, async (req, res) => {
+    try {
+      const admin = req.admin;
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+      const result = await db.releaseLptiClaim(req.params.id, admin, clientIp);
+      if (!result.success) {
+        return res.status(403).json(result);
+      }
+
+      res.json({ success: true, message: 'Klaim LPTI berhasil dilepas.' });
+    } catch (err) {
+      res.status(500).json({ success: false, message: 'Gagal melepas klaim LPTI: ' + err.message });
+    }
+  });
+
+  // 6. Setujui Berkas LPTI (Persetujuan Satu Tahap)
+  router.post('/api/admin/verifikasi-lpti/:id/approve', requireAdminAuth, async (req, res) => {
+    try {
+      const admin = req.admin;
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+      const employee = await db.getEmployeeByIdOrNip(req.params.id);
+      if (!employee) return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
+
+      // Verifikasi presensi aula wajib hadir
+      if (!employee.attended) {
+        return res.status(400).json({
+          success: false,
+          code: 'ATTENDANCE_REQUIRED',
+          message: 'Persetujuan Ditolak: Pegawai belum tercatat hadir secara fisik di aula. Verifikasi kehadiran terlebih dahulu.'
+        });
+      }
+
+      const currentVersi = parseInt(employee.lpti?.versi, 10) || 1;
+      const catatan = (req.body.catatan || 'LPTI memenuhi standar substansi materi pelatihan').trim();
+
+      const result = await db.approveLpti(employee.id, admin, currentVersi, catatan, clientIp);
+      if (!result.success) {
+        const code = result.code === 'LOCK_CONFLICT' || result.code === 'ALREADY_DECIDED' ? 409 : 400;
+        return res.status(code).json(result);
+      }
+
+      // Generate nomor sertifikat jika belum ada
+      if (!employee.certificate || !employee.certificate.number) {
+        const activeEvent = await db.getActiveEvent();
+        const seq = await db.getNextCertificateSequence();
+        const year = new Date().getFullYear();
+        const padSeq = String(seq).padStart(4, '0');
+        const certNumber = `${padSeq}/C6.26/Sertifikat/KP.04.00/${year}`;
+
+        await db.saveCertificate({
+          employee_id: employee.id,
+          event_id: activeEvent?.id || null,
+          number: certNumber,
+          status: 'valid',
+          issued_at: new Date().toISOString()
+        });
+
+        await db.updateEmployee(employee.id, {
+          certificate: {
+            number: certNumber,
+            issuedAt: new Date().toISOString(),
+            status: 'valid'
+          }
+        });
+      }
+
+      const updatedEmp = await db.getEmployeeByIdOrNip(employee.id);
+      res.json({
+        success: true,
+        message: `Berkas LPTI milik ${employee.name} berhasil disetujui.`,
+        employee: updatedEmp
+      });
+    } catch (err) {
+      console.error('[Approve LPTI Error]:', err);
+      res.status(500).json({ success: false, message: 'Gagal menyetujui LPTI: ' + err.message });
+    }
+  });
+
+  // 7. Minta Revisi Berkas LPTI (Catatan Wajib)
+  router.post('/api/admin/verifikasi-lpti/:id/revise', requireAdminAuth, async (req, res) => {
+    try {
+      const admin = req.admin;
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+      const employee = await db.getEmployeeByIdOrNip(req.params.id);
+      if (!employee) return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
+
+      const catatan = (req.body.catatan || req.body.revisionNote || '').trim();
+      if (!catatan || catatan.length < 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'Catatan revisi wajib diisi dengan jelas (minimal 5 karakter) sebagai panduan perbaikan bagi pegawai.'
+        });
+      }
+
+      const currentVersi = parseInt(employee.lpti?.versi, 10) || 1;
+      const result = await db.reviseLpti(employee.id, admin, currentVersi, catatan, clientIp);
+      if (!result.success) {
+        const code = result.code === 'LOCK_CONFLICT' || result.code === 'ALREADY_DECIDED' ? 409 : 400;
+        return res.status(code).json(result);
+      }
+
+      const updatedEmp = await db.getEmployeeByIdOrNip(employee.id);
+      res.json({
+        success: true,
+        message: `Status LPTI milik ${employee.name} berhasil diubah menjadi Revisi.`,
+        employee: updatedEmp
+      });
+    } catch (err) {
+      console.error('[Revise LPTI Error]:', err);
+      res.status(500).json({ success: false, message: 'Gagal merevisi LPTI: ' + err.message });
+    }
+  });
+
+  // 8. Riwayat Timeline Kurasi LPTI (dari tabel lpti_riwayat)
+  router.get('/api/admin/verifikasi-lpti/:id/history', async (req, res) => {
+    try {
+      const employee = await db.getEmployeeByIdOrNip(req.params.id);
+      if (!employee) return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
+
+      const history = await db.getLptiHistory(employee.id);
+      res.json({
+        success: true,
+        employee: {
+          id: employee.id,
+          name: employee.name,
+          nip: employee.nip,
+          jabatan: employee.jabatan
+        },
+        history: history || []
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: 'Gagal memuat riwayat LPTI: ' + err.message });
+    }
+  });
+
+  return router;
+}
+
+module.exports = createVerifikasiLptiRouter;

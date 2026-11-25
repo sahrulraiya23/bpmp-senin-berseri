@@ -282,10 +282,16 @@
             <!-- Header Actions -->
             <div class="col-auto ms-auto d-print-none">
               <div class="btn-list">
-                <!-- Tab Buttons -->
-                <button type="button" id="tabBtnDashboard" class="btn btn-primary" onclick="switchMainTab('dashboard')" aria-label="Presensi dan LPTI">
-                  <i class="ti ti-layout-dashboard me-1"></i> Presensi & LPTI
+                <!-- Tab Buttons & Navigasi Halaman Terpisah -->
+                <button type="button" id="tabBtnDashboard" class="btn btn-primary" onclick="switchMainTab('dashboard')" aria-label="Ringkasan">
+                  <i class="ti ti-layout-dashboard me-1"></i> Ringkasan
                 </button>
+                <a href="/admin/rekap-presensi" class="btn btn-outline-primary" aria-label="Rekap Presensi">
+                  <i class="ti ti-clipboard-check me-1"></i> Rekap Presensi
+                </a>
+                <a href="/admin/verifikasi-lpti" class="btn btn-outline-warning text-dark fw-bold" aria-label="Verifikasi LPTI">
+                  <i class="ti ti-file-check me-1"></i> Verifikasi LPTI
+                </a>
                 <button type="button" id="tabBtnQr" class="btn btn-outline-secondary" onclick="switchMainTab('qr')" aria-label="Dynamic QR Presensi">
                   <i class="ti ti-qrcode me-1"></i> Dynamic QR
                 </button>
@@ -518,185 +524,66 @@
             </div>
           </div>
 
-          <!-- 1. TABEL REKAP PRESENSI & VERIFIKASI LPTI (SATU TABEL DENGAN FIXED LAYOUT & STICKY HEADER) -->
-          <div class="card shadow-sm border-0 mb-4" id="sectionTabelRekap">
-            <!-- Header Kartu Tabel -->
-            <div class="card-header py-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
-              <div>
-                <h3 class="card-title text-primary fw-bold mb-0">
-                  <i class="ti ti-list-check me-2"></i> Rekap Presensi & Verifikasi LPTI ASN BPMP Sultra
-                </h3>
-                <div class="text-secondary small">
-                  Daftar <span class="fw-bold text-dark" id="textTotalPegawaiLabel">105 Pegawai</span> BPMP Sultra beserta status presensi aula, biometrik wajah, berkas LPTI, dan penerbitan e-sertifikat
-                </div>
-              </div>
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- Dropdown Pilih Event -->
-                <select id="filterEventSelect" class="form-select form-select-sm" style="min-width: 220px;" onchange="handleEventFilterChange(this.value)" aria-label="Filter berdasarkan kegiatan pelatihan">
-                  <option value="all">Semua Kegiatan Pelatihan</option>
-                </select>
-                <!-- Waktu Terakhir Diperbarui -->
-                <span class="text-secondary small font-monospace d-none d-md-inline" id="lastUpdatedTimeText" title="Waktu sinkronisasi data terakhir">
-                  <i class="ti ti-clock me-1"></i> Terakhir: --:--:--
-                </span>
-                <!-- Tombol Refresh -->
-                <button class="btn btn-outline-secondary btn-sm" onclick="loadEmployees(true)" title="Segarkan Data Sekarang" aria-label="Segarkan Data">
-                  <i class="ti ti-refresh" id="iconRefresh"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Toolbar Filter, Search, Unit Kerja, & Ekspor -->
-            <div class="card-body border-bottom py-2 bg-light-subtle">
-              <div class="row g-2 align-items-center justify-content-between">
-                <!-- Filter Status Presensi & LPTI -->
-                <div class="col-12 col-xl-auto">
-                  <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Filter Status">
-                    <button type="button" id="btnFilterAll" class="btn btn-outline-primary active" onclick="setFilter('all', this)">Semua (<span id="countFilterAll">105</span>)</button>
-                    <button type="button" id="btnFilterHadir" class="btn btn-outline-success" onclick="setFilter('hadir', this)">Hadir</button>
-                    <button type="button" id="btnFilterBelum" class="btn btn-outline-secondary" onclick="setFilter('belum', this)">Belum Hadir</button>
-                    <button type="button" id="btnFilterPending" class="btn btn-outline-warning" onclick="setFilter('pending', this)">
-                      Perlu Dikurasi <span class="badge bg-warning text-dark ms-1" id="badgePendingCount">0</span>
-                    </button>
-                    <button type="button" id="btnFilterDisetujui" class="btn btn-outline-teal" onclick="setFilter('disetujui', this)">Disetujui</button>
-                    <button type="button" id="btnFilterRevisi" class="btn btn-outline-danger" onclick="setFilter('revisi', this)">Revisi</button>
-                  </div>
-                  <button type="button" class="btn btn-primary btn-sm ms-2 fw-bold shadow-xs" onclick="handleClaimNextLpti()" title="Klaim dan buka berkas LPTI berikutnya secara otomatis">
-                    <i class="ti ti-player-track-next me-1"></i> Ambil LPTI Berikutnya
-                  </button>
-                </div>
-
-                <!-- Kolom Kanan: Filter Unit Kerja, Search, Ekspor -->
-                <div class="col-12 col-xl-auto d-flex align-items-center gap-2 flex-wrap">
-                  <!-- Filter Jabatan / Unit Kerja -->
-                  <select id="filterUnitKerja" class="form-select form-select-sm" style="max-width: 180px;" onchange="handleUnitKerjaFilterChange(this.value)" aria-label="Filter berdasarkan jabatan atau unit kerja">
-                    <option value="all">Semua Unit Kerja</option>
-                  </select>
-
-                  <!-- Search Input -->
-                  <div class="input-icon" style="min-width: 200px;">
-                    <span class="input-icon-addon">
-                      <i class="ti ti-search"></i>
+          <!-- DUA MENU LAYANAN UTAMA KEPEGAWAIAN (TERPISAH & TABLER) -->
+          <div class="row row-cards mb-4">
+            <!-- 1. KARTU MENU REKAP PRESENSI -->
+            <div class="col-md-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-3">
+                    <span class="avatar bg-blue-lt text-blue me-3">
+                      <i class="ti ti-list-check font-22"></i>
                     </span>
-                    <input type="text" id="searchEmployee" class="form-control form-control-sm" placeholder="Cari nama atau NIP..." oninput="handleSearchInput()" aria-label="Cari nama atau NIP pegawai">
+                    <div>
+                      <h3 class="card-title text-primary fw-bold mb-1">Rekap Presensi ASN</h3>
+                      <div class="text-secondary small">Kehadiran aula, biometrik wajah, perhitungan JP & e-sertifikat</div>
+                    </div>
                   </div>
-
-                  <!-- Tombol Ekspor Excel & PDF -->
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-success" onclick="exportTableToExcel()" title="Ekspor data tersaring ke file Excel / CSV" aria-label="Ekspor Excel">
-                      <i class="ti ti-file-spreadsheet me-1"></i> Excel
-                    </button>
-                    <button type="button" class="btn btn-outline-primary" onclick="exportTableToPdf()" title="Cetak atau unduh dokumen PDF data rekap" aria-label="Ekspor PDF">
-                      <i class="ti ti-printer me-1"></i> PDF
-                    </button>
+                  <p class="text-muted small mb-3">
+                    Kelola dan pantau presensi 105 pegawai ASN BPMP Sultra, status validasi biometrik wajah, hak jam pelajaran (JP), dan akses cetak e-sertifikat resmi. Dilengkapi filter unit kerja serta ekspor Excel dan PDF.
+                  </p>
+                  <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                    <div class="small text-secondary">
+                      Hadir: <strong class="text-success" id="dashCardHadir">--</strong> | Belum: <strong class="text-danger" id="dashCardBelum">--</strong>
+                    </div>
+                    <a href="/admin/rekap-presensi" class="btn btn-primary btn-sm fw-bold">
+                      <i class="ti ti-arrow-right me-1"></i> Buka Rekap Presensi
+                    </a>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Floating Bulk Action Bar (Muncul saat ada baris yang dipilih) -->
-            <div id="bulkActionBar" class="bulk-action-bar mx-3 my-2 d-none d-flex flex-wrap justify-content-between align-items-center gap-2">
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-primary text-white font-monospace" id="bulkSelectedCount">0</span>
-                <span class="small fw-bold">Pegawai Terpilih</span>
-              </div>
-              <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="handleBulkApproveLpti()" title="Setujui berkas LPTI untuk semua pegawai terpilih">
-                  <i class="ti ti-check me-1"></i> Setujui LPTI Terpilih
-                </button>
-                <button type="button" class="btn btn-teal btn-sm text-white fw-bold" onclick="handleBulkIssueCertificates()" title="Terbitkan e-sertifikat untuk pegawai yang telah disetujui">
-                  <i class="ti ti-certificate me-1"></i> Terbitkan Sertifikat
-                </button>
-                <button type="button" class="btn btn-outline-light btn-sm" onclick="clearBulkSelection()">
-                  Batal
-                </button>
-              </div>
-            </div>
-
-            <!-- Header Cetak Resmi (Hanya tampil saat Print PDF) -->
-            <div class="print-header-bpmp d-none">
-              <h3 style="margin: 0; font-size: 16pt; font-weight: bold;">KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI</h3>
-              <h4 style="margin: 2px 0; font-size: 14pt; font-weight: bold;">BALAI PENJAMINAN MUTU PENDIDIKAN PROVINSI SULAWESI TENGGARA</h4>
-              <p style="margin: 0; font-size: 9pt;">Jl. Wolter Monginsidi No. 115, Ranomeeto, Kendari - Sulawesi Tenggara</p>
-              <h5 style="margin-top: 15px; font-size: 12pt; text-decoration: underline;">DAFTAR REKAPITULASI PRESENSI & VERIFIKASI LPTI PELATIHAN ASN</h5>
-              <div id="printEventTitleSub" style="font-size: 10pt; font-weight: bold;"></div>
-            </div>
-
-            <!-- Satu Tabel dengan table-layout fixed & Sticky Header (No Scroll-in-Scroll) -->
-            <div class="table-responsive admin-table-wrapper" style="overflow-x: auto;">
-              <table class="table table-vcenter admin-table" id="mainAdminTable">
-                <thead>
-                  <tr>
-                    <!-- Col 1: Checkbox (44px) -->
-                    <th style="width: 44px;" class="text-center">
-                      <input type="checkbox" id="selectAllCheckbox" class="form-check-input" onchange="toggleSelectAllRows(this.checked)" title="Pilih Semua Pegawai di Halaman Ini" aria-label="Pilih Semua">
-                    </th>
-                    <!-- Col 2: No (48px) -->
-                    <th style="width: 48px;" class="text-center sortable" onclick="sortTableBy('no')">
-                      No <span id="sortIcon_no" class="small text-muted">▲</span>
-                    </th>
-                    <!-- Col 3: Nama (220px) -->
-                    <th style="width: 220px;" class="sortable" onclick="sortTableBy('name')">
-                      Nama Pegawai <span id="sortIcon_name" class="small text-muted">↕</span>
-                    </th>
-                    <!-- Col 4: NIP (165px) -->
-                    <th style="width: 165px;" class="sortable" onclick="sortTableBy('nip')">
-                      NIP <span id="sortIcon_nip" class="small text-muted">↕</span>
-                    </th>
-                    <!-- Col 5: Jabatan / Unit Kerja (185px) -->
-                    <th style="width: 185px;" class="sortable" onclick="sortTableBy('jabatan')">
-                      Jabatan / Unit Kerja <span id="sortIcon_jabatan" class="small text-muted">↕</span>
-                    </th>
-                    <!-- Col 6: Presensi Aula (125px) -->
-                    <th style="width: 125px;" class="text-center sortable" onclick="sortTableBy('attended')">
-                      Presensi Aula <span id="sortIcon_attended" class="small text-muted">↕</span>
-                    </th>
-                    <!-- Col 7: Biometrik Wajah (120px) -->
-                    <th style="width: 120px;" class="text-center">
-                      Biometrik Wajah
-                    </th>
-                    <!-- Col 8: Berkas LPTI (145px) -->
-                    <th style="width: 145px;" class="text-center sortable" onclick="sortTableBy('lpti')">
-                      Berkas LPTI <span id="sortIcon_lpti" class="small text-muted">↕</span>
-                    </th>
-                    <!-- Col 9: E-Sertifikat (150px) -->
-                    <th style="width: 150px;">
-                      E-Sertifikat
-                    </th>
-                    <!-- Col 10: Aksi Admin (135px) -->
-                    <th style="width: 135px;" class="text-center">
-                      Aksi Admin
-                    </th>
-                  </tr>
-                </thead>
-                <tbody id="employeeTableBody">
-                  <tr>
-                    <td colspan="10" class="text-center py-5 text-secondary">
-                      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                      Memuat daftar pegawai BPMP Provinsi Sulawesi Tenggara...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Footer Pagination & Tampilan Jumlah Baris -->
-            <div class="card-footer d-flex flex-wrap justify-content-between align-items-center py-2 bg-white gap-2">
-              <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary small">Baris per halaman:</span>
-                <select id="pageSizeSelect" class="form-select form-select-sm" style="width: 75px;" onchange="changePageSize(this.value)" aria-label="Jumlah baris per halaman">
-                  <option value="10">10</option>
-                  <option value="25" selected>25</option>
-                  <option value="50">50</option>
-                  <option value="105">Semua</option>
-                </select>
-                <span class="text-secondary small ms-2" id="paginationEntriesInfo">
-                  Menampilkan 1-25 dari 105 pegawai
-                </span>
-              </div>
-
-              <div class="d-flex align-items-center gap-1" id="paginationControls">
-                <!-- Diisi secara dinamis oleh JavaScript -->
+            <!-- 2. KARTU MENU VERIFIKASI LPTI -->
+            <div class="col-md-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-3">
+                    <span class="avatar bg-warning-lt text-warning me-3">
+                      <i class="ti ti-file-certificate font-22"></i>
+                    </span>
+                    <div>
+                      <h3 class="card-title text-warning-emphasis fw-bold mb-1">Verifikasi & Kurasi LPTI</h3>
+                      <div class="text-secondary small">Antrean kurasi, kunci klaim 15 menit & riwayat keputusan</div>
+                    </div>
+                  </div>
+                  <p class="text-muted small mb-3">
+                    Kurasi dan verifikasi berkas resume materi LPTI ASN. Didukung mekanisme penguncian atomik anti-bentrok antar-staf, preview dokumen langsung, pencatatan catatan revisi wajib, dan jejak audit lengkap.
+                  </p>
+                  <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                    <div class="small text-secondary">
+                      Menunggu: <strong class="text-warning" id="dashCardPending">--</strong> | Disetujui: <strong class="text-teal" id="dashCardApproved">--</strong>
+                    </div>
+                    <div class="d-flex gap-2">
+                      <a href="/admin/verifikasi-lpti?claimNext=true" class="btn btn-outline-warning btn-sm fw-bold">
+                        <i class="ti ti-player-track-next me-1"></i> Ambil LPTI
+                      </a>
+                      <a href="/admin/verifikasi-lpti" class="btn btn-warning text-dark btn-sm fw-bold">
+                        <i class="ti ti-arrow-right me-1"></i> Buka Verifikasi
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2947,25 +2834,29 @@
       if (approvedRatio) approvedRatio.textContent = `${approved} dari ${total}`;
       const approvedPctEl = document.getElementById('statApprovedPct');
       if (approvedPctEl) approvedPctEl.textContent = `${approvedPct}%`;
+
+      // Update Service Cards Ringkasan Dashboard
+      const dashHadir = document.getElementById('dashCardHadir');
+      if (dashHadir) dashHadir.textContent = `${hadir} Pegawai`;
+      const dashBelum = document.getElementById('dashCardBelum');
+      if (dashBelum) dashBelum.textContent = `${total - hadir} Pegawai`;
+      const dashPending = document.getElementById('dashCardPending');
+      if (dashPending) dashPending.textContent = `${pending} Berkas`;
+      const dashApproved = document.getElementById('dashCardApproved');
+      if (dashApproved) dashApproved.textContent = `${approved} Berkas`;
     }
 
-    // Klik KPI untuk filter cepat tabel
+    // Klik KPI untuk navigasi cepat ke halaman spesifik
     function applyKpiFilter(filterType) {
-      const mapButtons = {
-        all: 'btnFilterAll',
-        hadir: 'btnFilterHadir',
-        pending: 'btnFilterPending',
-        disetujui: 'btnFilterDisetujui'
-      };
-
-      const btnId = mapButtons[filterType];
-      const targetBtn = document.getElementById(btnId);
-      if (targetBtn) {
-        setFilter(filterType, targetBtn);
+      if (filterType === 'all') {
+        window.location.href = '/admin/rekap-presensi';
+      } else if (filterType === 'hadir') {
+        window.location.href = '/admin/rekap-presensi?filter=hadir';
+      } else if (filterType === 'pending') {
+        window.location.href = '/admin/verifikasi-lpti?filter=pending';
+      } else if (filterType === 'disetujui') {
+        window.location.href = '/admin/verifikasi-lpti?filter=approved';
       }
-
-      // Scroll halus ke tabel
-      document.getElementById('sectionTabelRekap')?.scrollIntoView({ behavior: 'smooth' });
     }
 
     function setFilter(filterType, btnElement) {
@@ -3094,6 +2985,7 @@
 
     function renderTable() {
       const tbody = document.getElementById('employeeTableBody');
+      if (!tbody) return;
       const allFiltered = getFilteredEmployees();
 
       // Sort data

@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Rekap Presensi ASN - BPMP Provinsi Sulawesi Tenggara</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+
+  <!-- Tabler Core CSS (Local Dist) -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+
+  <style>
+    /* Styling khusus Rekap Presensi */
+    .rekap-table-wrapper {
+      background: #ffffff;
+      border: 1px solid rgba(98, 105, 118, 0.16);
+      border-radius: 4px;
+    }
+    
+    .rekap-table {
+      table-layout: fixed;
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .rekap-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: #f8fafc !important;
+      color: #334155 !important;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-top: none;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 0.65rem 0.5rem;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .rekap-table thead th.sortable {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .rekap-table thead th.sortable:hover {
+      background-color: #eef2f6 !important;
+    }
+
+    .rekap-table tbody tr {
+      transition: background-color 0.15s ease;
+    }
+
+    .rekap-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .rekap-table tbody td {
+      padding: 0.55rem 0.5rem;
+      vertical-align: middle;
+      font-size: 0.83rem;
+      border-bottom: 1px solid #edf2f7;
+    }
+
+    /* Pemotongan nama panjang responsif */
+    .emp-name-text {
+      max-width: 175px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .emp-jabatan-text {
+      max-width: 155px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .status-empty {
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    /* Badge LPTI Interaktif */
+    .lpti-link-badge {
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.1s ease, filter 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .lpti-link-badge:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.95);
+    }
+  </style>
+</head>
+<body class="bg-white">
+  <div class="page">
+    <!-- Top Identity Strip -->
+    <div id="bpmp-top-strip"></div>
+
+    <!-- Navigation Header -->
+    <div id="bpmp-navbar"></div>
+
+    <!-- Page Body -->
+    <div class="page-wrapper">
+      <div class="container-xl py-3">
+
+        <!-- Breadcrumb & Sub-Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-primary text-white d-inline-flex align-items-center px-2 py-1">
+              <i class="ti ti-clipboard-check me-1"></i> Kepegawaian
+            </span>
+            <span class="badge bg-azure-lt text-azure">Rekapitulasi</span>
+            <span class="text-secondary small d-none d-md-inline">Pemantauan Kehadiran Fisik & Verifikasi Kelayakan Sertifikat</span>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Waktu Terakhir Diperbarui -->
+            <div id="liveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Pembaruan Terakhir">
+              <i class="ti ti-clock me-1"></i> Terakhir: <span id="textLastUpdated">--:--:-- WITA</span>
+            </div>
+            <!-- Tombol Refresh -->
+            <button class="btn btn-outline-secondary btn-sm" onclick="loadRekapData(true)" title="Segarkan Data Sekarang" aria-label="Segarkan Data">
+              <i class="ti ti-refresh" id="iconRefresh"></i>
+            </button>
+            <!-- Navigasi Cepat ke Verifikasi LPTI -->
+            <a href="/admin/verifikasi-lpti" class="btn btn-outline-warning btn-sm fw-bold">
+              <i class="ti ti-file-check me-1"></i> Verifikasi LPTI &rarr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header d-print-none mb-3">
+          <div class="row g-2 align-items-center justify-content-between">
+            <div class="col">
+              <div class="page-pretitle text-secondary">BPMP PROVINSI SULAWESI TENGGARA</div>
+              <h2 class="page-title text-primary fw-bold d-flex align-items-center gap-2">
+                <i class="ti ti-clipboard-data text-primary"></i>
+                <span>Rekap Presensi ASN BPMP Sultra</span>
+              </h2>
+              <p class="text-secondary mb-0 small" id="textEventTitleHeader">
+                Daftar <span class="fw-bold text-dark" id="headerCountTotal">105 Pegawai</span> BPMP Sultra beserta status presensi aula, biometrik wajah, perhitungan JP, dan kelayakan e-sertifikat
+              </p>
+            </div>
+
+            <!-- Dropdown Pilihan Kegiatan Pelatihan -->
+            <div class="col-12 col-md-auto d-flex align-items-center gap-2">
+              <label class="form-label small fw-bold mb-0 text-muted d-none d-lg-inline">Kegiatan:</label>
+              <select id="filterEventSelect" class="form-select form-select-sm" style="min-width: 260px;" onchange="handleEventChange(this.value)">
+                <option value="all">Semua Kegiatan Pelatihan</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN TABLE CARD -->
+        <div class="card shadow-sm border-0 mb-4">
+          <!-- Toolbar Filter, Search, Unit Kerja, & Ekspor -->
+          <div class="card-body border-bottom py-2 bg-light-subtle">
+            <div class="row g-2 align-items-center justify-content-between">
+              <!-- Filter Tabs: Semua / Hadir / Belum Hadir -->
+              <div class="col-12 col-lg-auto">
+                <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Filter Presensi">
+                  <button type="button" id="btnTabAll" class="btn btn-outline-primary active" onclick="setTabFilter('all')">
+                    Semua (<span id="countTabAll">105</span>)
+                  </button>
+                  <button type="button" id="btnTabHadir" class="btn btn-outline-success" onclick="setTabFilter('hadir')">
+                    <i class="ti ti-check me-1"></i> Hadir (<span id="countTabHadir">0</span>)
+                  </button>
+                  <button type="button" id="btnTabBelum" class="btn btn-outline-secondary" onclick="setTabFilter('belum')">
+                    <i class="ti ti-x me-1"></i> Belum Hadir (<span id="countTabBelum">0</span>)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filter Unit Kerja, Search, Ekspor Excel & PDF -->
+              <div class="col-12 col-lg-auto d-flex align-items-center gap-2 flex-wrap">
+                <!-- Dropdown Unit Kerja -->
+                <select id="filterUnitKerja" class="form-select form-select-sm" style="max-width: 200px;" onchange="handleUnitKerjaChange(this.value)">
+                  <option value="all">Semua Unit Kerja</option>
+                </select>
+
+                <!-- Search Input with Debounce -->
+                <div class="input-icon" style="min-width: 210px;">
+                  <span class="input-icon-addon">
+                    <i class="ti ti-search"></i>
+                  </span>
+                  <input type="text" id="searchEmployee" class="form-control form-control-sm" placeholder="Cari nama atau NIP..." oninput="handleSearchDebounced(this.value)">
+                </div>
+
+                <!-- Tombol Ekspor Excel & PDF -->
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-outline-success" onclick="exportExcel()" title="Unduh data tersaring dalam format Excel">
+                    <i class="ti ti-file-spreadsheet me-1"></i> Excel
+                  </button>
+                  <button type="button" class="btn btn-outline-primary" onclick="exportPdf()" title="Cetak atau unduh dokumen PDF data rekap">
+                    <i class="ti ti-printer me-1"></i> PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabel Rekap Presensi (Table-layout fixed, responsif ≥1280px tanpa horizontal scroll) -->
+          <div class="table-responsive rekap-table-wrapper">
+            <table class="table table-vcenter rekap-table" id="mainRekapTable">
+              <thead>
+                <tr>
+                  <th style="width: 44px;" class="text-center sortable" onclick="handleSort('no')">
+                    No <span id="sortIcon_no">▲</span>
+                  </th>
+                  <th style="width: 200px;" class="sortable" onclick="handleSort('name')">
+                    Nama Pegawai <span id="sortIcon_name">↕</span>
+                  </th>
+                  <th style="width: 145px;" class="sortable" onclick="handleSort('nip')">
+                    NIP <span id="sortIcon_nip">↕</span>
+                  </th>
+                  <th style="width: 165px;" class="sortable" onclick="handleSort('jabatan')">
+                    Jabatan / Unit Kerja <span id="sortIcon_jabatan">↕</span>
+                  </th>
+                  <th style="width: 110px;" class="text-center sortable" onclick="handleSort('presensi')">
+                    Presensi Aula <span id="sortIcon_presensi">↕</span>
+                  </th>
+                  <th style="width: 100px;" class="text-center">
+                    Biometrik Wajah
+                  </th>
+                  <th style="width: 65px;" class="text-center">
+                    JP
+                  </th>
+                  <th style="width: 120px;" class="text-center sortable" onclick="handleSort('lpti')">
+                    LPTI <span id="sortIcon_lpti">↕</span>
+                  </th>
+                  <th style="width: 125px;" class="text-center sortable" onclick="handleSort('sertifikat')">
+                    E-Sertifikat <span id="sortIcon_sertifikat">↕</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="rekapTableBody">
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    Memuat data rekap presensi ASN...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="card-footer d-flex flex-wrap align-items-center justify-content-between py-2 bg-light-subtle gap-2">
+            <div class="text-secondary small" id="paginationInfoText">
+              Menampilkan 0 dari 0 pegawai
+            </div>
+            <ul class="pagination pagination-sm m-0" id="paginationUl">
+              <!-- Rendered via JS -->
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="bpmp-footer"></div>
+  </div>
+
+  <!-- Modal Foto Kehadiran / Wajah -->
+  <div class="modal fade" id="modalPhotoView" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h5 class="modal-title small fw-bold" id="modalPhotoTitle">Dokumentasi Presensi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center p-2">
+          <img id="modalPhotoImage" src="" alt="Foto" class="img-fluid rounded border shadow-sm" style="max-height: 280px;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabler & Application Scripts -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
+
+  <script>
+    // State Halaman Rekap Presensi
+    let currentFilter = 'all';      // 'all', 'hadir', 'belum'
+    let currentUnitKerja = 'all';
+    let currentEventId = 'all';
+    let currentSearch = '';
+    let currentPage = 1;
+    let currentSort = 'no';
+    let currentDir = 'asc';
+    let searchDebounceTimer = null;
+
+    // Helper Sanitisasi HTML
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+
+    // 0. Autentikasi Admin
+    async function checkAdminAuth() {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      if (!token) {
+        window.location.replace('/admin/login');
+        return false;
+      }
+      return true;
+    }
+
+    // Baca parameter dari URL query string saat halaman dibuka
+    function syncStateFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('filter')) currentFilter = params.get('filter');
+      if (params.get('unitKerja')) currentUnitKerja = params.get('unitKerja');
+      if (params.get('eventId')) currentEventId = params.get('eventId');
+      if (params.get('search')) currentSearch = params.get('search');
+      if (params.get('page')) currentPage = parseInt(params.get('page'), 10) || 1;
+      if (params.get('sort')) currentSort = params.get('sort');
+      if (params.get('dir')) currentDir = params.get('dir');
+
+      // Sinkronkan input form
+      const sInput = document.getElementById('searchEmployee');
+      if (sInput && currentSearch) sInput.value = currentSearch;
+      updateTabButtonUI();
+    }
+
+    function updateUrlState() {
+      const params = new URLSearchParams();
+      if (currentFilter !== 'all') params.set('filter', currentFilter);
+      if (currentUnitKerja !== 'all') params.set('unitKerja', currentUnitKerja);
+      if (currentEventId !== 'all') params.set('eventId', currentEventId);
+      if (currentSearch) params.set('search', currentSearch);
+      if (currentPage > 1) params.set('page', currentPage);
+      if (currentSort !== 'no') params.set('sort', currentSort);
+      if (currentDir !== 'asc') params.set('dir', currentDir);
+
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    function updateTabButtonUI() {
+      document.querySelectorAll('[id^="btnTab"]').forEach(b => b.classList.remove('active'));
+      if (currentFilter === 'hadir') document.getElementById('btnTabHadir')?.classList.add('active');
+      else if (currentFilter === 'belum') document.getElementById('btnTabBelum')?.classList.add('active');
+      else document.getElementById('btnTabAll')?.classList.add('active');
+    }
+
+    // 1. Muat Data Rekap Presensi dari Server
+    async function loadRekapData(showSpinner = false) {
+      if (showSpinner) {
+        const icon = document.getElementById('iconRefresh');
+        if (icon) icon.classList.add('ti-spin');
+      }
+
+      try {
+        const params = new URLSearchParams({
+          filter: currentFilter,
+          unitKerja: currentUnitKerja,
+          eventId: currentEventId,
+          search: currentSearch,
+          page: currentPage,
+          limit: 25,
+          sort: currentSort,
+          dir: currentDir
+        });
+
+        const resp = await fetch(`/api/admin/rekap-presensi?${params.toString()}`);
+        const data = await resp.json();
+
+        if (data.success) {
+          renderTableRows(data.employees, data.pagination);
+          renderPagination(data.pagination);
+          updateCounts(data.counts);
+          populateUnitKerjaDropdown(data.unitKerjaList);
+          populateEventsDropdown(data.events, data.targetEvent);
+          updateClockBadge();
+          updateUrlState();
+        } else {
+          document.getElementById('rekapTableBody').innerHTML = `
+            <tr><td colspan="9" class="text-center py-4 text-danger"><i class="ti ti-alert-triangle me-1"></i> ${escapeHtml(data.message)}</td></tr>
+          `;
+        }
+      } catch (err) {
+        console.error('Gagal memuat rekap:', err);
+        document.getElementById('rekapTableBody').innerHTML = `
+          <tr><td colspan="9" class="text-center py-4 text-danger"><i class="ti ti-wifi-off me-1"></i> Gagal terhubung ke server: ${escapeHtml(err.message)}</td></tr>
+        `;
+      } finally {
+        const icon = document.getElementById('iconRefresh');
+        if (icon) icon.classList.remove('ti-spin');
+      }
+    }
+
+    // 2. Render Tabel Baris Pegawai
+    function renderTableRows(employees, pagination) {
+      const tbody = document.getElementById('rekapTableBody');
+      if (!tbody) return;
+
+      if (!employees || employees.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="ti ti-search-off font-32 text-secondary mb-2 d-block"></i>
+              Tidak ada data pegawai yang sesuai dengan filter atau kata kunci pencarian.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = employees.map(emp => {
+        // Kolom Presensi Aula
+        let presensiHtml = '';
+        if (emp.attended) {
+          presensiHtml = `
+            <span class="badge bg-green text-green-fg fw-bold px-2 py-0.5" title="Hadir terverifikasi di aula">
+              <i class="ti ti-check me-0.5"></i> Hadir
+            </span>
+            ${emp.attendancePhotoUrl ? `
+              <button onclick="viewPhoto('${emp.attendancePhotoUrl}', 'Presensi: ${escapeHtml(emp.name)}')" class="btn btn-xs btn-ghost-info ms-1 p-0" title="Lihat Foto Kehadiran">
+                <i class="ti ti-camera font-14"></i>
+              </button>
+            ` : ''}
+          `;
+        } else {
+          presensiHtml = '<span class="status-empty">—</span>';
+        }
+
+        // Kolom Biometrik Wajah
+        let wajahHtml = '';
+        if (emp.faceRegistered) {
+          wajahHtml = `
+            <span class="badge bg-blue-lt text-blue px-2 py-0.5 fw-bold" title="Master biometrik wajah aktif">
+              <i class="ti ti-mood-smile me-0.5"></i> Terdaftar
+            </span>
+            ${emp.facePhotoUrl ? `
+              <button onclick="viewPhoto('${emp.facePhotoUrl}', 'Master Wajah: ${escapeHtml(emp.name)}')" class="btn btn-xs btn-ghost-primary ms-1 p-0" title="Lihat Master Foto">
+                <i class="ti ti-eye font-14"></i>
+              </button>
+            ` : ''}
+          `;
+        } else {
+          wajahHtml = '<span class="status-empty">—</span>';
+        }
+
+        // Kolom JP
+        const jpHtml = emp.attended 
+          ? `<span class="badge bg-purple-lt text-purple fw-bold px-2 py-0.5" title="${emp.jp} Jam Pelajaran">${emp.jp} JP</span>`
+          : '<span class="status-empty">0 JP</span>';
+
+        // Kolom LPTI (Badge Hanya-Baca, Klik membuka /admin/verifikasi-lpti?nip=<nip>)
+        let lptiBadge = '';
+        const lptiStatus = emp.lpti.status;
+        const targetUrl = `/admin/verifikasi-lpti?nip=${encodeURIComponent(emp.nip)}`;
+
+        if (lptiStatus === 'approved') {
+          lptiBadge = `
+            <a href="${targetUrl}" class="badge bg-teal-lt text-teal fw-bold px-2 py-0.5 lpti-link-badge" title="LPTI Disetujui (Klik untuk detail kurasi)">
+              <i class="ti ti-circle-check me-0.5"></i> Disetujui
+            </a>
+          `;
+        } else if (lptiStatus === 'pending') {
+          lptiBadge = `
+            <a href="${targetUrl}" class="badge bg-warning-lt text-warning fw-bold px-2 py-0.5 lpti-link-badge" title="Perlu Dikurasi (Klik untuk verifikasi)">
+              <i class="ti ti-clock me-0.5"></i> Perlu Dikurasi
+            </a>
+          `;
+        } else if (lptiStatus === 'revision') {
+          lptiBadge = `
+            <a href="${targetUrl}" class="badge bg-danger-lt text-danger fw-bold px-2 py-0.5 lpti-link-badge" title="Revisi Diminta (Klik untuk melihat catatan)">
+              <i class="ti ti-alert-triangle me-0.5"></i> Revisi
+            </a>
+          `;
+        } else {
+          lptiBadge = `
+            <a href="${targetUrl}" class="badge bg-secondary-lt text-muted px-2 py-0.5 lpti-link-badge" title="Belum Mengunggah LPTI">
+              Belum
+            </a>
+          `;
+        }
+
+        // Kolom E-Sertifikat
+        let certHtml = '';
+        if (emp.certificate.canPrint) {
+          certHtml = `
+            <a href="/api/employees/${emp.id}/certificate.pdf?download=true" target="_blank" class="btn btn-sm btn-outline-success py-0.5 px-2 fw-bold" title="Cetak E-Sertifikat Resmi">
+              <i class="ti ti-printer me-1"></i> Cetak
+            </a>
+          `;
+        } else {
+          certHtml = `
+            <button class="btn btn-sm btn-light py-0.5 px-2 text-muted" disabled title="${escapeHtml(emp.certificate.lockedReason)}">
+              <i class="ti ti-lock me-1"></i> Terkunci
+            </button>
+          `;
+        }
+
+        return `
+          <tr>
+            <td class="text-center font-monospace text-secondary">${emp.no}</td>
+            <td>
+              <span class="emp-name-text fw-bold text-dark" title="${escapeHtml(emp.name)}">
+                ${escapeHtml(emp.name)}
+              </span>
+            </td>
+            <td class="font-monospace small text-secondary">${escapeHtml(emp.nip)}</td>
+            <td>
+              <span class="emp-jabatan-text small text-secondary" title="${escapeHtml(emp.jabatan)}">
+                ${escapeHtml(emp.jabatan)}
+              </span>
+            </td>
+            <td class="text-center">${presensiHtml}</td>
+            <td class="text-center">${wajahHtml}</td>
+            <td class="text-center">${jpHtml}</td>
+            <td class="text-center">${lptiBadge}</td>
+            <td class="text-center">${certHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 3. Render Pagination
+    function renderPagination(p) {
+      const ul = document.getElementById('paginationUl');
+      const info = document.getElementById('paginationInfoText');
+      if (!p) return;
+
+      const start = (p.page - 1) * p.limit + 1;
+      const end = Math.min(p.page * p.limit, p.total);
+      if (info) {
+        info.textContent = p.total > 0 ? `Menampilkan ${start} - ${end} dari ${p.total} pegawai` : 'Tidak ada data pegawai';
+      }
+
+      if (!ul) return;
+      if (p.totalPages <= 1) {
+        ul.innerHTML = '';
+        return;
+      }
+
+      let pagesHtml = '';
+
+      // Tombol Prev
+      pagesHtml += `
+        <li class="page-item ${p.page <= 1 ? 'disabled' : ''}">
+          <a class="page-link" href="javascript:void(0)" onclick="goToPage(${p.page - 1})" aria-label="Sebelumnya">
+            <i class="ti ti-chevron-left"></i>
+          </a>
+        </li>
+      `;
+
+      // Halaman dinamis
+      const startPage = Math.max(1, p.page - 2);
+      const endPage = Math.min(p.totalPages, p.page + 2);
+
+      for (let i = startPage; i <= endPage; i++) {
+        pagesHtml += `
+          <li class="page-item ${i === p.page ? 'active' : ''}">
+            <a class="page-link" href="javascript:void(0)" onclick="goToPage(${i})">${i}</a>
+          </li>
+        `;
+      }
+
+      // Tombol Next
+      pagesHtml += `
+        <li class="page-item ${p.page >= p.totalPages ? 'disabled' : ''}">
+          <a class="page-link" href="javascript:void(0)" onclick="goToPage(${p.page + 1})" aria-label="Berikutnya">
+            <i class="ti ti-chevron-right"></i>
+          </a>
+        </li>
+      `;
+
+      ul.innerHTML = pagesHtml;
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      loadRekapData(false);
+    }
+
+    // 4. Update Angka Counts Kategori
+    function updateCounts(counts) {
+      if (!counts) return;
+      document.getElementById('countTabAll').textContent = counts.all || 0;
+      document.getElementById('countTabHadir').textContent = counts.hadir || 0;
+      document.getElementById('countTabBelum').textContent = counts.belum || 0;
+      document.getElementById('headerCountTotal').textContent = `${counts.all || 0} Pegawai`;
+    }
+
+    // 5. Populate Dropdown Unit Kerja
+    function populateUnitKerjaDropdown(list) {
+      const select = document.getElementById('filterUnitKerja');
+      if (!select || select.dataset.populated === 'true') return;
+
+      const currentVal = currentUnitKerja;
+      let opts = '<option value="all">Semua Unit Kerja</option>';
+      (list || []).forEach(unit => {
+        opts += `<option value="${escapeHtml(unit)}" ${unit === currentVal ? 'selected' : ''}>${escapeHtml(unit)}</option>`;
+      });
+      select.innerHTML = opts;
+      select.dataset.populated = 'true';
+    }
+
+    // 6. Populate Dropdown Kegiatan Pelatihan
+    function populateEventsDropdown(events, targetEvent) {
+      const select = document.getElementById('filterEventSelect');
+      if (!select || select.dataset.populated === 'true') return;
+
+      let opts = '<option value="all">Semua Kegiatan Pelatihan</option>';
+      (events || []).forEach(ev => {
+        const isSelected = String(ev.id) === String(currentEventId);
+        opts += `<option value="${ev.id}" ${isSelected ? 'selected' : ''}>${escapeHtml(ev.title)} ${ev.active ? '(Sesi Aktif)' : ''}</option>`;
+      });
+      select.innerHTML = opts;
+      select.dataset.populated = 'true';
+
+      if (targetEvent) {
+        document.getElementById('textEventTitleHeader').innerHTML = `
+          Kegiatan: <strong>${escapeHtml(targetEvent.title)}</strong> (${targetEvent.jp || 2} JP) • Jadwal: ${escapeHtml(targetEvent.schedule || 'Tahun 2026')}
+        `;
+      }
+    }
+
+    // 7. Event Handlers
+    function setTabFilter(tab) {
+      currentFilter = tab;
+      currentPage = 1;
+      updateTabButtonUI();
+      loadRekapData(false);
+    }
+
+    function handleUnitKerjaChange(val) {
+      currentUnitKerja = val;
+      currentPage = 1;
+      loadRekapData(false);
+    }
+
+    function handleEventChange(val) {
+      currentEventId = val;
+      currentPage = 1;
+      loadRekapData(false);
+    }
+
+    function handleSearchDebounced(val) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        currentSearch = val.trim();
+        currentPage = 1;
+        loadRekapData(false);
+      }, 300);
+    }
+
+    function handleSort(column) {
+      if (currentSort === column) {
+        currentDir = currentDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort = column;
+        currentDir = 'asc';
+      }
+
+      // Update Sort Icons
+      document.querySelectorAll('[id^="sortIcon_"]').forEach(el => el.textContent = '↕');
+      const activeIcon = document.getElementById(`sortIcon_${column}`);
+      if (activeIcon) {
+        activeIcon.textContent = currentDir === 'asc' ? '▲' : '▼';
+      }
+
+      loadRekapData(false);
+    }
+
+    function updateClockBadge() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('id-ID', { hour12: false }) + ' WITA';
+      document.getElementById('textLastUpdated').textContent = timeStr;
+    }
+
+    function viewPhoto(url, title) {
+      document.getElementById('modalPhotoTitle').textContent = title;
+      document.getElementById('modalPhotoImage').src = url;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPhotoView')).show();
+    }
+
+    // 8. Ekspor Excel & PDF
+    function exportExcel() {
+      const params = new URLSearchParams({
+        filter: currentFilter,
+        unitKerja: currentUnitKerja,
+        eventId: currentEventId,
+        search: currentSearch,
+        sort: currentSort,
+        dir: currentDir
+      });
+      window.location.href = `/api/admin/rekap-presensi/export-excel?${params.toString()}`;
+    }
+
+    function exportPdf() {
+      const params = new URLSearchParams({
+        filter: currentFilter,
+        unitKerja: currentUnitKerja,
+        eventId: currentEventId,
+        search: currentSearch,
+        sort: currentSort,
+        dir: currentDir
+      });
+      window.open(`/api/admin/rekap-presensi/export-pdf?${params.toString()}`, '_blank');
+    }
+
+    // 9. Inisialisasi
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ok = await checkAdminAuth();
+      if (!ok) return;
+
+      const adminUser = JSON.parse(localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser') || '{}');
+      BPMPLayout.init({
+        role: adminUser.role === 'superadmin' ? 'superadmin' : 'admin',
+        activeMenu: 'rekap-presensi',
+        user: adminUser
+      });
+
+      syncStateFromUrl();
+      loadRekapData(false);
+    });
+  </script>
+</body>
+</html>

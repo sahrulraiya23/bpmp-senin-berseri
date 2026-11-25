@@ -17,6 +17,8 @@
     { "source": "/login", "destination": "/pegawai.html" },
     { "source": "/pegawai", "destination": "/pegawai.html" },
     { "source": "/admin/login", "destination": "/admin-login.html" },
+    { "source": "/admin/rekap-presensi", "destination": "/admin-rekap-presensi.html" },
+    { "source": "/admin/verifikasi-lpti", "destination": "/admin-verifikasi-lpti.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/superadmin", "destination": "/superadmin.html" },
     { "source": "/proyektor", "destination": "/proyektor.html" },

@@ -20,15 +20,18 @@ const BPMPLayout = {
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' }
     ],
     admin: [
-      { id: 'admin-dashboard', label: 'Dashboard Presensi', href: '/admin', icon: 'ti-layout-dashboard' },
+      { id: 'admin-dashboard', label: 'Ringkasan', href: '/admin', icon: 'ti-layout-dashboard' },
+      { id: 'rekap-presensi', label: 'Rekap Presensi', href: '/admin/rekap-presensi', icon: 'ti-clipboard-check' },
+      { id: 'verifikasi-lpti', label: 'Verifikasi LPTI', href: '/admin/verifikasi-lpti', icon: 'ti-file-check' },
       { id: 'sertifikat', label: 'Cek Sertifikat', href: '/sertifikat', icon: 'ti-certificate', target: '_blank' },
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' },
-      { id: 'pegawai', label: 'Portal ASN', href: '/login', icon: 'ti-user', target: '_blank' },
       { id: 'home', label: 'Beranda Portal', href: '/', icon: 'ti-home', target: '_blank' }
     ],
     superadmin: [
       { id: 'superadmin-summary', label: 'Konsol Superadmin', href: '/superadmin', icon: 'ti-shield-lock' },
-      { id: 'admin', label: 'Dashboard Kepegawaian', href: '/admin', icon: 'ti-layout-dashboard' },
+      { id: 'admin', label: 'Ringkasan Kepegawaian', href: '/admin', icon: 'ti-layout-dashboard' },
+      { id: 'rekap-presensi', label: 'Rekap Presensi', href: '/admin/rekap-presensi', icon: 'ti-clipboard-check' },
+      { id: 'verifikasi-lpti', label: 'Verifikasi LPTI', href: '/admin/verifikasi-lpti', icon: 'ti-file-check' },
       { id: 'sertifikat', label: 'Cek Sertifikat', href: '/sertifikat', icon: 'ti-certificate', target: '_blank' },
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' },
       { id: 'home', label: 'Beranda Portal', href: '/', icon: 'ti-home', target: '_blank' }

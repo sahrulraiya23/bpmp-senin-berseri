@@ -3011,6 +3011,14 @@ app.get('/verifikasi-wajah', (req, res) => {
   res.redirect('/pegawai');
 });
 
+// ==============================================================
+// MODUL ADMIN: REKAP PRESENSI & VERIFIKASI LPTI (TERPISAH & TABLER)
+// ==============================================================
+const createRekapPresensiRouter = require('./routes/admin/rekapPresensi');
+const createVerifikasiLptiRouter = require('./routes/admin/verifikasiLpti');
+app.use(createRekapPresensiRouter(db, { getAdminFromToken, PUBLIC_DIR }));
+app.use(createVerifikasiLptiRouter(db, { getAdminFromToken, isAuthorizedLptiVerifier, PUBLIC_DIR }));
+
 app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'admin-login.html'));
 });
