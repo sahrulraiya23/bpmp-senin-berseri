@@ -49,10 +49,6 @@ CREATE TABLE IF NOT EXISTS public.employees (
   certificate_issued_at TIMESTAMPTZ,
   certificate_verifier TEXT,
   certificate_verifier_title TEXT,
-  face_descriptor JSONB,
-  face_photo_url TEXT,
-  face_registered_at TIMESTAMPTZ,
-  attendance_photo_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -234,10 +230,9 @@ CREATE TABLE IF NOT EXISTS public.qr_tokens (
 );
 CREATE INDEX IF NOT EXISTS idx_qr_event_token ON public.qr_tokens (event_id, token);
 
--- 10. STORAGE BUCKETS (Untuk PDF LPTI, Template Piagam, Foto Wajah, & Sertifikat PDF)
+-- 10. STORAGE BUCKETS (Untuk PDF LPTI, Template Piagam, & Sertifikat PDF)
 INSERT INTO storage.buckets (id, name, public) VALUES ('lpti', 'lpti', true) ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('templates', 'templates', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public) VALUES ('faces', 'faces', true) ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('certificates', 'certificates', true) ON CONFLICT (id) DO NOTHING;
 
 -- 11. ROW LEVEL SECURITY (RLS) POLICIES & PERMISSIONS

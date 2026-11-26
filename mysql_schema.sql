@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `events` (
   INDEX `idx_events_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. TABEL EMPLOYEES (Data 104 Pegawai ASN & Presensi/Biometrik)
+-- 2. TABEL EMPLOYEES (Data 104 Pegawai ASN & Presensi)
 CREATE TABLE IF NOT EXISTS `employees` (
   `id` VARCHAR(64) NOT NULL PRIMARY KEY,
   `nip` VARCHAR(32) NOT NULL UNIQUE,
@@ -58,9 +58,6 @@ CREATE TABLE IF NOT EXISTS `employees` (
   `certificate_issued_at` DATETIME DEFAULT NULL,
   `certificate_verifier` VARCHAR(255) DEFAULT 'Junaiddin Pagala, ST, M.T.',
   `certificate_verifier_title` VARCHAR(255) DEFAULT 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
-  `face_descriptor` LONGTEXT DEFAULT NULL,
-  `face_photo_url` LONGTEXT DEFAULT NULL,
-  `face_registered_at` DATETIME DEFAULT NULL,
   `attendance_photo_url` LONGTEXT DEFAULT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

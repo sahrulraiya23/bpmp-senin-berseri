@@ -25,6 +25,20 @@
   <!-- Design Tokens BPMP Sultra -->
   <link rel="stylesheet" href="/css/tokens.css">
 
+  <!-- Core Helpers (XSS Sanitize) -->
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+  </script>
+
   <style>
     /* Styling khusus Dashboard Admin Revamp */
     .admin-table-wrapper {
@@ -330,7 +344,7 @@
                   <h4 class="alert-title mb-0 fw-bold">Pedoman Pelayanan Kepegawaian & Kurasi LPTI</h4>
                 </div>
                 <div class="text-secondary small">
-                  Setiap sesi kegiatan <strong>Senin Berseri</strong> berbobot <strong id="sopJpText">2 Jam Pelajaran (JP)</strong>. Pastikan verifikasi kehadiran aula telah tervalidasi secara fisik (QR TOTP/Wajah) dan periksa kelengkapan substansi berkas PDF LPTI sebelum memberikan persetujuan penerbitan E-Sertifikat resmi bagi <strong id="sopTotalAsnText">105 ASN</strong>.
+                  Setiap sesi kegiatan <strong>Senin Berseri</strong> berbobot <strong id="sopJpText">2 Jam Pelajaran (JP)</strong>. Pastikan verifikasi kehadiran aula telah tervalidasi secara fisik (QR TOTP) dan periksa kelengkapan substansi berkas PDF LPTI sebelum memberikan persetujuan penerbitan E-Sertifikat resmi bagi <strong id="sopTotalAsnText">105 ASN</strong>.
                 </div>
               </div>
               <button type="button" class="btn-close" onclick="dismissSopBanner()" aria-label="Tutup Banner SOP"></button>
@@ -536,11 +550,11 @@
                     </span>
                     <div>
                       <h3 class="card-title text-primary fw-bold mb-1">Rekap Presensi ASN</h3>
-                      <div class="text-secondary small">Kehadiran aula, biometrik wajah, perhitungan JP & e-sertifikat</div>
+                      <div class="text-secondary small">Kehadiran aula, perhitungan JP & e-sertifikat</div>
                     </div>
                   </div>
                   <p class="text-muted small mb-3">
-                    Kelola dan pantau presensi 105 pegawai ASN BPMP Sultra, status validasi biometrik wajah, hak jam pelajaran (JP), dan akses cetak e-sertifikat resmi. Dilengkapi filter unit kerja serta ekspor Excel dan PDF.
+                    Kelola dan pantau presensi 105 pegawai ASN BPMP Sultra, hak jam pelajaran (JP), dan akses cetak e-sertifikat resmi. Dilengkapi filter unit kerja serta ekspor Excel dan PDF.
                   </p>
                   <div class="d-flex align-items-center justify-content-between pt-2 border-top">
                     <div class="small text-secondary">
@@ -1315,14 +1329,14 @@
 
 
   <!-- ============================================================== -->
-  <!-- MODAL 5: FOTO BIOMETRIK / SELFIE PRESENSI PEGAWAI              -->
+  <!-- MODAL 5: FOTO DOKUMENTASI PRESENSI PEGAWAI                      -->
   <!-- ============================================================== -->
   <div class="modal modal-blur fade" id="viewPhotoModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
       <div class="modal-content">
         <div class="modal-header bg-primary text-white py-2">
           <h5 class="modal-title small fw-bold" id="viewPhotoModalTitle">
-            <i class="ti ti-camera me-1"></i> Foto Biometrik Pegawai
+            <i class="ti ti-camera me-1"></i> Foto Kehadiran Pegawai
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -3072,23 +3086,6 @@
           presensiCell = '<span class="status-empty">—</span>';
         }
 
-        // Biometrik Wajah Cell
-        let faceCell = '';
-        if (emp.faceRegistered) {
-          faceCell = `
-            <span class="badge bg-blue-lt text-blue px-2 py-0.5 fw-bold" title="Master biometrik wajah aktif">
-              <i class="ti ti-mood-smile me-0.5"></i> Terdaftar
-            </span>
-            ${emp.facePhotoUrl ? `
-              <button onclick="viewPhotoModal('${emp.facePhotoUrl}', 'Master Biometrik: ${emp.name.replace(/'/g, "\\'")}')" class="btn btn-xs btn-ghost-primary ms-1 p-0" title="Lihat Master Foto" aria-label="Lihat Foto Wajah">
-                <i class="ti ti-eye font-14"></i>
-              </button>
-            ` : ''}
-          `;
-        } else {
-          faceCell = '<span class="status-empty">—</span>';
-        }
-
         // Berkas LPTI Cell dengan Status Multi-Staf & Kunci Klaim
         const lpti = emp.lpti || {};
         const lptiStatus = lpti.status || 'none';
@@ -3225,10 +3222,6 @@
             <!-- Col 6: Presensi Aula -->
             <td class="text-center" data-label="Presensi">
               ${presensiCell}
-            </td>
-            <!-- Col 7: Biometrik Wajah -->
-            <td class="text-center" data-label="Wajah">
-              ${faceCell}
             </td>
             <!-- Col 8: Berkas LPTI -->
             <td class="text-center" data-label="LPTI">
@@ -3426,7 +3419,7 @@
 
       // Format CSV dengan Header
       let csvContent = '\uFEFF'; // UTF-8 BOM agar aksen Indonesia & Excel tidak corrupt
-      csvContent += 'No,Nama Pegawai,NIP,Jabatan / Unit Kerja,Presensi Aula,Biometrik Wajah,Status LPTI,Nomor Sertifikat\n';
+      csvContent += 'No,Nama Pegawai,NIP,Jabatan / Unit Kerja,Presensi Aula,Status LPTI,Nomor Sertifikat\n';
 
       data.forEach((emp, i) => {
         const no = i + 1;
@@ -3434,11 +3427,10 @@
         const nip = `="'${emp.nip}'"`; // Format text NIP agar angka nol di depan tidak hilang di Excel
         const jabatan = `"${(emp.jabatan || 'ASN BPMP Sultra').replace(/"/g, '""')}"`;
         const hadir = emp.attended ? 'Hadir' : 'Belum Hadir';
-        const face = emp.faceRegistered ? 'Terdaftar' : 'Belum';
         const lpti = emp.lpti ? (emp.lpti.status === 'approved' ? 'Disetujui' : (emp.lpti.status === 'pending' ? 'Perlu Dikurasi' : (emp.lpti.status === 'revision' ? 'Perlu Revisi' : 'Belum Diunggah'))) : 'Belum Diunggah';
         const cert = emp.certificate ? `"${emp.certificate.number || ''}"` : 'Belum Terbit';
 
-        csvContent += `${no},${name},${nip},${jabatan},${hadir},${face},${lpti},${cert}\n`;
+        csvContent += `${no},${name},${nip},${jabatan},${hadir},${lpti},${cert}\n`;
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

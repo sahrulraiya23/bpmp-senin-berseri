@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Audit Log Sistem - BPMP Provinsi Sulawesi Tenggara</title>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+
+  <!-- Core Styles -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+  </script>
+</head>
+<body class="layout-fluid">
+  <div class="page">
+    <div id="bpmp-sidebar"></div>
+
+    <div class="page-wrapper">
+      <div id="bpmp-header"></div>
+
+      <div class="page-body">
+        <div class="container-xl">
+          <!-- Page Header -->
+          <div class="page-header d-print-none mb-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <div class="page-pretitle">Keamanan & Kepatuhan Sistem</div>
+                <h2 class="page-title text-primary fw-bold">
+                  <i class="ti ti-history me-2"></i> Audit Log & Rekam Jejak Sistem
+                </h2>
+                <p class="text-secondary small mb-0">Catatan mutasi data, kurasi LPTI, penerbitan sertifikat, dan perubahan aturan kegiatan (Khusus Superadmin).</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Card -->
+          <div class="card shadow-sm border-0 mb-3">
+            <div class="card-body p-3">
+              <div class="row g-2 align-items-center">
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Cari User / Aktor</label>
+                  <input type="text" id="filterUser" class="form-control form-control-sm" placeholder="Contoh: superadmin atau NIP">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Aksi / Tindakan</label>
+                  <input type="text" id="filterAksi" class="form-control form-control-sm" placeholder="Contoh: TERBITKAN_SERTIFIKAT">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small mb-1">Dari Tanggal</label>
+                  <input type="date" id="filterStartDate" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small mb-1">Sampai Tanggal</label>
+                  <input type="date" id="filterEndDate" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-1">
+                  <button type="button" class="btn btn-primary btn-sm w-100" onclick="loadAuditLogs()">
+                    <i class="ti ti-filter me-1"></i> Filter
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                    <i class="ti ti-rotate"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logs Table Card -->
+          <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+              <h3 class="card-title text-primary fw-bold mb-0">Riwayat Mutasi & Peristiwa</h3>
+              <span class="badge bg-primary-lt" id="badgeLogCount">0 Log</span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-vcenter card-table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th class="w-1 text-center">No</th>
+                    <th>Waktu (WITA)</th>
+                    <th>Aktor / User</th>
+                    <th>Aksi</th>
+                    <th>Entitas</th>
+                    <th>ID Target</th>
+                    <th>Detail Mutasi</th>
+                  </tr>
+                </thead>
+                <tbody id="auditLogTableBody">
+                  <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                      Memuat audit log...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="bpmp-footer"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
+
+  <script>
+    async function checkSuperadminAuth() {
+      try {
+        const res = await fetch('/api/auth/admin-check');
+        const data = await res.json();
+        if (!res.ok || !data.authenticated) {
+          window.location.href = '/admin/login';
+          return false;
+        }
+        if (data.admin.role !== 'superadmin' && data.admin.peran !== 'superadmin') {
+          alert('Hanya Superadmin yang berwenang membuka Audit Log.');
+          window.location.href = '/admin';
+          return false;
+        }
+        localStorage.setItem('adminUser', JSON.stringify(data.admin));
+        return true;
+      } catch (e) {
+        window.location.href = '/admin/login';
+        return false;
+      }
+    }
+
+    async function loadAuditLogs() {
+      const tbody = document.getElementById('auditLogTableBody');
+      const badge = document.getElementById('badgeLogCount');
+
+      const params = new URLSearchParams();
+      const user = document.getElementById('filterUser').value.trim();
+      const aksi = document.getElementById('filterAksi').value.trim();
+      const sDate = document.getElementById('filterStartDate').value;
+      const eDate = document.getElementById('filterEndDate').value;
+
+      if (user) params.append('user', user);
+      if (aksi) params.append('aksi', aksi);
+      if (sDate) params.append('startDate', sDate);
+      if (eDate) params.append('endDate', eDate);
+
+      try {
+        const res = await fetch(`/api/admin/audit-log?${params.toString()}`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message);
+
+        const logs = data.logs || [];
+        badge.textContent = `${logs.length} Log`;
+
+        if (logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada rekaman log audit yang cocok.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = logs.map((log, idx) => {
+          let detail = '—';
+          if (log.sesudah_json) {
+            try {
+              const obj = JSON.parse(log.sesudah_json);
+              detail = `<pre class="mb-0 small bg-light p-1 border rounded" style="max-height: 80px; overflow-y: auto;">${escapeHtml(JSON.stringify(obj, null, 2))}</pre>`;
+            } catch (_) {
+              detail = escapeHtml(log.sesudah_json);
+            }
+          }
+
+          const actionBadge = log.aksi.includes('HAPUS') || log.aksi.includes('CABUT')
+            ? `<span class="badge bg-danger-lt text-danger fw-bold">${escapeHtml(log.aksi)}</span>`
+            : (log.aksi.includes('TAMBAH') || log.aksi.includes('SETUJUI') || log.aksi.includes('TERBIT')
+              ? `<span class="badge bg-green-lt text-green fw-bold">${escapeHtml(log.aksi)}</span>`
+              : `<span class="badge bg-blue-lt text-blue fw-bold">${escapeHtml(log.aksi)}</span>`);
+
+          return `
+            <tr>
+              <td class="text-center text-muted small">${idx + 1}</td>
+              <td class="text-secondary small font-monospace">${escapeHtml(log.created_at)}</td>
+              <td class="fw-bold text-dark font-monospace small">${escapeHtml(log.user_id)}</td>
+              <td>${actionBadge}</td>
+              <td class="small text-secondary font-monospace">${escapeHtml(log.entitas)}</td>
+              <td class="small font-monospace text-primary">${escapeHtml(log.entitas_id || '—')}</td>
+              <td>${detail}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="ti ti-alert-triangle me-1"></i> Gagal memuat audit log: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function resetFilters() {
+      document.getElementById('filterUser').value = '';
+      document.getElementById('filterAksi').value = '';
+      document.getElementById('filterStartDate').value = '';
+      document.getElementById('filterEndDate').value = '';
+      loadAuditLogs();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ok = await checkSuperadminAuth();
+      if (!ok) return;
+
+      const adminUser = JSON.parse(localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser') || '{}');
+      BPMPLayout.init({
+        role: 'superadmin',
+        activeMenu: 'audit-log',
+        user: adminUser
+      });
+
+      loadAuditLogs();
+    });
+  </script>
+</body>
+</html>

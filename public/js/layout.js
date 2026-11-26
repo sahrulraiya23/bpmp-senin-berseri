@@ -23,6 +23,7 @@ const BPMPLayout = {
       { id: 'admin-dashboard', label: 'Ringkasan', href: '/admin', icon: 'ti-layout-dashboard' },
       { id: 'rekap-presensi', label: 'Rekap Presensi', href: '/admin/rekap-presensi', icon: 'ti-clipboard-check' },
       { id: 'verifikasi-lpti', label: 'Verifikasi LPTI', href: '/admin/verifikasi-lpti', icon: 'ti-file-check' },
+      { id: 'kegiatan', label: 'Manajemen Kegiatan', href: '/admin/kegiatan', icon: 'ti-calendar-event' },
       { id: 'sertifikat', label: 'Cek Sertifikat', href: '/sertifikat', icon: 'ti-certificate', target: '_blank' },
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' },
       { id: 'home', label: 'Beranda Portal', href: '/', icon: 'ti-home', target: '_blank' }
@@ -32,9 +33,17 @@ const BPMPLayout = {
       { id: 'admin', label: 'Ringkasan Kepegawaian', href: '/admin', icon: 'ti-layout-dashboard' },
       { id: 'rekap-presensi', label: 'Rekap Presensi', href: '/admin/rekap-presensi', icon: 'ti-clipboard-check' },
       { id: 'verifikasi-lpti', label: 'Verifikasi LPTI', href: '/admin/verifikasi-lpti', icon: 'ti-file-check' },
+      { id: 'kegiatan', label: 'Manajemen Kegiatan', href: '/admin/kegiatan', icon: 'ti-calendar-event' },
+      { id: 'audit-log', label: 'Audit Log', href: '/admin/audit-log', icon: 'ti-history' },
       { id: 'sertifikat', label: 'Cek Sertifikat', href: '/sertifikat', icon: 'ti-certificate', target: '_blank' },
       { id: 'proyektor', label: 'Layar Aula', href: '/proyektor', icon: 'ti-device-projector', target: '_blank' },
       { id: 'home', label: 'Beranda Portal', href: '/', icon: 'ti-home', target: '_blank' }
+    ],
+    peserta: [
+      { id: 'peserta-riwayat', label: 'Riwayat Pelatihan', href: '/peserta/riwayat', icon: 'ti-award' },
+      { id: 'peserta-presensi', label: 'Presensi & LPTI', href: '/pegawai', icon: 'ti-qrcode' },
+      { id: 'sertifikat', label: 'Verifikasi Sertifikat', href: '/sertifikat', icon: 'ti-certificate', target: '_blank' },
+      { id: 'home', label: 'Beranda', href: '/', icon: 'ti-home' }
     ]
   },
 

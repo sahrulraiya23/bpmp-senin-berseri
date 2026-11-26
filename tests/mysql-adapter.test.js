@@ -20,10 +20,7 @@ test('SUITE: Pengujian MySQL Adapter untuk Senin Berseri', async (t) => {
         event_title: 'Pelatihan Transformasi Digital BPMP Sultra',
         attended: 0,
         attended_at: null,
-        accumulated_jp: 4,
-        face_photo_url: null,
-        face_descriptor: null,
-        face_registered_at: null,
+        accumulated_jp: 0,
         attendance_photo_url: null,
         created_at: new Date(),
         updated_at: new Date()
@@ -108,13 +105,11 @@ test('SUITE: Pengujian MySQL Adapter untuk Senin Berseri', async (t) => {
           return [{ affectedRows: 1 }];
         }
 
-        if (sqlUpper.includes('UPDATE EMPLOYEES SET') && sqlUpper.includes('FACE_PHOTO_URL = ?')) {
+        if (sqlUpper.includes('UPDATE EMPLOYEES SET') && sqlUpper.includes('ACCUMULATED_JP = ?')) {
           const empId = params[params.length - 1];
           const emp = employees.find(e => e.id === empId);
           if (emp) {
-            emp.face_photo_url = params[0];
-            emp.face_descriptor = params[1];
-            emp.face_registered_at = params[2];
+            emp.accumulated_jp = params[0];
           }
           return [{ affectedRows: 1 }];
         }
@@ -184,22 +179,13 @@ test('SUITE: Pengujian MySQL Adapter untuk Senin Berseri', async (t) => {
     assert.ok(emp);
     assert.equal(emp.nip, '199508232024011001');
     assert.equal(emp.attended, false);
-    assert.equal(emp.faceRegistered, false);
   });
 
-  await t.test('2. Registrasi Master Wajah menyimpan data biometrik ke MySQL', async () => {
-    const dummyPhoto = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
-    const updated = await mysqlAdapter.registerEmployeeFace('199508232024011001', {
-      facePhotoUrl: dummyPhoto,
-      faceDescriptor: [0.1, 0.2, 0.3]
-    });
-
+  await t.test('2. Penyesuaian JP pegawai di MySQL via ensureEmployeeJp', async () => {
+    const updated = await mysqlAdapter.ensureEmployeeJp('199508232024011001', 32);
     assert.ok(updated);
-    assert.equal(updated.faceRegistered, true);
-    assert.equal(updated.facePhotoUrl, dummyPhoto);
-
-    // Verifikasi di state pool mock
-    assert.equal(mockPool._employees[0].face_photo_url, dummyPhoto);
+    assert.equal(updated.accumulatedJp, 32);
+    assert.equal(mockPool._employees[0].accumulated_jp, 32);
   });
 
   await t.test('3. Presensi aula mencatat attended: true di MySQL dan terbaca di getAllEmployees', async () => {

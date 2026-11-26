@@ -77,8 +77,6 @@ function createRekapPresensiRouter(db, helpers = {}) {
         attended: attended,
         attendedAt: emp.attendedAt || (attended ? targetEvent?.schedule || '2026' : null),
         attendancePhotoUrl: emp.attendancePhotoUrl || null,
-        faceRegistered: Boolean(emp.faceRegistered),
-        facePhotoUrl: emp.facePhotoUrl || null,
         jp: attended ? currentEventJp : 0,
         lpti: {
           status: lptiStatus, // 'none', 'pending', 'approved', 'revision'
@@ -273,7 +271,6 @@ function createRekapPresensiRouter(db, helpers = {}) {
         'NIP',
         'Jabatan / Unit Kerja',
         'Presensi Aula',
-        'Biometrik Wajah',
         'Bobot (JP)',
         'Status LPTI',
         'Status E-Sertifikat'
@@ -308,7 +305,6 @@ function createRekapPresensiRouter(db, helpers = {}) {
           emp.nip,
           emp.jabatan,
           emp.attended ? 'Hadir' : 'Belum Hadir',
-          emp.faceRegistered ? 'Terdaftar' : 'Belum',
           emp.jp,
           lptiText,
           emp.certificate.canPrint ? 'Siap Cetak / Terbit' : 'Terkunci'
@@ -322,7 +318,7 @@ function createRekapPresensiRouter(db, helpers = {}) {
             bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
             right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
           };
-          if ([1, 3, 5, 6, 7, 8, 9].includes(colNumber)) {
+          if ([1, 3, 5, 6, 7, 8].includes(colNumber)) {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
           } else {
             cell.alignment = { horizontal: 'left', vertical: 'middle' };
@@ -347,10 +343,9 @@ function createRekapPresensiRouter(db, helpers = {}) {
       worksheet.getColumn(3).width = 24;  // NIP
       worksheet.getColumn(4).width = 30;  // Jabatan
       worksheet.getColumn(5).width = 16;  // Presensi
-      worksheet.getColumn(6).width = 18;  // Biometrik
-      worksheet.getColumn(7).width = 14;  // JP
-      worksheet.getColumn(8).width = 18;  // LPTI
-      worksheet.getColumn(9).width = 22;  // Sertifikat
+      worksheet.getColumn(6).width = 14;  // JP
+      worksheet.getColumn(7).width = 18;  // LPTI
+      worksheet.getColumn(8).width = 22;  // Sertifikat
 
       const filename = `Rekap_Presensi_BPMP_Sultra_${Date.now()}.xlsx`;
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -420,14 +415,13 @@ function createRekapPresensiRouter(db, helpers = {}) {
       // Header Tabel
       const columns = [
         { label: 'No', width: 28, align: 'center' },
-        { label: 'Nama Pegawai', width: 175, align: 'left' },
-        { label: 'NIP', width: 125, align: 'left' },
-        { label: 'Jabatan / Unit Kerja', width: 155, align: 'left' },
-        { label: 'Presensi', width: 68, align: 'center' },
-        { label: 'Biometrik', width: 68, align: 'center' },
-        { label: 'JP', width: 35, align: 'center' },
-        { label: 'Status LPTI', width: 70, align: 'center' },
-        { label: 'E-Sertifikat', width: 58, align: 'center' }
+        { label: 'Nama Pegawai', width: 195, align: 'left' },
+        { label: 'NIP', width: 135, align: 'left' },
+        { label: 'Jabatan / Unit Kerja', width: 175, align: 'left' },
+        { label: 'Presensi', width: 78, align: 'center' },
+        { label: 'JP', width: 40, align: 'center' },
+        { label: 'Status LPTI', width: 85, align: 'center' },
+        { label: 'E-Sertifikat', width: 70, align: 'center' }
       ];
 
       const drawTableHeader = (page) => {
@@ -486,7 +480,6 @@ function createRekapPresensiRouter(db, helpers = {}) {
           emp.nip,
           emp.jabatan.length > 28 ? emp.jabatan.slice(0, 26) + '...' : emp.jabatan,
           emp.attended ? 'Hadir' : 'Belum',
-          emp.faceRegistered ? 'Terdaftar' : 'Belum',
           String(emp.jp),
           lptiText,
           emp.certificate.canPrint ? 'Valid' : 'Kunci'

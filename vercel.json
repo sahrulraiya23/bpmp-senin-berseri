@@ -19,12 +19,15 @@
     { "source": "/admin/login", "destination": "/admin-login.html" },
     { "source": "/admin/rekap-presensi", "destination": "/admin-rekap-presensi.html" },
     { "source": "/admin/verifikasi-lpti", "destination": "/admin-verifikasi-lpti.html" },
+    { "source": "/admin/kegiatan", "destination": "/admin-kegiatan.html" },
+    { "source": "/admin/audit-log", "destination": "/admin-audit-log.html" },
+    { "source": "/admin/pegawai/:id", "destination": "/admin-pegawai-detail.html" },
+    { "source": "/peserta/riwayat", "destination": "/peserta-riwayat.html" },
+    { "source": "/peserta/kegiatan/:id", "destination": "/peserta-kegiatan-detail.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/superadmin", "destination": "/superadmin.html" },
     { "source": "/proyektor", "destination": "/proyektor.html" },
     { "source": "/qr", "destination": "/proyektor.html" },
-    { "source": "/verif-wajah", "destination": "/pegawai.html" },
-    { "source": "/verifikasi-wajah", "destination": "/pegawai.html" },
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/(.*)", "destination": "/api/index.js" }
   ]

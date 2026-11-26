@@ -143,7 +143,10 @@
             <button class="btn btn-outline-secondary btn-sm" onclick="loadRekapData(true)" title="Segarkan Data Sekarang" aria-label="Segarkan Data">
               <i class="ti ti-refresh" id="iconRefresh"></i>
             </button>
-            <!-- Navigasi Cepat ke Verifikasi LPTI -->
+            <!-- Navigasi ke Kegiatan & Verifikasi LPTI -->
+            <a href="/admin/kegiatan" class="btn btn-outline-teal btn-sm fw-bold">
+              <i class="ti ti-calendar-event me-1"></i> Kegiatan
+            </a>
             <a href="/admin/verifikasi-lpti" class="btn btn-outline-warning btn-sm fw-bold">
               <i class="ti ti-file-check me-1"></i> Verifikasi LPTI &rarr;
             </a>
@@ -160,7 +163,7 @@
                 <span>Rekap Presensi ASN BPMP Sultra</span>
               </h2>
               <p class="text-secondary mb-0 small" id="textEventTitleHeader">
-                Daftar <span class="fw-bold text-dark" id="headerCountTotal">105 Pegawai</span> BPMP Sultra beserta status presensi aula, biometrik wajah, perhitungan JP, dan kelayakan e-sertifikat
+                Daftar <span class="fw-bold text-dark" id="headerCountTotal">105 Pegawai</span> BPMP Sultra beserta status presensi aula, perhitungan JP, dan kelayakan e-sertifikat
               </p>
             </div>
 
@@ -239,13 +242,10 @@
                   <th style="width: 165px;" class="sortable" onclick="handleSort('jabatan')">
                     Jabatan / Unit Kerja <span id="sortIcon_jabatan">↕</span>
                   </th>
-                  <th style="width: 110px;" class="text-center sortable" onclick="handleSort('presensi')">
+                  <th style="width: 120px;" class="text-center sortable" onclick="handleSort('presensi')">
                     Presensi Aula <span id="sortIcon_presensi">↕</span>
                   </th>
-                  <th style="width: 100px;" class="text-center">
-                    Biometrik Wajah
-                  </th>
-                  <th style="width: 65px;" class="text-center">
+                  <th style="width: 70px;" class="text-center">
                     JP
                   </th>
                   <th style="width: 120px;" class="text-center sortable" onclick="handleSort('lpti')">
@@ -285,7 +285,7 @@
     <div id="bpmp-footer"></div>
   </div>
 
-  <!-- Modal Foto Kehadiran / Wajah -->
+  <!-- Modal Foto Kehadiran -->
   <div class="modal fade" id="modalPhotoView" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content">
@@ -457,23 +457,6 @@
           presensiHtml = '<span class="status-empty">—</span>';
         }
 
-        // Kolom Biometrik Wajah
-        let wajahHtml = '';
-        if (emp.faceRegistered) {
-          wajahHtml = `
-            <span class="badge bg-blue-lt text-blue px-2 py-0.5 fw-bold" title="Master biometrik wajah aktif">
-              <i class="ti ti-mood-smile me-0.5"></i> Terdaftar
-            </span>
-            ${emp.facePhotoUrl ? `
-              <button onclick="viewPhoto('${emp.facePhotoUrl}', 'Master Wajah: ${escapeHtml(emp.name)}')" class="btn btn-xs btn-ghost-primary ms-1 p-0" title="Lihat Master Foto">
-                <i class="ti ti-eye font-14"></i>
-              </button>
-            ` : ''}
-          `;
-        } else {
-          wajahHtml = '<span class="status-empty">—</span>';
-        }
-
         // Kolom JP
         const jpHtml = emp.attended 
           ? `<span class="badge bg-purple-lt text-purple fw-bold px-2 py-0.5" title="${emp.jp} Jam Pelajaran">${emp.jp} JP</span>`
@@ -530,9 +513,9 @@
           <tr>
             <td class="text-center font-monospace text-secondary">${emp.no}</td>
             <td>
-              <span class="emp-name-text fw-bold text-dark" title="${escapeHtml(emp.name)}">
-                ${escapeHtml(emp.name)}
-              </span>
+              <a href="/admin/pegawai/${encodeURIComponent(emp.id || emp.nip)}" class="emp-name-text fw-bold text-primary text-decoration-none" title="Lihat Profil & Riwayat Lengkap: ${escapeHtml(emp.name)}">
+                ${escapeHtml(emp.name)} <i class="ti ti-external-link font-12 opacity-75"></i>
+              </a>
             </td>
             <td class="font-monospace small text-secondary">${escapeHtml(emp.nip)}</td>
             <td>
@@ -541,7 +524,6 @@
               </span>
             </td>
             <td class="text-center">${presensiHtml}</td>
-            <td class="text-center">${wajahHtml}</td>
             <td class="text-center">${jpHtml}</td>
             <td class="text-center">${lptiBadge}</td>
             <td class="text-center">${certHtml}</td>

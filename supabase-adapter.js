@@ -39,95 +39,6 @@ let _supabaseInstance = null;
 let _isConfigured = false;
 let _explicitNull = false;
 
-// Cache Persisten Biometrik Wajah Lokal & Supabase Storage Cloud
-const FACES_CACHE_PATH = path.join(__dirname, 'uploads', 'faces', 'descriptors_cache.json');
-const _faceMemCache = new Map();
-
-function getFaceCache(nip) {
-  if (!nip) return null;
-  const cleanNip = String(nip).trim();
-  if (_faceMemCache.has(cleanNip)) {
-    return _faceMemCache.get(cleanNip);
-  }
-  if (process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test') {
-    return null;
-  }
-  try {
-    if (fs.existsSync(FACES_CACHE_PATH)) {
-      const data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8'));
-      if (data && data[cleanNip]) {
-        _faceMemCache.set(cleanNip, data[cleanNip]);
-        return data[cleanNip];
-      }
-    }
-  } catch (e) {}
-  return null;
-}
-
-async function ensureFaceCacheFromCloud(nip) {
-  if (!nip) return null;
-  const cleanNip = String(nip).trim();
-  const cached = getFaceCache(cleanNip);
-  if (cached) return cached;
-
-  const client = getClient();
-  if (!client) return null;
-
-  try {
-    const { data, error } = await client.storage.from('faces').download(`meta-${cleanNip}.json`);
-    if (!error && data) {
-      const text = await data.text();
-      const meta = JSON.parse(text);
-      if (meta && (meta.facePhotoUrl || meta.faceDescriptor)) {
-        _faceMemCache.set(cleanNip, meta);
-        try {
-          const dir = path.dirname(FACES_CACHE_PATH);
-          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-          let localData = {};
-          if (fs.existsSync(FACES_CACHE_PATH)) {
-            try { localData = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8')); } catch(e){}
-          }
-          localData[cleanNip] = meta;
-          fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(localData, null, 2), 'utf8');
-        } catch (fsErr) {}
-        return meta;
-      }
-    }
-  } catch (err) {}
-  return null;
-}
-
-function saveFaceCache(nip, obj) {
-  if (!nip || !obj) return;
-  const cleanNip = String(nip).trim();
-  _faceMemCache.set(cleanNip, obj);
-  // Jangan menimpa data produksi saat test runner berjalan
-  if (process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test') return;
-  try {
-    const dir = path.dirname(FACES_CACHE_PATH);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    let data = {};
-    if (fs.existsSync(FACES_CACHE_PATH)) {
-      try { data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8')); } catch(e){}
-    }
-    data[cleanNip] = obj;
-    fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) {}
-}
-
-function deleteFaceCache(nip) {
-  if (!nip) return;
-  const cleanNip = String(nip).trim();
-  _faceMemCache.delete(cleanNip);
-  try {
-    if (fs.existsSync(FACES_CACHE_PATH)) {
-      let data = JSON.parse(fs.readFileSync(FACES_CACHE_PATH, 'utf8'));
-      delete data[cleanNip];
-      fs.writeFileSync(FACES_CACHE_PATH, JSON.stringify(data, null, 2), 'utf8');
-    }
-  } catch (e) {}
-}
-
 // In-Memory store untuk development lokal sebelum file .env diisi credential Supabase
 let _memoryStore = null;
 
@@ -288,7 +199,6 @@ function setSupabaseInstance(instance) {
   _supabaseInstance = instance;
   _isConfigured = Boolean(instance);
   _explicitNull = (instance === null);
-  _faceMemCache.clear();
 }
 
 function isSupabaseAvailable() {
@@ -373,14 +283,7 @@ function formatSupabaseEmployee(row) {
       issuedAt: row.certificate_issued_at,
       verifier: row.certificate_verifier || 'Junaiddin Pagala, ST, M.T.',
       verifierTitle: row.certificate_verifier_title || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra'
-    } : null,
-    faceRegistered: Boolean(row.face_photo_url || row.face_descriptor || getFaceCache(row.nip)?.facePhotoUrl),
-    facePhotoUrl: row.face_photo_url || getFaceCache(row.nip)?.facePhotoUrl || null,
-    faceDescriptor: row.face_descriptor
-      ? (typeof row.face_descriptor === 'string' ? JSON.parse(row.face_descriptor) : row.face_descriptor)
-      : (getFaceCache(row.nip)?.faceDescriptor || null),
-    faceRegisteredAt: row.face_registered_at || getFaceCache(row.nip)?.faceRegisteredAt || null,
-    attendancePhotoUrl: row.attendance_photo_url || null
+    } : null
   };
 }
 
@@ -550,9 +453,6 @@ async function getAllEmployees() {
     return {
       ...emp,
       nip: String(emp.nip || '').trim(),
-      faceRegistered: Boolean(emp.facePhotoUrl || emp.face_photo_url || emp.faceRegistered),
-      facePhotoUrl: emp.facePhotoUrl || emp.face_photo_url || null,
-      attendancePhotoUrl: emp.attendancePhotoUrl || emp.attendance_photo_url || null,
       attendance: {
         status: isAttended ? 'present' : 'absent',
         time: isAttended ? (emp.attendedAt || 'Pukul 08:30:00 WITA') : null
@@ -582,9 +482,6 @@ async function getEmployeeByIdOrNip(idOrNip) {
         throw new Error(`Gagal memuat profil pegawai dari Supabase: ${error.message}`);
       }
     } else if (data) {
-      if (!data.face_photo_url && !data.face_descriptor) {
-        await ensureFaceCacheFromCloud(data.nip);
-      }
       return formatSupabaseEmployee(data);
     }
   } else if (isProd()) {
@@ -603,9 +500,6 @@ async function getEmployeeByIdOrNip(idOrNip) {
     return {
       ...foundMem,
       nip: String(foundMem.nip || '').trim(),
-      faceRegistered: Boolean(foundMem.facePhotoUrl || foundMem.face_photo_url || foundMem.faceRegistered),
-      facePhotoUrl: foundMem.facePhotoUrl || foundMem.face_photo_url || null,
-      attendancePhotoUrl: foundMem.attendancePhotoUrl || foundMem.attendance_photo_url || null,
       attendance: {
         status: isAttended ? 'present' : 'absent',
         attendedAt: foundMem.attendedAt || null,
@@ -740,182 +634,6 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
     time: 'Pukul ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WITA'
   };
 
-  return existing;
-}
-
-async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = null }) {
-  const now = new Date().toISOString();
-  const clean = String(id).trim();
-
-  const existing = await getEmployeeByIdOrNip(clean);
-  if (!existing) return null;
-
-  const descStr = faceDescriptor ? (typeof faceDescriptor === 'string' ? faceDescriptor : JSON.stringify(faceDescriptor)) : null;
-
-  const client = getClient();
-  if (client) {
-    const updatePayload = {
-      face_photo_url: facePhotoUrl,
-      face_descriptor: descStr,
-      face_registered_at: now,
-      updated_at: now
-    };
-
-    let { data, error } = await client
-      .from('employees')
-      .update(updatePayload)
-      .eq('id', existing.id)
-      .select()
-      .maybeSingle();
-
-    saveFaceCache(existing.nip, { faceDescriptor, facePhotoUrl, faceRegisteredAt: now });
-
-    // Simpan metadata biometrik ke Supabase Storage bucket 'faces' agar persisten lintas serverless instance
-    try {
-      const metaBuf = Buffer.from(JSON.stringify({
-        nip: existing.nip,
-        faceRegistered: true,
-        facePhotoUrl,
-        faceDescriptor,
-        faceRegisteredAt: now
-      }, null, 2), 'utf8');
-      await client.storage.from('faces').upload(`meta-${existing.nip}.json`, metaBuf, {
-        contentType: 'application/json',
-        upsert: true
-      });
-    } catch (storageMetaErr) {
-      console.warn('[Supabase Storage Note] Failed to upload meta json:', storageMetaErr.message);
-    }
-
-    if (error && error.message && (error.message.includes('face_photo_url') || error.message.includes('face_descriptor'))) {
-      console.warn(`[Supabase Note] Kolom biometrik belum ada di tabel employees. Menunggu eksekusi ALTER TABLE di Supabase SQL Editor.`);
-      return {
-        ...existing,
-        faceRegistered: true,
-        facePhotoUrl: facePhotoUrl,
-        faceDescriptor: faceDescriptor,
-        faceRegisteredAt: now
-      };
-    }
-
-    if (error) {
-      console.error(`[Supabase Error] registerEmployeeFace(${existing.id}):`, error.message);
-      throw new Error(`Gagal menyimpan data biometrik wajah ke Supabase: ${error.message}`);
-    }
-
-    if (data) {
-      return formatSupabaseEmployee(data);
-    }
-  }
-
-  if (isProd()) {
-    throw new Error('Supabase Cloud Database tidak terkonfigurasi di lingkungan Vercel/Produksi. Perekaman wajah tidak dapat disimpan.');
-  }
-
-  // Memory fallback HANYA untuk development offline non-Vercel
-  const mem = getMemoryStore();
-  const lowerClean = clean.toLowerCase();
-  const rawEmp = (mem.employees || []).find(e => 
-    e.id === clean || 
-    String(e.nip).trim() === clean || 
-    (e.username && e.username.toLowerCase() === lowerClean)
-  );
-  if (rawEmp) {
-    rawEmp.faceRegistered = true;
-    rawEmp.facePhotoUrl = facePhotoUrl;
-    rawEmp.face_photo_url = facePhotoUrl;
-    rawEmp.faceDescriptor = faceDescriptor;
-    rawEmp.face_descriptor = descStr;
-    rawEmp.faceRegisteredAt = now;
-  }
-
-  // Update di BUILTIN_TEST_USERS agar persist lintas request
-  const testUser = BUILTIN_TEST_USERS.find(tu => 
-    tu.id === clean || 
-    tu.nip === clean || 
-    tu.username === lowerClean
-  );
-  if (testUser) {
-    testUser.faceRegistered = true;
-    testUser.facePhotoUrl = facePhotoUrl;
-  }
-
-  existing.faceRegistered = true;
-  existing.facePhotoUrl = facePhotoUrl;
-  existing.faceDescriptor = faceDescriptor;
-  existing.faceRegisteredAt = now;
-  return existing;
-}
-
-async function resetEmployeeFace(id) {
-  const now = new Date().toISOString();
-  const clean = String(id).trim();
-
-  const existing = await getEmployeeByIdOrNip(clean);
-  if (!existing) return null;
-
-  deleteFaceCache(existing.nip);
-
-  const client = getClient();
-  if (client) {
-    try {
-      await client.storage.from('faces').remove([`meta-${existing.nip}.json`]);
-    } catch (rmStorageErr) {}
-
-    const resetPayload = { updated_at: now };
-    let { data, error } = await client
-      .from('employees')
-      .update({
-        face_photo_url: null,
-        face_descriptor: null,
-        face_registered_at: null,
-        updated_at: now
-      })
-      .eq('id', existing.id)
-      .select()
-      .maybeSingle();
-
-    if (error && error.message && (error.message.includes('face_photo_url') || error.message.includes('face_descriptor'))) {
-      // Kolom biometrik belum ada di tabel employees, abaikan error DB
-      return {
-        ...existing,
-        faceRegistered: false,
-        facePhotoUrl: null,
-        faceDescriptor: null
-      };
-    }
-
-    if (error) {
-      console.error(`[Supabase Error] resetEmployeeFace(${existing.id}):`, error.message);
-      throw new Error(`Gagal mereset biometrik wajah di Supabase: ${error.message}`);
-    }
-    if (data) {
-      return formatSupabaseEmployee(data);
-    }
-  }
-
-  if (isProd()) {
-    throw new Error('Supabase Cloud Database tidak terkonfigurasi di lingkungan Vercel/Produksi. Gagal mereset biometrik wajah.');
-  }
-
-  // Memory fallback HANYA untuk development offline non-Vercel
-  const mem = getMemoryStore();
-  const rawEmp = (mem.employees || []).find(e => e.id === clean || String(e.nip).trim() === clean);
-  if (rawEmp) {
-    rawEmp.faceRegistered = false;
-    rawEmp.facePhotoUrl = null;
-    rawEmp.face_photo_url = null;
-    rawEmp.faceDescriptor = null;
-    rawEmp.face_descriptor = null;
-    rawEmp.faceRegisteredAt = null;
-    rawEmp.attendancePhotoUrl = null;
-    rawEmp.attendance_photo_url = null;
-  }
-  existing.faceRegistered = false;
-  existing.facePhotoUrl = null;
-  existing.faceDescriptor = null;
-  existing.faceRegisteredAt = null;
-  existing.attendancePhotoUrl = null;
   return existing;
 }
 
@@ -2272,7 +1990,6 @@ async function uploadToStorage(bucketName, fileName, fileBuffer, contentType) {
 // ==============================================================
 async function resetTestingData() {
   const now = new Date().toISOString();
-  _faceMemCache.clear();
   const client = getClient();
 
   if (client) {
@@ -3191,8 +2908,6 @@ module.exports = {
   bulkApproveLpti,
   getSystemSettings,
   uploadToStorage,
-  registerEmployeeFace,
-  resetEmployeeFace,
   resetTestingData,
   isDatabaseAvailable: isSupabaseAvailable,
   saveCertificate,

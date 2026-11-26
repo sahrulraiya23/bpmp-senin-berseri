@@ -45,10 +45,9 @@ const PUBLIC_DIR = fs.existsSync(path.join(BASE_DIR, 'public'))
 const DATA_DIR = IS_VERCEL ? os.tmpdir() : BASE_DIR;
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'lpti');
 const TEMPLATE_DIR = path.join(DATA_DIR, 'uploads', 'templates');
-const FACES_DIR = path.join(DATA_DIR, 'uploads', 'faces');
 
 // Ensure upload directories exist
-[UPLOAD_DIR, TEMPLATE_DIR, FACES_DIR].forEach(dir => {
+[UPLOAD_DIR, TEMPLATE_DIR].forEach(dir => {
   try {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   } catch (e) {
@@ -61,11 +60,9 @@ app.use(express.static(PUBLIC_DIR));
 app.use('/azia', express.static(PUBLIC_DIR));
 app.use('/uploads/lpti', express.static(UPLOAD_DIR));
 app.use('/uploads/templates', express.static(TEMPLATE_DIR));
-app.use('/uploads/faces', express.static(FACES_DIR));
 if (IS_VERCEL) {
   app.use('/uploads/lpti', express.static(path.join(BASE_DIR, 'uploads', 'lpti')));
   app.use('/uploads/templates', express.static(path.join(BASE_DIR, 'uploads', 'templates')));
-  app.use('/uploads/faces', express.static(path.join(BASE_DIR, 'uploads', 'faces')));
 }
 
 // Melayani file yang disimpan langsung di database (MySQL / Cloud Database)
@@ -610,9 +607,7 @@ app.post('/api/auth/login', async (req, res) => {
       isProduction,
       sessionToken: employeeSessionToken,
       employee: {
-        ...safeEmployee,
-        needsFaceRegistration: false,
-        faceRegistered: Boolean(employee.faceRegistered)
+        ...safeEmployee
       },
       redirectUrl: '/pegawai',
       event: activeEvent
@@ -674,14 +669,13 @@ app.post('/api/auth/change-password', async (req, res) => {
 });
 
 // ========================================================
-// PRESENSI SCAN TOKEN & VERIFIKASI WAJAH AULA
+// PRESENSI SCAN TOKEN AULA
 // ========================================================
 app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, res) => {
   try {
     const employeeId = req.body.employeeId || req.body.nip || req.body.id;
     const token = req.body.token || req.body.presenceToken || req.body.qrToken;
     const eventId = req.body.eventId;
-    const attendancePhoto = req.body.attendancePhoto || req.body.faceSnapshot;
 
     if (!employeeId || !token) {
       return res.status(400).json({ success: false, message: 'Identitas Pegawai dan Kode Token QR wajib diisi!' });
@@ -737,31 +731,6 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan dalam sistem.' });
     }
 
-    // Simpan foto bukti presensi (jika ada snapshot selfie) ke Supabase Storage
-    let attendancePhotoUrl = null;
-    if (attendancePhoto && typeof attendancePhoto === 'string' && attendancePhoto.startsWith('data:image')) {
-      try {
-        const base64Data = attendancePhoto.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        const filename = `ATTEND-${employee.nip || employee.id}-${Date.now()}.jpg`;
-        try {
-          const localFilePath = path.join(FACES_DIR, filename);
-          fs.writeFileSync(localFilePath, buffer);
-          attendancePhotoUrl = `/uploads/faces/${filename}`;
-        } catch (fsErr) {}
-
-        // Upload langsung ke Supabase Storage bucket 'faces'
-        try {
-          const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
-          if (cloudUrl) attendancePhotoUrl = cloudUrl;
-        } catch (storageErr) {
-          console.warn('Gagal upload presensi ke Supabase Storage:', storageErr.message);
-        }
-      } catch (photoErr) {
-        console.warn('Gagal memproses attendancePhoto:', photoErr.message);
-      }
-    }
-
     // Cek apakah pegawai SUDAH HADIR KHUSUS pada kegiatan aktif ini
     const isAlreadyAttendedThisEvent = Boolean(employee.attended && employee.eventId === activeEvent.id);
     if (isAlreadyAttendedThisEvent) {
@@ -785,7 +754,7 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
       activeEvent.id,
       activeEvent.title,
       activeEvent.jp || 32,
-      attendancePhotoUrl,
+      null,
       cleanToken
     );
 
@@ -800,100 +769,6 @@ app.post(['/api/presensi/verify-token', '/api/attendance/verify'], async (req, r
   } catch (errPresensi) {
     console.error('Error in presensi verification:', errPresensi);
     return res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem: ' + errPresensi.message });
-  }
-});
-
-// ========================================================
-// BIOMETRIK WAJAH ASN: PENDAFTARAN & RESET
-// ========================================================
-app.post('/api/employees/:id/register-face', async (req, res) => {
-  try {
-    const { facePhoto, faceDescriptor } = req.body || {};
-    const employee = await db.getEmployeeByIdOrNip(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
-    }
-
-    if (!facePhoto || typeof facePhoto !== 'string' || !facePhoto.startsWith('data:image')) {
-      return res.status(400).json({ success: false, message: 'Foto wajah master wajib berupa format data:image (base64).' });
-    }
-
-    const base64Data = facePhoto.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64Data, 'base64');
-    const filename = `MASTER-FACE-${employee.nip || employee.id}-${Date.now()}.jpg`;
-
-    let facePhotoUrl = null;
-
-    // Simpan buffer lokal hanya untuk caching non-kritis jika sistem berkas mengizinkan
-    try {
-      const localFilePath = path.join(FACES_DIR, filename);
-      fs.writeFileSync(localFilePath, buffer);
-      facePhotoUrl = `/uploads/faces/${filename}`;
-    } catch (fsErr) {
-      // Non-fatal di lingkungan serverless ber-filesystem read-only
-    }
-
-    // Wajib upload ke Supabase Storage bucket 'faces' di Supabase atau lingkungan Vercel/Produksi
-    const isCloudRequired = db.isSupabaseAvailable() || IS_VERCEL || process.env.NODE_ENV === 'production';
-    if (isCloudRequired) {
-      try {
-        const cloudUrl = await db.uploadToStorage('faces', filename, buffer, 'image/jpeg');
-        if (!cloudUrl) {
-          throw new Error('Supabase Storage tidak mengembalikan URL publik yang valid.');
-        }
-        facePhotoUrl = cloudUrl;
-      } catch (storageErr) {
-        console.error('[Storage Error in register-face]:', storageErr.message);
-        return res.status(502).json({
-          success: false,
-          message: `Gagal mengunggah foto wajah ke Supabase Storage: ${storageErr.message}. Pastikan bucket 'faces' tersedia.`
-        });
-      }
-    }
-
-    try {
-      const updated = await db.registerEmployeeFace(employee.id, {
-        faceDescriptor: faceDescriptor || null,
-        facePhotoUrl: facePhotoUrl
-      });
-
-      return res.json({
-        success: true,
-        message: `Data biometrik wajah pegawai ${employee.name} berhasil didaftarkan secara permanen di Supabase!`,
-        employee: updated
-      });
-    } catch (dbErr) {
-      console.error('[Database Error in register-face]:', dbErr.message);
-      return res.status(500).json({
-        success: false,
-        message: `Gagal menyimpan biometrik wajah ke database: ${dbErr.message}`
-      });
-    }
-  } catch (err) {
-    console.error('Unhandled error in /api/employees/:id/register-face:', err);
-    return res.status(500).json({
-      success: false,
-      message: `Terjadi kesalahan sistem: ${err.message}`
-    });
-  }
-});
-
-app.post('/api/employees/:id/reset-face', async (req, res) => {
-  try {
-    const employee = await db.getEmployeeByIdOrNip(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
-    }
-
-    const updated = await db.resetEmployeeFace(employee.id);
-    return res.json({
-      success: true,
-      message: `Data biometrik wajah ${employee.name} berhasil di-reset. Pegawai dapat mendaftarkan ulang wajahnya.`,
-      employee: updated
-    });
-  } catch (err) {
-    console.error('Error in /api/employees/:id/reset-face:', err);
-    return res.status(500).json({ success: false, message: `Gagal mereset biometrik wajah: ${err.message}` });
   }
 });
 
@@ -2609,7 +2484,7 @@ function requireAdminMiddleware(req, res, next) {
   next();
 }
 
-// 0. Endpoint Diagnostik Khusus Admin (Mode Penyimpanan, Env Status, Status Wajah Pegawai)
+// 0. Endpoint Diagnostik Khusus Admin (Mode Penyimpanan, Env Status)
 app.get(['/api/admin/diagnostik', '/api/diagnostik'], requireAdminMiddleware, async (req, res) => {
   try {
     const isDbActive = typeof db.isDatabaseAvailable === 'function' ? db.isDatabaseAvailable() : db.isSupabaseAvailable();
@@ -2633,7 +2508,7 @@ app.get(['/api/admin/diagnostik', '/api/diagnostik'], requireAdminMiddleware, as
       try {
         const client = typeof db.getClient === 'function' ? db.getClient() : null;
         if (client) {
-          const { data, error } = await client.storage.from('faces').list('', { limit: 1 });
+          const { data, error } = await client.storage.from('lpti').list('', { limit: 1 });
           if (error) {
             storageBucketStatus = 'error';
             storageBucketError = error.message;
@@ -2663,10 +2538,7 @@ app.get(['/api/admin/diagnostik', '/api/diagnostik'], requireAdminMiddleware, as
           nip: emp.nip,
           name: emp.name,
           attended: Boolean(emp.attended),
-          attendedAt: emp.attendedAt || null,
-          faceRegistered: Boolean(emp.faceRegistered || emp.facePhotoUrl),
-          facePhotoUrl: emp.facePhotoUrl || null,
-          faceRegisteredAt: emp.faceRegisteredAt || null
+          attendedAt: emp.attendedAt || null
         };
       } else {
         targetEmployeeStatus = { found: false, nip: nipQuery };
@@ -2684,7 +2556,7 @@ app.get(['/api/admin/diagnostik', '/api/diagnostik'], requireAdminMiddleware, as
       },
       envStatus,
       storageBucket: {
-        bucket: 'faces',
+        bucket: 'lpti',
         status: storageBucketStatus,
         error: storageBucketError
       },
@@ -2709,7 +2581,6 @@ app.get('/api/superadmin/summary', requireSuperAdminMiddleware, async (req, res)
     const totalPendingLpti = employees.filter(e => e.lpti && e.lpti.status === 'pending').length;
     const totalApprovedLpti = employees.filter(e => e.lpti && e.lpti.status === 'approved').length;
     const totalCertificates = employees.filter(e => e.certificate && e.certificate.number).length;
-    const totalFaces = employees.filter(e => e.faceRegistered).length;
 
     res.json({
       success: true,
@@ -2719,7 +2590,6 @@ app.get('/api/superadmin/summary', requireSuperAdminMiddleware, async (req, res)
         totalPendingLpti,
         totalApprovedLpti,
         totalCertificates,
-        totalFaces,
         totalEvents: events.length,
         activeEvent,
         totalAdmins: admins.length,
@@ -3003,21 +2873,32 @@ app.get('/pegawai', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'pegawai.html'));
 });
 
-app.get('/verif-wajah', (req, res) => {
-  res.redirect('/pegawai');
-});
-
-app.get('/verifikasi-wajah', (req, res) => {
-  res.redirect('/pegawai');
-});
+// ==============================================================
+// INISIALISASI SERVICE MULTI-EVENT & AUDIT
+// ==============================================================
+const MultiEventService = require('./services/multiEventService');
+const multiEventService = new MultiEventService(db);
 
 // ==============================================================
 // MODUL ADMIN: REKAP PRESENSI & VERIFIKASI LPTI (TERPISAH & TABLER)
 // ==============================================================
 const createRekapPresensiRouter = require('./routes/admin/rekapPresensi');
 const createVerifikasiLptiRouter = require('./routes/admin/verifikasiLpti');
-app.use(createRekapPresensiRouter(db, { getAdminFromToken, PUBLIC_DIR }));
-app.use(createVerifikasiLptiRouter(db, { getAdminFromToken, isAuthorizedLptiVerifier, PUBLIC_DIR }));
+app.use(createRekapPresensiRouter(db, { getAdminFromToken, multiEventService, PUBLIC_DIR }));
+app.use(createVerifikasiLptiRouter(db, { getAdminFromToken, isAuthorizedLptiVerifier, multiEventService, PUBLIC_DIR }));
+
+// ==============================================================
+// MODUL MULTI-EVENT: KEGIATAN, AUDIT LOG, DETAIL PEGAWAI & PESERTA PORTAL
+// ==============================================================
+const { createKegiatanRouter } = require('./routes/admin/kegiatan');
+const { createAuditLogRouter } = require('./routes/admin/auditLog');
+const { createPegawaiDetailRouter } = require('./routes/admin/pegawaiDetail');
+const { createPesertaRouter } = require('./routes/peserta/pesertaRoutes');
+
+app.use(createKegiatanRouter(multiEventService, { getAdminFromToken, PUBLIC_DIR }));
+app.use(createAuditLogRouter(multiEventService, { getAdminFromToken, PUBLIC_DIR }));
+app.use(createPegawaiDetailRouter(multiEventService, { getAdminFromToken, PUBLIC_DIR }));
+app.use(createPesertaRouter(multiEventService, db, { getEmployeeFromRequest, PUBLIC_DIR, UPLOAD_DIR }));
 
 app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'admin-login.html'));

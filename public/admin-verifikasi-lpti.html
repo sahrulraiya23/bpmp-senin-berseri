@@ -158,7 +158,10 @@
               <i class="ti ti-refresh" id="iconRefresh"></i>
             </button>
 
-            <!-- Navigasi ke Rekap Presensi -->
+            <!-- Navigasi ke Kegiatan & Rekap Presensi -->
+            <a href="/admin/kegiatan" class="btn btn-outline-teal btn-sm fw-bold">
+              <i class="ti ti-calendar-event me-1"></i> Kegiatan
+            </a>
             <a href="/admin/rekap-presensi" class="btn btn-outline-primary btn-sm fw-bold">
               <i class="ti ti-clipboard-check me-1"></i> Rekap Presensi &rarr;
             </a>
@@ -179,15 +182,27 @@
               </p>
             </div>
 
-            <!-- TOMBOL AMBIL LPTI BERIKUTNYA -->
-            <div class="col-12 col-md-auto">
-              <button type="button" class="btn btn-primary btn-md fw-bold shadow-sm d-inline-flex align-items-center gap-2" id="btnClaimNextLpti" onclick="handleClaimNext()">
-                <i class="ti ti-player-track-next font-18"></i>
+            <!-- Dropdown Pilihan Kegiatan & Tombol Ambil LPTI -->
+            <div class="col-12 col-md-auto d-flex align-items-center gap-2 flex-wrap">
+              <div class="d-flex align-items-center gap-1.5">
+                <label class="form-label small fw-bold mb-0 text-muted d-none d-lg-inline">Kegiatan:</label>
+                <select id="selectKegiatanLpti" class="form-select form-select-sm" style="min-width: 250px;" onchange="handleKegiatanFilterChange(this.value)">
+                  <option value="all">Semua Kegiatan Pelatihan</option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm fw-bold shadow-sm d-inline-flex align-items-center gap-1.5" id="btnClaimNextLpti" onclick="handleClaimNext()">
+                <i class="ti ti-player-track-next font-16"></i>
                 <span>Ambil LPTI Berikutnya</span>
                 <span class="badge bg-warning text-dark font-monospace" id="badgePendingCount">0</span>
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- Alert Bebas LPTI (Tampil jika kegiatan yang dipilih wajib_lpti = 0) -->
+        <div id="alertBebasLpti" class="alert alert-info border-info-subtle shadow-sm py-2 px-3 small mb-3 d-none">
+          <i class="ti ti-info-circle me-1 text-info fs-3 align-middle"></i>
+          <strong>Informasi Kegiatan:</strong> Kegiatan yang dipilih berstatus <strong>Bebas LPTI (wajib_lpti = 0)</strong>. Peserta pada kegiatan ini tidak diwajibkan mengunggah resume materi untuk memperoleh E-Sertifikat resmi.
         </div>
 
         <!-- MAIN TABLE CARD -->
@@ -378,6 +393,8 @@
     let currentFilter = 'all';      // 'all', 'pending', 'approved', 'revision'
     let currentSearch = '';
     let targetNipParam = '';
+    let currentKegiatanId = 'all';
+    let hasPopulatedKegiatan = false;
     let currentPage = 1;
     let searchDebounceTimer = null;
     let currentAdminUser = null;
@@ -414,6 +431,7 @@
       if (params.get('filter')) currentFilter = params.get('filter');
       if (params.get('search')) currentSearch = params.get('search');
       if (params.get('nip')) targetNipParam = params.get('nip');
+      if (params.get('kegiatanId')) currentKegiatanId = params.get('kegiatanId');
       if (params.get('page')) currentPage = parseInt(params.get('page'), 10) || 1;
 
       const sInput = document.getElementById('searchLpti');
@@ -428,11 +446,18 @@
       updateTabButtonUI();
     }
 
+    function handleKegiatanFilterChange(val) {
+      currentKegiatanId = val;
+      currentPage = 1;
+      loadLptiData(false);
+    }
+
     function updateUrlState() {
       const params = new URLSearchParams();
       if (currentFilter !== 'all') params.set('filter', currentFilter);
       if (currentSearch) params.set('search', currentSearch);
       if (targetNipParam) params.set('nip', targetNipParam);
+      if (currentKegiatanId !== 'all') params.set('kegiatanId', currentKegiatanId);
       if (currentPage > 1) params.set('page', currentPage);
 
       const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
@@ -459,6 +484,7 @@
           filter: currentFilter,
           search: targetNipParam || currentSearch,
           nip: targetNipParam,
+          kegiatanId: currentKegiatanId,
           page: currentPage,
           limit: 25
         });
@@ -467,6 +493,22 @@
         const data = await resp.json();
 
         if (data.success) {
+          // Populate Dropdown Pilihan Kegiatan
+          if (!hasPopulatedKegiatan && data.kegiatanList && data.kegiatanList.length > 0) {
+            populateKegiatanDropdown(data.kegiatanList, data.activeKegiatan);
+            hasPopulatedKegiatan = true;
+          }
+
+          // Cek apakah kegiatan yang dipilih bebas LPTI (wajib_lpti = 0)
+          const alertBebas = document.getElementById('alertBebasLpti');
+          if (alertBebas) {
+            if (data.wajib_lpti === false) {
+              alertBebas.classList.remove('d-none');
+            } else {
+              alertBebas.classList.add('d-none');
+            }
+          }
+
           renderLptiTableRows(data.employees);
           renderPagination(data.pagination);
           updateCounts(data.counts);
@@ -629,9 +671,9 @@
           <tr class="${isRowHighlight ? 'row-highlight' : ''}">
             <td class="text-center font-monospace text-secondary">${emp.no}</td>
             <td>
-              <span class="emp-name-text fw-bold text-dark" title="${escapeHtml(emp.name)}">
-                ${escapeHtml(emp.name)}
-              </span>
+              <a href="/admin/pegawai/${encodeURIComponent(emp.id || emp.nip)}" class="emp-name-text fw-bold text-primary text-decoration-none" title="Lihat Profil & Riwayat Lengkap: ${escapeHtml(emp.name)}">
+                ${escapeHtml(emp.name)} <i class="ti ti-external-link font-12 opacity-75"></i>
+              </a>
             </td>
             <td class="font-monospace small text-secondary">${escapeHtml(emp.nip)}</td>
             <td>
@@ -708,6 +750,17 @@
       document.getElementById('badgePendingCount').textContent = c.pending || 0;
     }
 
+    function populateKegiatanDropdown(events, active) {
+      const select = document.getElementById('selectKegiatanLpti');
+      if (!select) return;
+      let opts = '<option value="all">Semua Kegiatan Pelatihan</option>';
+      (events || []).forEach(ev => {
+        const isSelected = String(ev.id) === String(currentKegiatanId);
+        opts += `<option value="${ev.id}" ${isSelected ? 'selected' : ''}>${escapeHtml(ev.nama || ev.title)}</option>`;
+      });
+      select.innerHTML = opts;
+    }
+
     // 4. Tombol "Ambil LPTI Berikutnya"
     async function handleClaimNext() {
       const btn = document.getElementById('btnClaimNextLpti');
@@ -722,7 +775,8 @@
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-          }
+          },
+          body: JSON.stringify({ kegiatanId: currentKegiatanId })
         });
 
         const data = await res.json();

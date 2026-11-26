@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Detail Kegiatan Pelatihan - Peserta ASN BPMP Sultra</title>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a3a5c">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+
+  <!-- Core Styles -->
+  <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
+  <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+  </script>
+</head>
+<body class="layout-fluid">
+  <div class="page">
+    <div id="bpmp-sidebar"></div>
+
+    <div class="page-wrapper">
+      <div id="bpmp-header"></div>
+
+      <div class="page-body">
+        <div class="container-xl">
+          <!-- Page Header -->
+          <div class="page-header d-print-none mb-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <a href="/peserta/riwayat" class="btn btn-outline-secondary btn-sm mb-2">
+                  <i class="ti ti-arrow-left me-1"></i> Kembali ke Riwayat Pelatihan
+                </a>
+                <h2 class="page-title text-primary fw-bold" id="kegiatanDetailTitle">
+                  Detail Kegiatan Pelatihan
+                </h2>
+                <p class="text-secondary small mb-0" id="kegiatanDetailSubtitle">Memuat detail kegiatan...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: Ringkasan Kegiatan & Syarat Kelayakan Sertifikat -->
+          <div class="row row-cards mb-4">
+            <div class="col-md-7">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white py-2.5">
+                  <h4 class="card-title text-primary fw-bold mb-0">
+                    <i class="ti ti-info-circle me-1"></i> Informasi & Sesi Pertemuan
+                  </h4>
+                </div>
+                <div class="card-body p-3">
+                  <div class="table-responsive border rounded mb-2">
+                    <table class="table table-vcenter table-sm mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th class="w-1 text-center">No</th>
+                          <th>Nama Sesi</th>
+                          <th>Tanggal</th>
+                          <th class="text-center">Presensi Saya</th>
+                        </tr>
+                      </thead>
+                      <tbody id="sesiTableBody">
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Memuat daftar sesi...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="text-secondary small mt-1" id="kegiatanPresensiRuleInfo">
+                    Syarat kehadiran minimal: <strong>1 sesi</strong>.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Kelayakan Sertifikat -->
+            <div class="col-md-5">
+              <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white py-2.5">
+                  <h4 class="card-title text-primary fw-bold mb-0">
+                    <i class="ti ti-certificate me-1"></i> Status Kelayakan E-Sertifikat
+                  </h4>
+                </div>
+                <div class="card-body p-3">
+                  <div class="list-group list-group-flush mb-3">
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                      <div>
+                        <div class="fw-semibold">1. Kehadiran Sesi Aula</div>
+                        <div class="text-secondary small" id="chkPresensiSub">Memeriksa...</div>
+                      </div>
+                      <span id="badgeChkPresensi" class="badge bg-secondary-lt">...</span>
+                    </div>
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                      <div>
+                        <div class="fw-semibold">2. Pengesahan LPTI</div>
+                        <div class="text-secondary small" id="chkLptiSub">Memeriksa...</div>
+                      </div>
+                      <span id="badgeChkLpti" class="badge bg-secondary-lt">...</span>
+                    </div>
+                  </div>
+
+                  <div id="certDownloadActionBox" class="text-center pt-2 border-top">
+                    <button class="btn btn-light w-100 text-muted" disabled>
+                      <i class="ti ti-lock me-1"></i> Syarat Sertifikat Belum Lengkap
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Form Laporan LPTI (Jika Wajib LPTI) -->
+          <div id="sectionLpti" class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+              <div>
+                <h3 class="card-title text-primary fw-bold mb-0">
+                  <i class="ti ti-file-text me-1"></i> Laporan Pelaksanaan Tugas Individu (LPTI)
+                </h3>
+                <div class="text-secondary small">Dokumen resume materi / notula kegiatan pelatihan</div>
+              </div>
+              <span id="badgeLptiStatus" class="badge bg-secondary-lt">Memuat status...</span>
+            </div>
+            <div class="card-body p-3">
+              <!-- Info Batas Waktu & Catatan Revisi -->
+              <div id="alertLptiNotice" class="alert alert-info py-2 px-3 small mb-3">
+                <i class="ti ti-clock me-1"></i> Batas waktu pengunggahan: <strong id="textLptiDeadline">—</strong>
+              </div>
+
+              <div id="boxLptiRevision" class="alert alert-danger py-2 px-3 small mb-3 d-none">
+                <div class="fw-bold"><i class="ti ti-alert-triangle me-1"></i> Catatan Revisi dari Kepegawaian:</div>
+                <div id="textLptiRevisionNote" class="mt-1"></div>
+              </div>
+
+              <!-- Form Upload Berkas PDF -->
+              <div id="boxUploadForm" class="border rounded p-3 bg-light mb-3">
+                <form id="formUploadLpti" onsubmit="handleUploadLpti(event)">
+                  <label class="form-label fw-bold">Unggah Berkas LPTI (Format PDF, Maks. 15MB)</label>
+                  <div class="input-group mb-2">
+                    <input type="file" id="inputLptiFile" class="form-control" accept="application/pdf" required>
+                    <button type="submit" id="btnUploadSubmit" class="btn btn-primary">
+                      <i class="ti ti-upload me-1"></i> Unggah Laporan
+                    </button>
+                  </div>
+                  <div class="text-secondary small">
+                    Pastikan dokumen memuat ringkasan materi kegiatan, pemateri, dan tindak lanjut tugas.
+                  </div>
+                </form>
+              </div>
+
+              <!-- Berkas Aktif Terunggah -->
+              <div id="boxCurrentFile" class="card card-sm bg-light-subtle border p-2 mb-3 d-none">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-danger text-white">PDF</span>
+                    <div>
+                      <div class="fw-bold small" id="currentFileName">Laporan_LPTI.pdf</div>
+                      <div class="text-secondary small" id="currentFileMeta">—</div>
+                    </div>
+                  </div>
+                  <a id="btnViewCurrentPdf" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="ti ti-eye me-1"></i> Lihat Berkas
+                  </a>
+                </div>
+              </div>
+
+              <!-- Linimasa Riwayat LPTI (Append-Only) -->
+              <h5 class="fw-bold text-dark mt-4 mb-2"><i class="ti ti-history me-1"></i> Riwayat Pengajuan & Kurasi LPTI</h5>
+              <div class="table-responsive border rounded">
+                <table class="table table-vcenter table-sm mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="w-1 text-center">Versi</th>
+                      <th>Waktu</th>
+                      <th>Tindakan</th>
+                      <th>Oleh</th>
+                      <th>Catatan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="lptiRiwayatTableBody">
+                    <tr><td colspan="5" class="text-center py-2 text-muted">Belum ada riwayat pengajuan.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div id="bpmp-footer"></div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 1090;"></div>
+
+  <!-- Scripts -->
+  <script src="/vendor/tabler/js/tabler.min.js"></script>
+  <script src="/js/components.js"></script>
+  <script src="/js/layout.js"></script>
+
+  <script>
+    let currentKegiatanId = null;
+    let kegiatanData = null;
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const el = document.createElement('div');
+      el.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : (type === 'success' ? 'success' : 'primary')} border-0 show mb-2`;
+      el.setAttribute('role', 'alert');
+      el.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${escapeHtml(msg)}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      `;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
+    function getKegiatanIdFromUrl() {
+      const parts = window.location.pathname.split('/');
+      return parts[parts.length - 1];
+    }
+
+    async function loadKegiatanDetail() {
+      currentKegiatanId = getKegiatanIdFromUrl();
+      if (!currentKegiatanId) return;
+
+      try {
+        const res = await fetch(`/api/peserta/kegiatan/${encodeURIComponent(currentKegiatanId)}`);
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message);
+
+        kegiatanData = data;
+        const keg = data.kegiatan;
+        const sesi = data.sesi || [];
+        const lpti = data.lpti || {};
+        const elig = data.eligibility || {};
+        const cert = data.sertifikat;
+
+        // Header info
+        document.getElementById('kegiatanDetailTitle').textContent = keg.nama;
+        document.getElementById('kegiatanDetailSubtitle').textContent = `${keg.jp || 2} JP • Pelaksanaan: ${keg.tgl_mulai} s.d. ${keg.tgl_selesai || keg.tgl_mulai}`;
+        document.getElementById('kegiatanPresensiRuleInfo').innerHTML = `Syarat kehadiran minimal: <strong>${keg.min_sesi_hadir || 1} sesi</strong> dari total ${sesi.length} sesi pertemuan.`;
+
+        // Sesi Table
+        const tbSesi = document.getElementById('sesiTableBody');
+        if (sesi.length === 0) {
+          tbSesi.innerHTML = '<tr><td colspan="4" class="text-center py-2 text-muted">Belum ada sesi yang dijadwalkan.</td></tr>';
+        } else {
+          tbSesi.innerHTML = sesi.map((s, idx) => {
+            const badgePresensi = s.hadir
+              ? `<span class="badge bg-green-lt text-green fw-bold"><i class="ti ti-check me-1"></i> Hadir (${escapeHtml(s.waktu_presensi || 'Tercatat')})</span>`
+              : `<span class="badge bg-secondary-lt text-secondary">Belum Hadir</span>`;
+
+            return `
+              <tr>
+                <td class="text-center text-muted small">${idx + 1}</td>
+                <td class="fw-semibold text-dark">${escapeHtml(s.nama)}</td>
+                <td class="text-secondary small font-monospace">${escapeHtml(s.tanggal)}</td>
+                <td class="text-center">${badgePresensi}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // Checklist Kelayakan
+        const attendedCount = elig.presensi_hadir || 0;
+        const minSesi = keg.min_sesi_hadir || 1;
+        const isPresensiSufficient = attendedCount >= minSesi;
+
+        document.getElementById('chkPresensiSub').textContent = `Hadir ${attendedCount} dari min. ${minSesi} sesi`;
+        document.getElementById('badgeChkPresensi').className = isPresensiSufficient ? 'badge bg-teal-lt text-teal fw-bold' : 'badge bg-danger-lt text-danger';
+        document.getElementById('badgeChkPresensi').textContent = isPresensiSufficient ? 'Memenuhi' : 'Belum Cukup';
+
+        if (!keg.wajib_lpti) {
+          document.getElementById('chkLptiSub').textContent = 'Kegiatan ini tidak mewajibkan LPTI';
+          document.getElementById('badgeChkLpti').className = 'badge bg-teal-lt text-teal fw-bold';
+          document.getElementById('badgeChkLpti').textContent = 'Bebas LPTI';
+          document.getElementById('sectionLpti').classList.add('d-none');
+        } else {
+          document.getElementById('sectionLpti').classList.remove('d-none');
+          const isLptiApproved = lpti.status === 'disetujui';
+          document.getElementById('chkLptiSub').textContent = isLptiApproved ? 'LPTI telah diverifikasi & disetujui' : `Status: ${lpti.status || 'Belum Unggah'}`;
+          document.getElementById('badgeChkLpti').className = isLptiApproved ? 'badge bg-teal-lt text-teal fw-bold' : 'badge bg-danger-lt text-danger';
+          document.getElementById('badgeChkLpti').textContent = isLptiApproved ? 'Disetujui' : 'Belum Disetujui';
+        }
+
+        // Tombol E-Sertifikat
+        const certBox = document.getElementById('certDownloadActionBox');
+        if (cert && cert.download_url) {
+          certBox.innerHTML = `
+            <a href="${cert.download_url}" target="_blank" class="btn btn-primary w-100 fw-bold py-2">
+              <i class="ti ti-printer me-1"></i> Unduh E-Sertifikat Resmi PDF
+            </a>
+            <div class="text-secondary small mt-1 font-monospace">Nomor: ${escapeHtml(cert.nomor)}</div>
+          `;
+        } else if (elig.eligible) {
+          certBox.innerHTML = `
+            <a href="/api/employees/me/certificate.pdf" target="_blank" class="btn btn-primary w-100 fw-bold py-2">
+              <i class="ti ti-printer me-1"></i> Terbitkan & Unduh E-Sertifikat
+            </a>
+          `;
+        } else {
+          certBox.innerHTML = `
+            <button class="btn btn-light w-100 text-muted" disabled title="${escapeHtml(elig.reason || 'Syarat belum lengkap')}">
+              <i class="ti ti-lock me-1"></i> E-Sertifikat Terkunci
+            </button>
+            <div class="text-danger small mt-1">${escapeHtml(elig.reason || 'Lengkapi presensi dan LPTI terlebih dahulu.')}</div>
+          `;
+        }
+
+        // LPTI Section UI State
+        const badgeLpti = document.getElementById('badgeLptiStatus');
+        const boxRev = document.getElementById('boxLptiRevision');
+        const boxForm = document.getElementById('boxUploadForm');
+        const boxCurrent = document.getElementById('boxCurrentFile');
+
+        document.getElementById('textLptiDeadline').textContent = keg.batas_unggah_lpti || 'Tidak ada batas waktu';
+
+        if (lpti.status === 'disetujui') {
+          badgeLpti.className = 'badge bg-teal-lt text-teal fw-bold';
+          badgeLpti.innerHTML = '<i class="ti ti-circle-check me-0.5"></i> Disetujui';
+          boxForm.classList.add('d-none');
+          boxRev.classList.add('d-none');
+        } else if (lpti.status === 'perlu_dikurasi') {
+          badgeLpti.className = 'badge bg-warning-lt text-warning fw-bold';
+          badgeLpti.innerHTML = '<i class="ti ti-clock me-0.5"></i> Sedang Menunggu Kurasi';
+          boxForm.classList.add('d-none');
+          boxRev.classList.add('d-none');
+        } else if (lpti.status === 'revisi') {
+          badgeLpti.className = 'badge bg-danger-lt text-danger fw-bold';
+          badgeLpti.innerHTML = '<i class="ti ti-alert-triangle me-0.5"></i> Perlu Revisi';
+          boxForm.classList.remove('d-none');
+          boxRev.classList.remove('d-none');
+          // Cari catatan revisi terakhir
+          const lastRev = (lpti.riwayat || []).reverse().find(r => r.aksi === 'revisi');
+          document.getElementById('textLptiRevisionNote').textContent = lastRev?.catatan || 'Harap perbaiki resume materi sesuai arahan kepegawaian.';
+        } else {
+          badgeLpti.className = 'badge bg-secondary-lt text-secondary';
+          badgeLpti.textContent = 'Belum Ada Berkas';
+          boxForm.classList.remove('d-none');
+          boxRev.classList.add('d-none');
+        }
+
+        if (lpti.berkas) {
+          boxCurrent.classList.remove('d-none');
+          document.getElementById('currentFileName').textContent = lpti.berkas.fileOriginalName || lpti.berkas.fileName || 'LPTI.pdf';
+          document.getElementById('currentFileMeta').textContent = `Versi ${lpti.versi || 1} • ${(lpti.berkas.fileSize / 1024).toFixed(1)} KB`;
+          document.getElementById('btnViewCurrentPdf').href = lpti.berkas.filePath || '#';
+        } else {
+          boxCurrent.classList.add('d-none');
+        }
+
+        // LPTI Riwayat Table
+        const tbRiwayat = document.getElementById('lptiRiwayatTableBody');
+        const riwList = lpti.riwayat || [];
+        if (riwList.length === 0) {
+          tbRiwayat.innerHTML = '<tr><td colspan="5" class="text-center py-2 text-muted">Belum ada catatan riwayat.</td></tr>';
+        } else {
+          tbRiwayat.innerHTML = riwList.map(r => `
+            <tr>
+              <td class="text-center font-monospace small">v${r.versi || 1}</td>
+              <td class="text-secondary small font-monospace">${escapeHtml(r.created_at)}</td>
+              <td><span class="badge bg-secondary-lt text-secondary fw-bold">${escapeHtml(r.aksi)}</span></td>
+              <td class="small text-muted font-monospace">${escapeHtml(r.oleh_user_id || 'Peserta')}</td>
+              <td class="small text-secondary">${escapeHtml(r.catatan || '—')}</td>
+            </tr>
+          `).join('');
+        }
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function handleUploadLpti(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('inputLptiFile');
+      const file = fileInput?.files?.[0];
+      if (!file) {
+        showToast('Pilih berkas PDF terlebih dahulu!', 'warning');
+        return;
+      }
+
+      if (file.size > 15 * 1024 * 1024) {
+        showToast('Ukuran berkas melebihi batas maksimal 15 MB.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnUploadSubmit');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengunggah...';
+
+      const formData = new FormData();
+      formData.append('lptiFile', file);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      try {
+        const res = await fetch(`/api/peserta/kegiatan/${encodeURIComponent(currentKegiatanId)}/unggah-lpti`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.success) {
+          showToast('Berkas LPTI berhasil diunggah! Menunggu kurasi admin.', 'success');
+          fileInput.value = '';
+          await loadKegiatanDetail();
+        } else {
+          showToast(data?.message || `Gagal mengunggah berkas LPTI (Kode ${res.status}).`, 'error');
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          showToast('Waktu unggah habis (timeout). Periksa jaringan dan coba lagi.', 'error');
+        } else {
+          showToast('Kesalahan unggah: ' + err.message, 'error');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-upload me-1"></i> Unggah Laporan';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      BPMPLayout.init({
+        role: 'peserta',
+        activeMenu: 'peserta-riwayat'
+      });
+      loadKegiatanDetail();
+    });
+  </script>
+</body>
+</html>

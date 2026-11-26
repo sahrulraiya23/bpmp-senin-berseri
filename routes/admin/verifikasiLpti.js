@@ -8,7 +8,7 @@ const path = require('path');
 
 function createVerifikasiLptiRouter(db, helpers = {}) {
   const router = express.Router();
-  const { getAdminFromToken, isAuthorizedLptiVerifier, PUBLIC_DIR } = helpers;
+  const { getAdminFromToken, isAuthorizedLptiVerifier, multiEventService, PUBLIC_DIR } = helpers;
 
   // Middleware autentikasi admin
   function requireAdminAuth(req, res, next) {
@@ -26,23 +26,103 @@ function createVerifikasiLptiRouter(db, helpers = {}) {
     res.sendFile(path.join(PUBLIC_DIR, 'admin-verifikasi-lpti.html'));
   });
 
-  // 2. API JSON Data Daftar LPTI (Filter, Search, & Pagination)
+  // 2. API JSON Data Daftar LPTI (Filter per Kegiatan, Kategori, Search, & Pagination)
   router.get('/api/admin/verifikasi-lpti', async (req, res) => {
     try {
       const filter = (req.query.filter || 'all').toLowerCase(); // 'all', 'pending', 'approved', 'revision'
       const search = (req.query.search || '').trim().toLowerCase();
       const targetNip = (req.query.nip || '').trim();
+      const selectedKegiatanId = req.query.kegiatanId || req.query.eventId || null;
       const page = Math.max(1, parseInt(req.query.page, 10) || 1);
       const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 25));
 
       const allEmployees = await db.getAllEmployees();
       const nowTs = Date.now();
 
-      // Ekstrak pegawai yang memiliki berkas LPTI atau seluruh pegawai
+      // Daftar Kegiatan Pelatihan
+      let allKegiatan = [];
+      if (multiEventService) {
+        allKegiatan = await multiEventService.getAllKegiatan();
+      } else if (typeof db.getAllEvents === 'function') {
+        allKegiatan = await db.getAllEvents();
+      }
+
+      let activeKegiatan = null;
+      if (selectedKegiatanId && selectedKegiatanId !== 'all') {
+        activeKegiatan = (allKegiatan || []).find(k => String(k.id) === String(selectedKegiatanId));
+      }
+      if (!activeKegiatan && (allKegiatan || []).length > 0) {
+        activeKegiatan = allKegiatan[0];
+      }
+
+      // Ekstrak pegawai dan LPTI (mendukung pivot multi-event)
+      let store = null;
+      if (multiEventService) {
+        store = multiEventService._getStore();
+      }
+
       const mapped = allEmployees.map((emp, idx) => {
-        const lpti = emp.lpti || {};
-        const lptiStatus = lpti.status || 'none';
-        const isClaimed = lpti.diklaimOleh && lpti.diklaimSampai && new Date(lpti.diklaimSampai).getTime() > nowTs;
+        let lptiStatus = 'none';
+        let lptiData = {};
+        let attended = Boolean(emp.attended);
+
+        if (store && activeKegiatan) {
+          const pk = store.peserta_kegiatan.find(x => x.kegiatan_id === activeKegiatan.id && x.pegawai_id === emp.id);
+          if (pk) {
+            const hasPres = store.presensi.some(p => p.peserta_kegiatan_id === pk.id);
+            if (hasPres) attended = true;
+            const l = store.lpti.find(x => x.peserta_kegiatan_id === pk.id);
+            if (l) {
+              const statusMap = {
+                'belum_unggah': 'none',
+                'perlu_dikurasi': 'pending',
+                'disetujui': 'approved',
+                'revisi': 'revision'
+              };
+              lptiStatus = statusMap[l.status] || l.status;
+              const isClaimedLock = l.lock_until && new Date(l.lock_until).getTime() > nowTs;
+              lptiData = {
+                status: lptiStatus,
+                fileName: l.berkas_aktif?.fileName || null,
+                fileOriginalName: l.berkas_aktif?.fileOriginalName || null,
+                filePath: l.berkas_aktif?.filePath || null,
+                fileSize: l.berkas_aktif?.fileSize || null,
+                uploadedAt: l.diajukan_at || null,
+                versi: l.versi || 1,
+                catatan: l.catatan || '',
+                diputuskanOleh: l.diputuskan_oleh || null,
+                diputuskanNama: l.diputuskan_nama || null,
+                diputuskanPada: l.diputuskan_at || null,
+                diklaimOleh: isClaimedLock ? l.lock_by : null,
+                diklaimSampai: isClaimedLock ? l.lock_until : null,
+                isLocked: isClaimedLock
+              };
+            }
+          }
+        }
+
+        // Fallback ke profil emp jika multi-event belum ada berkas
+        if (lptiStatus === 'none' && emp.lpti) {
+          const legacyLpti = emp.lpti || {};
+          const isLegacyClaimed = legacyLpti.diklaimOleh && legacyLpti.diklaimSampai && new Date(legacyLpti.diklaimSampai).getTime() > nowTs;
+          lptiStatus = legacyLpti.status || 'none';
+          lptiData = {
+            status: lptiStatus,
+            fileName: legacyLpti.fileName || legacyLpti.fileOriginalName || null,
+            fileOriginalName: legacyLpti.fileOriginalName || legacyLpti.fileName || null,
+            filePath: legacyLpti.filePath || null,
+            fileSize: legacyLpti.fileSize || null,
+            uploadedAt: legacyLpti.uploadedAt || null,
+            versi: parseInt(legacyLpti.versi, 10) || 1,
+            catatan: legacyLpti.catatan || legacyLpti.revisionNote || '',
+            diputuskanOleh: legacyLpti.diputuskanOleh || null,
+            diputuskanNama: legacyLpti.diputuskanNama || null,
+            diputuskanPada: legacyLpti.diputuskanPada || null,
+            diklaimOleh: isLegacyClaimed ? legacyLpti.diklaimOleh : null,
+            diklaimSampai: isLegacyClaimed ? legacyLpti.diklaimSampai : null,
+            isLocked: isLegacyClaimed
+          };
+        }
 
         return {
           id: emp.id,
@@ -51,24 +131,8 @@ function createVerifikasiLptiRouter(db, helpers = {}) {
           nip: emp.nip,
           jabatan: emp.jabatan || emp.position || 'Aparatur Sipil Negara',
           instansi: emp.instansi || 'BPMP Provinsi Sulawesi Tenggara',
-          attended: Boolean(emp.attended),
-          lpti: {
-            status: lptiStatus, // 'none', 'pending', 'approved', 'revision'
-            fileName: lpti.fileName || lpti.fileOriginalName || null,
-            fileOriginalName: lpti.fileOriginalName || lpti.fileName || null,
-            filePath: lpti.filePath || null,
-            fileSize: lpti.fileSize || null,
-            uploadedAt: lpti.uploadedAt || null,
-            versi: parseInt(lpti.versi, 10) || 1,
-            catatan: lpti.catatan || lpti.revisionNote || '',
-            revisionNote: lpti.revisionNote || lpti.catatan || '',
-            diputuskanOleh: lpti.diputuskanOleh || null,
-            diputuskanNama: lpti.diputuskanNama || null,
-            diputuskanPada: lpti.diputuskanPada || null,
-            diklaimOleh: isClaimed ? lpti.diklaimOleh : null,
-            diklaimSampai: isClaimed ? lpti.diklaimSampai : null,
-            isLocked: isClaimed
-          }
+          attended: attended,
+          lpti: lptiData
         };
       });
 
@@ -122,6 +186,9 @@ function createVerifikasiLptiRouter(db, helpers = {}) {
 
       res.json({
         success: true,
+        kegiatanList: allKegiatan,
+        activeKegiatan: activeKegiatan,
+        wajib_lpti: activeKegiatan ? Boolean(activeKegiatan.wajib_lpti) : true,
         employees: rows,
         counts: {
           all: countAll,
@@ -147,6 +214,24 @@ function createVerifikasiLptiRouter(db, helpers = {}) {
     try {
       const admin = req.admin;
       const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+      const targetKegiatanId = req.body?.kegiatanId || req.query?.kegiatanId;
+
+      if (multiEventService && targetKegiatanId && targetKegiatanId !== 'all') {
+        const claimRes = await multiEventService.claimNextLpti(targetKegiatanId, admin.id || admin.username);
+        if (!claimRes) {
+          return res.status(404).json({
+            success: false,
+            code: 'NO_PENDING_QUEUE',
+            message: 'Semua berkas LPTI untuk kegiatan ini telah selesai diverifikasi atau sedang diperiksa staf lain.'
+          });
+        }
+        return res.json({
+          success: true,
+          message: 'Berhasil mengambil LPTI antrean berikutnya! Berkas dikunci selama 15 menit.',
+          lpti: claimRes.lpti,
+          employee: claimRes.employee
+        });
+      }
 
       const result = await db.getNextUnclaimedLpti(admin);
       if (!result.success || !result.employee) {

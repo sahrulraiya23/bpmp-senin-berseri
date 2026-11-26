@@ -302,7 +302,6 @@
                     <th>Jabatan Dinas</th>
                     <th>Akumulasi JP</th>
                     <th>Status Hadir</th>
-                    <th>Biometrik Wajah</th>
                     <th class="text-center w-1">Aksi</th>
                   </tr>
                 </thead>
@@ -841,11 +840,6 @@
                   ? `<span class="badge bg-success text-success-fg"><i class="ti ti-check me-1"></i> HADIR</span>` 
                   : `<span class="badge bg-secondary-lt">Belum Hadir</span>`}
               </td>
-              <td>
-                ${hasFace 
-                  ? `<span class="badge bg-info-lt"><i class="ti ti-scan me-1"></i> Terdaftar</span>` 
-                  : `<span class="badge bg-secondary-lt">Belum Rekam</span>`}
-              </td>
               <td class="text-center">
                 <div class="btn-list flex-nowrap justify-content-center">
                   <button class="btn btn-outline-primary btn-sm btn-icon" title="Sunting Pegawai" onclick="openEditEmployeeModal('${emp.id || emp.nip}')">
@@ -854,11 +848,6 @@
                   <button class="btn btn-outline-warning btn-sm btn-icon" title="Reset Sandi ke Bpmp2026!" onclick="handleResetEmployeePassword('${emp.id || emp.nip}', '${emp.name}')">
                     <i class="ti ti-key"></i>
                   </button>
-                  ${hasFace ? `
-                    <button class="btn btn-outline-secondary btn-sm btn-icon" title="Reset Biometrik Wajah" onclick="handleResetEmployeeFace('${emp.id || emp.nip}', '${emp.name}')">
-                      <i class="ti ti-user-x"></i>
-                    </button>
-                  ` : ''}
                   <button class="btn btn-outline-danger btn-sm btn-icon" title="Hapus Pegawai" onclick="handleDeleteEmployee('${emp.id || emp.nip}', '${emp.name}')">
                     <i class="ti ti-trash"></i>
                   </button>
@@ -1003,34 +992,6 @@
               BPMPComponents.showToast(data.message, 'success');
             } else {
               BPMPComponents.showToast(data.message || 'Gagal reset sandi.', 'danger');
-            }
-          } catch (err) {
-            BPMPComponents.showToast(err.message, 'danger');
-          }
-        }
-      });
-    }
-
-    async function handleResetEmployeeFace(idOrNip, name) {
-      BPMPComponents.showConfirmModal({
-        title: 'Reset Biometrik Wajah?',
-        message: `Hapus foto master wajah pegawai <strong>${name}</strong>? Pegawai dapat merekam ulang saat presensi.`,
-        icon: 'ti-user-x',
-        iconColor: 'warning',
-        confirmClass: 'btn-warning',
-        confirmText: 'Ya, Reset Wajah',
-        onConfirm: async () => {
-          try {
-            const res = await fetch(`/api/employees/${idOrNip}/reset-face`, {
-              method: 'POST',
-              headers: getAuthHeaders()
-            });
-            const data = await res.json();
-            if (data.success) {
-              BPMPComponents.showToast(data.message, 'success');
-              loadEmployees();
-            } else {
-              BPMPComponents.showToast(data.message || 'Gagal reset wajah.', 'danger');
             }
           } catch (err) {
             BPMPComponents.showToast(err.message, 'danger');

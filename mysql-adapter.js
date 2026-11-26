@@ -131,15 +131,6 @@ function formatEmployeeRow(row) {
     } catch (e) {}
   }
 
-  let faceDesc = null;
-  if (row.face_descriptor) {
-    try {
-      faceDesc = typeof row.face_descriptor === 'string' ? JSON.parse(row.face_descriptor) : row.face_descriptor;
-    } catch (e) {
-      faceDesc = row.face_descriptor;
-    }
-  }
-
   const attendanceObj = {
     status: isAttended ? 'present' : 'absent',
     time: timeStr || (isAttended ? 'Pukul 08:30:00 WITA' : null)
@@ -180,12 +171,7 @@ function formatEmployeeRow(row) {
       issuedAt: row.certificate_issued_at ? new Date(row.certificate_issued_at).toISOString() : null,
       verifier: row.certificate_verifier || 'Junaiddin Pagala, ST, M.T.',
       verifierTitle: row.certificate_verifier_title || 'Kepala Balai Penjaminan Mutu Pendidikan Sultra'
-    } : null,
-    faceRegistered: Boolean(row.face_photo_url || row.face_descriptor),
-    facePhotoUrl: row.face_photo_url || null,
-    faceDescriptor: faceDesc,
-    faceRegisteredAt: row.face_registered_at ? new Date(row.face_registered_at).toISOString() : null,
-    attendancePhotoUrl: row.attendance_photo_url || null
+    } : null
   };
 }
 
@@ -364,9 +350,6 @@ async function initDb() {
         certificate_issued_at DATETIME DEFAULT NULL,
         certificate_verifier VARCHAR(255) DEFAULT 'Junaiddin Pagala, ST, M.T.',
         certificate_verifier_title VARCHAR(255) DEFAULT 'Kepala Balai Penjaminan Mutu Pendidikan Sultra',
-        face_descriptor LONGTEXT DEFAULT NULL,
-        face_photo_url LONGTEXT DEFAULT NULL,
-        face_registered_at DATETIME DEFAULT NULL,
         attendance_photo_url LONGTEXT DEFAULT NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -631,7 +614,7 @@ async function ensureEmployeeJp(id, eventJp = 32) {
 }
 
 // ==============================================================
-// PRESENSI & BIOMETRIK WAJAH
+// PRESENSI KEGIATAN
 // ==============================================================
 async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, attendancePhotoUrl = null, qrToken = null) {
   const now = new Date();
@@ -688,82 +671,6 @@ async function markEmployeeAttended(id, eventId, eventTitle, eventJp = 32, atten
   existing.eventTitle = eventTitle || null;
   existing.accumulatedJp = newJp;
   if (attendancePhotoUrl) existing.attendancePhotoUrl = attendancePhotoUrl;
-  return existing;
-}
-
-async function registerEmployeeFace(id, { faceDescriptor = null, facePhotoUrl = null }) {
-  const now = new Date();
-  const clean = String(id).trim();
-
-  const existing = await getEmployeeByIdOrNip(clean);
-  if (!existing) return null;
-
-  const descStr = faceDescriptor ? (typeof faceDescriptor === 'string' ? faceDescriptor : JSON.stringify(faceDescriptor)) : null;
-
-  const pool = getPool();
-  if (pool) {
-    try {
-      await pool.execute(
-        `UPDATE employees SET
-          face_photo_url = ?,
-          face_descriptor = ?,
-          face_registered_at = ?,
-          updated_at = NOW()
-         WHERE id = ?`,
-        [facePhotoUrl || null, descStr, now, existing.id]
-      );
-      return getEmployeeByIdOrNip(existing.id);
-    } catch (err) {
-      console.error(`[MySQL Error] registerEmployeeFace(${existing.id}):`, err.message);
-      throw new Error(`Gagal menyimpan data biometrik wajah ke MySQL: ${err.message}`);
-    }
-  }
-
-  if (isProd()) {
-    throw new Error('MySQL Database tidak terkonfigurasi di Vercel/Produksi. Perekaman wajah tidak dapat disimpan.');
-  }
-
-  existing.faceRegistered = true;
-  existing.facePhotoUrl = facePhotoUrl;
-  existing.faceDescriptor = faceDescriptor;
-  existing.faceRegisteredAt = now.toISOString();
-  return existing;
-}
-
-async function resetEmployeeFace(id) {
-  const clean = String(id).trim();
-  const existing = await getEmployeeByIdOrNip(clean);
-  if (!existing) return null;
-
-  const pool = getPool();
-  if (pool) {
-    try {
-      await pool.execute(
-        `UPDATE employees SET
-          face_photo_url = NULL,
-          face_descriptor = NULL,
-          face_registered_at = NULL,
-          attendance_photo_url = NULL,
-          updated_at = NOW()
-         WHERE id = ?`,
-        [existing.id]
-      );
-      return getEmployeeByIdOrNip(existing.id);
-    } catch (err) {
-      console.error(`[MySQL Error] resetEmployeeFace(${existing.id}):`, err.message);
-      throw new Error(`Gagal mereset biometrik wajah di MySQL: ${err.message}`);
-    }
-  }
-
-  if (isProd()) {
-    throw new Error('MySQL Database tidak terkonfigurasi di Vercel/Produksi. Gagal mereset biometrik wajah.');
-  }
-
-  existing.faceRegistered = false;
-  existing.facePhotoUrl = null;
-  existing.faceDescriptor = null;
-  existing.faceRegisteredAt = null;
-  existing.attendancePhotoUrl = null;
   return existing;
 }
 
@@ -1633,9 +1540,6 @@ async function resetTestingData() {
         lpti_file_path = NULL,
         certificate_number = NULL,
         certificate_issued_at = NULL,
-        face_photo_url = NULL,
-        face_descriptor = NULL,
-        face_registered_at = NULL,
         attendance_photo_url = NULL,
         updated_at = NOW()`
     );
@@ -1645,8 +1549,6 @@ async function resetTestingData() {
     e.attended = false;
     e.attendedAt = null;
     e.accumulatedJp = 0;
-    e.faceRegistered = false;
-    e.facePhotoUrl = null;
   });
   return true;
 }
@@ -1689,8 +1591,6 @@ module.exports = {
   getSystemSettings,
   uploadToStorage,
   getFile,
-  registerEmployeeFace,
-  resetEmployeeFace,
   resetTestingData,
   saveQrToken,
   isQrTokenValid,
