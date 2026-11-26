@@ -176,7 +176,7 @@ const BPMPLayout = {
   },
 
   /**
-   * Render Sidebar Tabler Vertical Layout (Tema Terang: Latar Putih, Border #E5E7EB, Lebar 260px)
+   * Render Sidebar Tabler Vertical Layout (Tema Terang: Latar Putih Bersih #FFFFFF, Border #E5E7EB, Lebar 260px)
    */
   renderSidebar(opts = {}) {
     const user = opts.user || this.getCurrentUser() || {};
@@ -234,11 +234,11 @@ const BPMPLayout = {
     const roleLabel = isSuper ? 'Super Administrator' : 'Bagian Kepegawaian';
 
     return `
-      <aside class="navbar navbar-vertical navbar-expand-lg d-print-none" id="sidebarMenu" style="z-index: 1030; background-color: #ffffff; border-right: 1px solid #E5E7EB;">
-        <div class="container-fluid px-0 h-100 d-flex flex-column">
+      <aside class="navbar navbar-vertical navbar-expand-lg d-print-none" id="sidebarMenu" style="z-index: 1030; background: #ffffff !important; background-color: #ffffff !important; border-right: 1px solid #E5E7EB !important;">
+        <div class="container-fluid px-0 h-100 d-flex flex-column" style="background-color: #ffffff !important;">
           
           <!-- Mobile Toggle Button (Drawer) -->
-          <div class="d-lg-none d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="border-color: #E5E7EB !important;">
+          <div class="d-lg-none d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="border-color: #E5E7EB !important; background-color: #ffffff !important;">
             <span class="fw-bold text-dark small">Menu Navigasi</span>
             <button class="navbar-toggler border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Tutup Menu">
               <i class="ti ti-x fs-2 text-dark"></i>
@@ -246,7 +246,7 @@ const BPMPLayout = {
           </div>
 
           <!-- Brand Logo & Instansi (Latar Putih, Teks #0056b3) -->
-          <div class="navbar-brand px-3 py-3 d-flex align-items-center justify-content-between">
+          <div class="navbar-brand px-3 py-3 d-flex align-items-center justify-content-between" style="background-color: #ffffff !important;">
             <a href="/admin" class="d-flex align-items-center text-decoration-none">
               <img src="/icons/tutwurihandayani.png" alt="Kemendikdasmen" width="34" height="34" class="me-2 flex-shrink-0" style="object-fit: contain;">
               <div class="brand-text-hide d-flex flex-column text-start lh-sm">
@@ -257,7 +257,7 @@ const BPMPLayout = {
           </div>
 
           <!-- Pemilih Event Aktif Global (Latar Terang, Tanpa Badge Arsip, Ada Checkbox Tampilkan Arsip) -->
-          <div class="sidebar-event-selector px-3 py-2.5 mb-1 border-top border-bottom" style="border-color: #E5E7EB !important; background-color: #F9FAFB;">
+          <div class="sidebar-event-selector px-3 py-2.5 mb-1 border-top border-bottom" style="border-color: #E5E7EB !important; background-color: #F9FAFB !important;">
             <label for="sidebarGlobalEventSelect" class="form-label text-uppercase fw-bold mb-1 d-flex justify-content-between align-items-center" style="font-size: 10px; letter-spacing: 0.5px; color: #6B7280;">
               <span><i class="ti ti-calendar-event me-1"></i> EVENT AKTIF</span>
             </label>
@@ -273,13 +273,13 @@ const BPMPLayout = {
           </div>
 
           <!-- Menu Items Collapsible -->
-          <div class="collapse navbar-collapse flex-grow-1" id="sidebar-menu">
-            <ul class="navbar-nav pt-lg-1 w-100 flex-grow-1 overflow-y-auto">
+          <div class="collapse navbar-collapse flex-grow-1" id="sidebar-menu" style="background-color: #ffffff !important;">
+            <ul class="navbar-nav pt-lg-1 w-100 flex-grow-1 overflow-y-auto" style="background-color: #ffffff !important;">
               ${menuHtml}
             </ul>
 
             <!-- Sidebar Footer: Avatar + Nama (Truncated) + Peran (Teks Kecil, Bukan Badge) + Tombol Keluar Tautan Teks Merah -->
-            <div class="sidebar-footer mt-auto p-3 border-top w-100" style="border-color: #E5E7EB !important; background-color: #FAFAFA;">
+            <div class="sidebar-footer mt-auto p-3 border-top w-100" style="border-color: #E5E7EB !important; background-color: #FAFAFA !important;">
               <div class="d-flex align-items-center gap-2 mb-2">
                 <span class="avatar avatar-sm bg-primary text-white fw-bold flex-shrink-0" id="sidebarUserAvatar">${initial}</span>
                 <div class="sidebar-user-details text-truncate flex-grow-1" style="min-width: 0;">
@@ -772,7 +772,40 @@ const BPMPLayout = {
   },
 
   /**
+   * Cek Apakah Halaman Saat Ini Adalah Halaman Dashboard Admin
+   * Sidebar Tabler Vertical HANYA boleh tampil di halaman Admin.
+   */
+  isAdminPage(opts = {}) {
+    if (opts.hasSidebar === false || opts.isAdminPage === false) return false;
+    if (opts.hasSidebar === true || opts.isAdminPage === true) return true;
+
+    const path = (window.location.pathname || '').toLowerCase();
+    // Halaman login admin BUKAN dashboard admin (tidak boleh ada sidebar)
+    if (path === '/admin/login' || path.startsWith('/admin/login')) return false;
+
+    // Halaman rute admin resmi
+    if (path.startsWith('/admin') || path.startsWith('/superadmin')) {
+      return true;
+    }
+
+    // Periksa jika dokumen secara eksplisit memiliki kontainer sidebar admin
+    const hasAdminSidebarContainer = !!(document.getElementById('app-sidebar') || document.getElementById('sidebar-container'));
+    const role = (opts.role || this.getUserRole() || '').toLowerCase();
+    if (hasAdminSidebarContainer && (role === 'admin' || role === 'superadmin' || role === 'kepegawaian')) {
+      // Pastikan bukan halaman publik
+      const publicPaths = ['/', '/index.html', '/login', '/login.html', '/proyektor', '/qr', '/sertifikat', '/verify'];
+      if (publicPaths.some(p => path === p || (p !== '/' && path.startsWith(p)))) {
+        return false;
+      }
+      return true;
+    }
+
+    return false;
+  },
+
+  /**
    * Injeksi CSS Layout & Tema Terang Sidebar Langsung ke Dokumen
+   * Semua offset & aturan sidebar di-scope ketat ke body.has-admin-sidebar
    */
   injectLayoutStyles() {
     if (document.getElementById('bpmp-injected-layout-styles')) return;
@@ -788,9 +821,39 @@ const BPMPLayout = {
         overflow-x: hidden !important;
       }
 
+      /* HANYA HALAMAN ADMIN (body.has-admin-sidebar) */
+      body.has-admin-sidebar #app-sidebar,
+      body.has-admin-sidebar #sidebar-container,
+      body.has-admin-sidebar #bpmp-sidebar {
+        display: block;
+      }
+
+      /* HALAMAN NON-ADMIN (Landing Page, Portal Pegawai, Sertifikat, Login): SEMBUNYIKAN SIDEBAR TOTAL */
+      body:not(.has-admin-sidebar) #app-sidebar,
+      body:not(.has-admin-sidebar) #sidebar-container,
+      body:not(.has-admin-sidebar) #bpmp-sidebar,
+      body:not(.has-admin-sidebar) #sidebarMenu,
+      body:not(.has-admin-sidebar) aside.navbar-vertical {
+        display: none !important;
+      }
+
+      /* HALAMAN NON-ADMIN: Konten 100% lebar tanpa offset margin kiri */
+      body:not(.has-admin-sidebar) .page-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* Sidebar Admin (Latar Putih Bersih / Theme Light) */
+      #sidebarMenu,
+      .navbar-vertical.navbar-expand-lg {
+        background-color: #ffffff !important;
+        border-right: 1px solid #E5E7EB !important;
+      }
+
       @media (min-width: 992px) {
-        #sidebarMenu,
-        .navbar-vertical.navbar-expand-lg {
+        body.has-admin-sidebar #sidebarMenu,
+        body.has-admin-sidebar .navbar-vertical.navbar-expand-lg {
           width: var(--bpmp-sidebar-w) !important;
           position: fixed !important;
           top: 0 !important;
@@ -805,7 +868,7 @@ const BPMPLayout = {
           overflow-x: hidden !important;
         }
 
-        .page-wrapper {
+        body.has-admin-sidebar .page-wrapper {
           margin-left: var(--bpmp-sidebar-w) !important;
           width: calc(100% - var(--bpmp-sidebar-w)) !important;
           max-width: calc(100% - var(--bpmp-sidebar-w)) !important;
@@ -816,37 +879,37 @@ const BPMPLayout = {
         }
 
         /* Mode Ikon Collapsed */
-        body.sidebar-collapsed #sidebarMenu,
-        body.sidebar-collapsed .navbar-vertical.navbar-expand-lg {
+        body.has-admin-sidebar.sidebar-collapsed #sidebarMenu,
+        body.has-admin-sidebar.sidebar-collapsed .navbar-vertical.navbar-expand-lg {
           width: var(--bpmp-sidebar-collapsed-w) !important;
         }
 
-        body.sidebar-collapsed .page-wrapper {
+        body.has-admin-sidebar.sidebar-collapsed .page-wrapper {
           margin-left: var(--bpmp-sidebar-collapsed-w) !important;
           width: calc(100% - var(--bpmp-sidebar-collapsed-w)) !important;
           max-width: calc(100% - var(--bpmp-sidebar-collapsed-w)) !important;
         }
 
-        body.sidebar-collapsed .sidebar-hide-collapsed,
-        body.sidebar-collapsed .bpmp-group-title,
-        body.sidebar-collapsed .sidebar-event-selector,
-        body.sidebar-collapsed .sidebar-user-details,
-        body.sidebar-collapsed .nav-link-title,
-        body.sidebar-collapsed #sidebarBadgeLptiPending {
+        body.has-admin-sidebar.sidebar-collapsed .sidebar-hide-collapsed,
+        body.has-admin-sidebar.sidebar-collapsed .bpmp-group-title,
+        body.has-admin-sidebar.sidebar-collapsed .sidebar-event-selector,
+        body.has-admin-sidebar.sidebar-collapsed .sidebar-user-details,
+        body.has-admin-sidebar.sidebar-collapsed .nav-link-title,
+        body.has-admin-sidebar.sidebar-collapsed #sidebarBadgeLptiPending {
           display: none !important;
         }
 
-        body.sidebar-collapsed .navbar-brand {
+        body.has-admin-sidebar.sidebar-collapsed .navbar-brand {
           justify-content: center !important;
           padding-left: 0 !important;
           padding-right: 0 !important;
         }
 
-        body.sidebar-collapsed .navbar-brand .brand-text-hide {
+        body.has-admin-sidebar.sidebar-collapsed .navbar-brand .brand-text-hide {
           display: none !important;
         }
 
-        body.sidebar-collapsed .bpmp-nav-link {
+        body.has-admin-sidebar.sidebar-collapsed .bpmp-nav-link {
           justify-content: center !important;
           padding: 0.65rem 0.5rem !important;
           margin: 0.15rem 0.35rem !important;
@@ -854,16 +917,16 @@ const BPMPLayout = {
           border-radius: 6px !important;
         }
 
-        body.sidebar-collapsed .bpmp-nav-link.active {
+        body.has-admin-sidebar.sidebar-collapsed .bpmp-nav-link.active {
           border-left: 3px solid #1D4ED8 !important;
           border-radius: 0 6px 6px 0 !important;
         }
 
-        body.sidebar-collapsed .bpmp-nav-link .nav-link-icon {
+        body.has-admin-sidebar.sidebar-collapsed .bpmp-nav-link .nav-link-icon {
           margin-right: 0 !important;
         }
 
-        body.sidebar-collapsed .sidebar-footer {
+        body.has-admin-sidebar.sidebar-collapsed .sidebar-footer {
           padding: 0.75rem 0.25rem !important;
           display: flex !important;
           flex-direction: column !important;
@@ -872,14 +935,14 @@ const BPMPLayout = {
       }
 
       @media (max-width: 991.98px) {
-        .page-wrapper {
+        body.has-admin-sidebar .page-wrapper {
           margin-left: 0 !important;
           width: 100% !important;
           max-width: 100% !important;
         }
 
-        #sidebarMenu,
-        .navbar-vertical.navbar-expand-lg {
+        body.has-admin-sidebar #sidebarMenu,
+        body.has-admin-sidebar .navbar-vertical.navbar-expand-lg {
           width: 260px !important;
           background-color: #ffffff !important;
           border-right: 1px solid #E5E7EB !important;
@@ -946,70 +1009,87 @@ const BPMPLayout = {
   init(opts = {}) {
     this.injectLayoutStyles();
 
-    const role = opts.role || this.getUserRole();
+    const isAdmin = this.isAdminPage(opts);
+    const role = opts.role || (isAdmin ? this.getUserRole() : 'pegawai');
     const isSuper = role === 'superadmin';
 
-    // Pulihkan status collapse sidebar dari localStorage
-    if (localStorage.getItem('bpmp_sidebar_collapsed') === 'true') {
-      document.body.classList.add('sidebar-collapsed');
+    if (isAdmin) {
+      // 1. Terapkan kelas body khusus Admin
+      document.body.classList.add('has-admin-sidebar');
+
+      // Pulihkan status collapse sidebar dari localStorage
+      if (localStorage.getItem('bpmp_sidebar_collapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
+      } else {
+        document.body.classList.remove('sidebar-collapsed');
+      }
+
+      // 2. Sidebar Container (HANYA UNTUK ADMIN)
+      const sidebarEl = document.getElementById('app-sidebar') || document.getElementById('sidebar-container') || document.getElementById('bpmp-sidebar');
+      if (sidebarEl) {
+        sidebarEl.style.display = 'block';
+        sidebarEl.innerHTML = this.renderSidebar({ ...opts, role });
+      }
+
+      // 3. Slim Topbar Header (HANYA UNTUK ADMIN)
+      const topbarEl = document.getElementById('app-topbar') || document.getElementById('topbar-container') || document.getElementById('bpmp-header');
+      if (topbarEl) {
+        topbarEl.innerHTML = this.renderSlimHeader({ ...opts, role });
+      }
+
+      // Update icon toggle collapse jika ada
+      const toggleIcon = document.getElementById('btnToggleCollapseIcon');
+      if (toggleIcon) {
+        toggleIcon.className = document.body.classList.contains('sidebar-collapsed')
+          ? 'ti ti-layout-sidebar-left-expand fs-3'
+          : 'ti ti-layout-sidebar-left-collapse fs-3';
+      }
+
+      // 4. Modal Pengaturan & Lookup Pegawai (Superadmin)
+      if (!document.getElementById('modalSystemSettings') && isSuper) {
+        document.body.insertAdjacentHTML('beforeend', this.renderSettingsModal());
+      }
+      if (!document.getElementById('modalLookupPegawai')) {
+        document.body.insertAdjacentHTML('beforeend', this.renderLookupModal());
+      }
+
+      // 5. Jalankan Jam WITA & Selector Event Global
+      this.startClock();
+      this.initGlobalEvents();
+      this.updateLptiPendingCount();
     } else {
-      document.body.classList.remove('sidebar-collapsed');
+      // HALAMAN NON-ADMIN (Beranda, Portal Pegawai, Proyektor, Sertifikat, Login):
+      // Bersihkan class dan pastikan sidebar TIDAK ADA sama sekali
+      document.body.classList.remove('has-admin-sidebar', 'sidebar-collapsed');
+
+      const sidebarEl = document.getElementById('app-sidebar') || document.getElementById('sidebar-container') || document.getElementById('bpmp-sidebar');
+      if (sidebarEl) {
+        sidebarEl.innerHTML = '';
+        sidebarEl.style.display = 'none';
+      }
+      const existingSidebar = document.getElementById('sidebarMenu');
+      if (existingSidebar) {
+        existingSidebar.remove();
+      }
     }
 
-    // 1. Sidebar Container
-    const sidebarEl = document.getElementById('app-sidebar') || document.getElementById('sidebar-container') || document.getElementById('bpmp-sidebar');
-    if (sidebarEl) {
-      sidebarEl.innerHTML = this.renderSidebar({ ...opts, role });
-    }
-
-    // 2. Slim Topbar Header
-    const topbarEl = document.getElementById('app-topbar') || document.getElementById('topbar-container') || document.getElementById('bpmp-header');
-    if (topbarEl) {
-      topbarEl.innerHTML = this.renderSlimHeader({ ...opts, role });
-    }
-
-    // Update icon toggle collapse jika ada
-    const toggleIcon = document.getElementById('btnToggleCollapseIcon');
-    if (toggleIcon) {
-      toggleIcon.className = document.body.classList.contains('sidebar-collapsed')
-        ? 'ti ti-layout-sidebar-left-expand fs-3'
-        : 'ti ti-layout-sidebar-left-collapse fs-3';
-    }
-
-    // 3. Fallback jika halaman lama masih menggunakan #bpmp-navbar atau #app-navbar
-    const legacyNavbar = document.getElementById('bpmp-navbar') || document.getElementById('app-navbar');
-    if (legacyNavbar && !sidebarEl) {
-      legacyNavbar.innerHTML = this.renderSidebar({ ...opts, role }) + this.renderSlimHeader({ ...opts, role });
-    }
-
-    // 4. Bersihkan banner instansi 3-lapis (#bpmp-top-strip / #app-topstrip)
+    // Bersihkan banner instansi 3-lapis lama (#bpmp-top-strip / #app-topstrip)
     const topStrip = document.getElementById('bpmp-top-strip') || document.getElementById('app-topstrip');
     if (topStrip) {
       topStrip.innerHTML = '';
     }
 
-    // 5. Footer Container
+    // Bersihkan legacy navbar kosong agar tidak mengganggu layout
+    const legacyNavbar = document.getElementById('bpmp-navbar') || document.getElementById('app-navbar');
+    if (legacyNavbar && !isAdmin) {
+      legacyNavbar.innerHTML = '';
+    }
+
+    // Footer Container (Bisa dimuat di semua halaman)
     const footerEl = document.getElementById('app-footer') || document.getElementById('bpmp-footer');
     if (footerEl) {
       footerEl.innerHTML = this.renderFooter();
     }
-
-    // 6. Pasang Modal Pengaturan & Lookup di Body jika belum ada
-    if (!document.getElementById('modalSystemSettings') && isSuper) {
-      document.body.insertAdjacentHTML('beforeend', this.renderSettingsModal());
-    }
-    if (!document.getElementById('modalLookupPegawai')) {
-      document.body.insertAdjacentHTML('beforeend', this.renderLookupModal());
-    }
-
-    // 7. Jalankan Jam WITA
-    this.startClock();
-
-    // 8. Inisialisasi Event Global di Sidebar
-    this.initGlobalEvents();
-
-    // 9. Update badge LPTI pending
-    this.updateLptiPendingCount();
   }
 };
 

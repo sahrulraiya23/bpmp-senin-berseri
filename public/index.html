@@ -52,12 +52,6 @@
 <body class="bg-light">
   <div class="page">
     
-    <!-- Top Official Identity Strip (Kemendikdasmen Standard) -->
-    <div id="bpmp-top-strip"></div>
-
-    <!-- Main Navigation Header -->
-    <div id="bpmp-navbar"></div>
-
     <!-- Page Body Content -->
     <div class="page-wrapper">
       <div class="container-xl py-4 py-lg-5">
@@ -226,7 +220,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      BPMPLayout.init({ role: 'pegawai', activeMenu: 'home' });
+      BPMPLayout.init({ role: 'publik', isAdminPage: false, hasSidebar: false });
     });
 
     function handleCekSertifikatIndex(e) {

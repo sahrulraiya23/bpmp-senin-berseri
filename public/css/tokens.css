@@ -56,8 +56,10 @@
   --bpmp-gold-bg:        #fef3c7;
   --bpmp-teal:           #0f766e;
   --bpmp-teal-bg:        #ccfbf1;
-  --bpmp-sidebar-bg:     #0056b3;
-  --bpmp-sidebar-active:  rgba(255,255,255,0.12);
+  --bpmp-sidebar-bg:     #ffffff;
+  --bpmp-sidebar-active:  #E8F0FE;
+  --bpmp-sidebar-text:    #374151;
+  --bpmp-sidebar-text-active: #1D4ED8;
   --bpmp-sidebar-text:    rgba(255,255,255,0.75);
   --bpmp-sidebar-text-active: #ffffff;
 }
@@ -238,18 +240,28 @@ html[data-bs-layout=boxed] .page,
 }
 
 /* ======================================================
-   9. SIDEBAR OVERRIDES (Tabler vertical navbar)
+   9. SIDEBAR OVERRIDES (Tabler vertical navbar - PURE WHITE THEME)
    ====================================================== */
-.navbar-vertical.navbar-dark {
-  background: var(--bpmp-sidebar-bg) !important;
+.navbar-vertical,
+.navbar-vertical.navbar-dark,
+.navbar-vertical.navbar-light,
+#sidebarMenu {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-right: 1px solid #E5E7EB !important;
 }
-.navbar-vertical.navbar-dark .nav-link {
-  color: var(--bpmp-sidebar-text);
+.navbar-vertical .nav-link,
+.navbar-vertical.navbar-dark .nav-link,
+.navbar-vertical.navbar-light .nav-link {
+  color: #374151 !important;
 }
+.navbar-vertical .nav-link.active,
 .navbar-vertical.navbar-dark .nav-link.active,
+.navbar-vertical.navbar-light .nav-link.active,
+.navbar-vertical .nav-link:hover,
 .navbar-vertical.navbar-dark .nav-link:hover {
-  color: var(--bpmp-sidebar-text-active);
-  background: var(--bpmp-sidebar-active);
+  color: #1D4ED8 !important;
+  background: #E8F0FE !important;
 }
 
 /* ======================================================
@@ -489,6 +501,7 @@ html[data-bs-layout=boxed] .page,
 
 /* ======================================================
    TABLER VERTICAL SIDEBAR (THEME LIGHT) & PAGE OFFSET
+   HANYA UNTUK HALAMAN ADMIN (body.has-admin-sidebar)
    ====================================================== */
 :root {
   --bpmp-sidebar-w: 260px;
@@ -499,15 +512,39 @@ html, body {
   overflow-x: hidden !important;
 }
 
-#app-sidebar,
-#sidebar-container,
-#bpmp-sidebar {
+/* Sidebar HANYA tampil jika di halaman admin (body.has-admin-sidebar) */
+body.has-admin-sidebar #app-sidebar,
+body.has-admin-sidebar #sidebar-container,
+body.has-admin-sidebar #bpmp-sidebar {
   display: block;
 }
 
+/* Halaman non-admin (landing page, portal pegawai, login, sertifikat): SEMBUNYIKAN SIDEBAR */
+body:not(.has-admin-sidebar) #app-sidebar,
+body:not(.has-admin-sidebar) #sidebar-container,
+body:not(.has-admin-sidebar) #bpmp-sidebar,
+body:not(.has-admin-sidebar) #sidebarMenu,
+body:not(.has-admin-sidebar) aside.navbar-vertical {
+  display: none !important;
+}
+
+/* Halaman non-admin: page-wrapper 100% lebar, tanpa margin kiri */
+body:not(.has-admin-sidebar) .page-wrapper {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Sidebar Admin (Latar Putih Bersih / Theme Light) */
+#sidebarMenu,
+.navbar-vertical.navbar-expand-lg {
+  background-color: #ffffff !important;
+  border-right: 1px solid #E5E7EB !important;
+}
+
 @media (min-width: 992px) {
-  #sidebarMenu,
-  .navbar-vertical.navbar-expand-lg {
+  body.has-admin-sidebar #sidebarMenu,
+  body.has-admin-sidebar .navbar-vertical.navbar-expand-lg {
     width: var(--bpmp-sidebar-w) !important;
     position: fixed !important;
     top: 0 !important;
@@ -522,7 +559,7 @@ html, body {
     overflow-x: hidden !important;
   }
 
-  .page-wrapper {
+  body.has-admin-sidebar .page-wrapper {
     margin-left: var(--bpmp-sidebar-w) !important;
     width: calc(100% - var(--bpmp-sidebar-w)) !important;
     max-width: calc(100% - var(--bpmp-sidebar-w)) !important;
@@ -533,37 +570,37 @@ html, body {
   }
 
   /* Mode Ikon (Collapsed) */
-  body.sidebar-collapsed #sidebarMenu,
-  body.sidebar-collapsed .navbar-vertical.navbar-expand-lg {
+  body.has-admin-sidebar.sidebar-collapsed #sidebarMenu,
+  body.has-admin-sidebar.sidebar-collapsed .navbar-vertical.navbar-expand-lg {
     width: var(--bpmp-sidebar-collapsed-w) !important;
   }
 
-  body.sidebar-collapsed .page-wrapper {
+  body.has-admin-sidebar.sidebar-collapsed .page-wrapper {
     margin-left: var(--bpmp-sidebar-collapsed-w) !important;
     width: calc(100% - var(--bpmp-sidebar-collapsed-w)) !important;
     max-width: calc(100% - var(--bpmp-sidebar-collapsed-w)) !important;
   }
 
-  body.sidebar-collapsed .sidebar-hide-collapsed,
-  body.sidebar-collapsed .bpmp-group-title,
-  body.sidebar-collapsed .sidebar-event-selector,
-  body.sidebar-collapsed .sidebar-user-details,
-  body.sidebar-collapsed .nav-link-title,
-  body.sidebar-collapsed #sidebarBadgeLptiPending {
+  body.has-admin-sidebar.sidebar-collapsed .sidebar-hide-collapsed,
+  body.has-admin-sidebar.sidebar-collapsed .bpmp-group-title,
+  body.has-admin-sidebar.sidebar-collapsed .sidebar-event-selector,
+  body.has-admin-sidebar.sidebar-collapsed .sidebar-user-details,
+  body.has-admin-sidebar.sidebar-collapsed .nav-link-title,
+  body.has-admin-sidebar.sidebar-collapsed #sidebarBadgeLptiPending {
     display: none !important;
   }
 
-  body.sidebar-collapsed .navbar-brand {
+  body.has-admin-sidebar.sidebar-collapsed .navbar-brand {
     justify-content: center !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
-  body.sidebar-collapsed .navbar-brand .brand-text-hide {
+  body.has-admin-sidebar.sidebar-collapsed .navbar-brand .brand-text-hide {
     display: none !important;
   }
 
-  body.sidebar-collapsed .bpmp-nav-link {
+  body.has-admin-sidebar.sidebar-collapsed .bpmp-nav-link {
     justify-content: center !important;
     padding: 0.65rem 0.5rem !important;
     margin: 0.15rem 0.35rem !important;
@@ -571,16 +608,16 @@ html, body {
     border-radius: 6px !important;
   }
 
-  body.sidebar-collapsed .bpmp-nav-link.active {
+  body.has-admin-sidebar.sidebar-collapsed .bpmp-nav-link.active {
     border-left: 3px solid #1D4ED8 !important;
     border-radius: 0 6px 6px 0 !important;
   }
 
-  body.sidebar-collapsed .bpmp-nav-link .nav-link-icon {
+  body.has-admin-sidebar.sidebar-collapsed .bpmp-nav-link .nav-link-icon {
     margin-right: 0 !important;
   }
 
-  body.sidebar-collapsed .sidebar-footer {
+  body.has-admin-sidebar.sidebar-collapsed .sidebar-footer {
     padding: 0.75rem 0.25rem !important;
     display: flex !important;
     flex-direction: column !important;
@@ -589,14 +626,14 @@ html, body {
 }
 
 @media (max-width: 991.98px) {
-  .page-wrapper {
+  body.has-admin-sidebar .page-wrapper {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
   }
 
-  #sidebarMenu,
-  .navbar-vertical.navbar-expand-lg {
+  body.has-admin-sidebar #sidebarMenu,
+  body.has-admin-sidebar .navbar-vertical.navbar-expand-lg {
     width: 260px !important;
     background-color: #ffffff !important;
     border-right: 1px solid #E5E7EB !important;
