@@ -1,5 +1,5 @@
 /**
- * BPMP Senin Berseri — Shared Layout System (Tabler Bootstrap 5 Vertical Layout)
+ * BPMP Senin Berseri — Shared Layout System (Tabler Vertical Layout — Light Theme)
  * Satu konfigurasi menu terpusat untuk semua peran (Superadmin, Kepegawaian, ASN).
  */
 
@@ -138,6 +138,7 @@ const BPMPLayout = {
   // Cache events & pending counts
   cachedEvents: [],
   lptiPendingCount: 0,
+  showArchivedEvents: false,
   clockTimer: null,
 
   /**
@@ -163,7 +164,19 @@ const BPMPLayout = {
   },
 
   /**
-   * Render Sidebar Tabler Vertical Layout
+   * Toggle Sidebar Collapsed Mode (260px <-> 72px icon mode)
+   */
+  toggleSidebarCollapse() {
+    const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('bpmp_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+    const icon = document.getElementById('btnToggleCollapseIcon');
+    if (icon) {
+      icon.className = isCollapsed ? 'ti ti-layout-sidebar-left-expand fs-3' : 'ti ti-layout-sidebar-left-collapse fs-3';
+    }
+  },
+
+  /**
+   * Render Sidebar Tabler Vertical Layout (Tema Terang: Latar Putih, Border #E5E7EB, Lebar 260px)
    */
   renderSidebar(opts = {}) {
     const user = opts.user || this.getCurrentUser() || {};
@@ -183,25 +196,28 @@ const BPMPLayout = {
       if (groupItems.length === 0) return; // Sembunyikan grup jika tidak ada item
 
       menuHtml += `
-        <li class="nav-item-header text-uppercase text-white-50 fw-bold px-3 pt-3 pb-1" style="font-size: 10px; letter-spacing: 0.8px;">
+        <li class="nav-item-header bpmp-group-title">
           ${groupName}
         </li>
       `;
 
       groupItems.forEach(item => {
         const isActive = item.id === activeMenu;
-        const activeClass = isActive ? 'active fw-bold text-white bg-primary bg-opacity-25' : 'text-white-75';
+        const activeClass = isActive ? 'active' : '';
         const targetAttr = item.target ? `target="${item.target}"` : '';
         const onclickAttr = item.onclick ? `onclick="${item.onclick}"` : '';
 
         let badgeHtml = '';
         if (item.badgeKey === 'lptiPending') {
-          badgeHtml = `<span id="sidebarBadgeLptiPending" class="badge bg-warning text-dark ms-auto font-monospace px-1.5 py-0.5" style="font-size: 10px;">${this.lptiPendingCount}</span>`;
+          const badgeStyle = this.lptiPendingCount > 0 
+            ? 'background-color: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;' 
+            : 'background-color: #F3F4F6; color: #6B7280; border: 1px solid #E5E7EB;';
+          badgeHtml = `<span id="sidebarBadgeLptiPending" class="badge ms-auto font-monospace px-1.5 py-0.5 rounded-pill" style="${badgeStyle} font-size: 10.5px;">${this.lptiPendingCount}</span>`;
         }
 
         menuHtml += `
           <li class="nav-item">
-            <a class="nav-link ${activeClass} px-3 py-2 rounded-2 mx-2 mb-0.5" href="${item.href}" ${targetAttr} ${onclickAttr}>
+            <a class="bpmp-nav-link ${activeClass}" href="${item.href}" ${targetAttr} ${onclickAttr}>
               <span class="nav-link-icon d-inline-block me-2">
                 <i class="ti ${item.icon} fs-3"></i>
               </span>
@@ -215,76 +231,82 @@ const BPMPLayout = {
 
     const displayName = user.name || (isSuper ? 'Super Administrator' : 'Staf Kepegawaian');
     const initial = (displayName || 'A').charAt(0).toUpperCase();
-    const roleBadgeText = isSuper ? 'Superadmin' : 'Kepegawaian';
-    const roleBadgeClass = isSuper ? 'bg-yellow text-dark' : 'bg-primary text-white';
+    const roleLabel = isSuper ? 'Super Administrator' : 'Bagian Kepegawaian';
 
     return `
-      <aside class="navbar navbar-vertical navbar-expand-lg d-print-none shadow-sm" data-bs-theme="dark" id="sidebarMenu" style="z-index: 1030;">
-        <div class="container-fluid px-2">
+      <aside class="navbar navbar-vertical navbar-expand-lg d-print-none" id="sidebarMenu" style="z-index: 1030; background-color: #ffffff; border-right: 1px solid #E5E7EB;">
+        <div class="container-fluid px-0 h-100 d-flex flex-column">
+          
           <!-- Mobile Toggle Button (Drawer) -->
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Buka Menu">
-            <span class="navbar-toggler-icon"></span>
-          </button>
+          <div class="d-lg-none d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="border-color: #E5E7EB !important;">
+            <span class="fw-bold text-dark small">Menu Navigasi</span>
+            <button class="navbar-toggler border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Tutup Menu">
+              <i class="ti ti-x fs-2 text-dark"></i>
+            </button>
+          </div>
 
-          <!-- Brand Logo & Instansi (Satu identitas terpadu) -->
-          <div class="navbar-brand navbar-brand-autodark px-2 py-2.5 my-1">
-            <a href="/admin" class="d-flex align-items-center text-decoration-none text-white">
+          <!-- Brand Logo & Instansi (Latar Putih, Teks #0056b3) -->
+          <div class="navbar-brand px-3 py-3 d-flex align-items-center justify-content-between">
+            <a href="/admin" class="d-flex align-items-center text-decoration-none">
               <img src="/icons/tutwurihandayani.png" alt="Kemendikdasmen" width="34" height="34" class="me-2 flex-shrink-0" style="object-fit: contain;">
-              <div class="d-flex flex-column text-start lh-sm">
-                <span class="fw-bold text-white" style="font-size: 13px; letter-spacing: -0.2px;">Kemendikdasmen</span>
-                <span class="text-white-50" style="font-size: 10px; letter-spacing: 0.1px;">BPMP Sultra</span>
+              <div class="brand-text-hide d-flex flex-column text-start lh-sm">
+                <span class="fw-bold" style="font-size: 13.5px; letter-spacing: -0.2px; color: #0056b3;">Kemendikdasmen</span>
+                <span style="font-size: 10px; letter-spacing: 0.1px; color: #6B7280;">BPMP Sultra</span>
               </div>
             </a>
           </div>
 
-          <!-- Pemilih Event Aktif Global (Tersimpan di Sesi) -->
-          <div class="sidebar-event-selector px-2 py-2 mb-2 w-100 border-top border-bottom border-white-10 bg-dark-lt rounded">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-              <span class="text-uppercase fw-bold text-white-50" style="font-size: 9.5px; letter-spacing: 0.5px;">
-                <i class="ti ti-calendar-event me-1"></i> EVENT AKTIF
-              </span>
-              <span id="sidebarEventStatusBadge" class="badge bg-green text-green-fg" style="font-size: 9px; padding: 1px 5px;">Aktif</span>
-            </div>
-            <select id="sidebarGlobalEventSelect" class="form-select form-select-sm bg-dark text-white border-secondary" style="font-size: 11.5px; cursor: pointer;" onchange="BPMPLayout.onGlobalEventChange(this.value)">
+          <!-- Pemilih Event Aktif Global (Latar Terang, Tanpa Badge Arsip, Ada Checkbox Tampilkan Arsip) -->
+          <div class="sidebar-event-selector px-3 py-2.5 mb-1 border-top border-bottom" style="border-color: #E5E7EB !important; background-color: #F9FAFB;">
+            <label for="sidebarGlobalEventSelect" class="form-label text-uppercase fw-bold mb-1 d-flex justify-content-between align-items-center" style="font-size: 10px; letter-spacing: 0.5px; color: #6B7280;">
+              <span><i class="ti ti-calendar-event me-1"></i> EVENT AKTIF</span>
+            </label>
+            <select id="sidebarGlobalEventSelect" class="form-select form-select-sm bg-white border" style="font-size: 11.5px; border-color: #D1D5DB; color: #1F2937; cursor: pointer;" onchange="BPMPLayout.onGlobalEventChange(this.value)">
               <option value="">Memuat kegiatan...</option>
             </select>
+            <div class="form-check form-check-inline mt-1.5 mb-0" style="min-height: auto;">
+              <input class="form-check-input" type="checkbox" id="chkShowArchivedEvents" style="cursor: pointer; width: 13px; height: 13px; margin-top: 3px;" onchange="BPMPLayout.toggleArchivedEvents(this.checked)">
+              <label class="form-check-label small" for="chkShowArchivedEvents" style="font-size: 11px; cursor: pointer; user-select: none; color: #6B7280 !important;">
+                Tampilkan arsip
+              </label>
+            </div>
           </div>
 
           <!-- Menu Items Collapsible -->
-          <div class="collapse navbar-collapse" id="sidebar-menu">
-            <ul class="navbar-nav pt-lg-1 w-100">
+          <div class="collapse navbar-collapse flex-grow-1" id="sidebar-menu">
+            <ul class="navbar-nav pt-lg-1 w-100 flex-grow-1 overflow-y-auto">
               ${menuHtml}
             </ul>
 
-            <!-- Sidebar Footer: Nama User, Peran, Pengaturan, Keluar -->
-            <div class="sidebar-footer mt-auto pt-3 border-top border-white-10 w-100 pb-2">
-              <div class="d-flex align-items-center gap-2 mb-2 px-2">
+            <!-- Sidebar Footer: Avatar + Nama (Truncated) + Peran (Teks Kecil, Bukan Badge) + Tombol Keluar Tautan Teks Merah -->
+            <div class="sidebar-footer mt-auto p-3 border-top w-100" style="border-color: #E5E7EB !important; background-color: #FAFAFA;">
+              <div class="d-flex align-items-center gap-2 mb-2">
                 <span class="avatar avatar-sm bg-primary text-white fw-bold flex-shrink-0" id="sidebarUserAvatar">${initial}</span>
-                <div class="text-truncate flex-grow-1" style="max-width: 120px;">
-                  <div class="fw-bold text-white small text-truncate" id="sidebarUserName" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</div>
-                  <div class="text-white-50" style="font-size: 10px;" id="sidebarUserRoleDisplay">${roleBadgeText}</div>
+                <div class="sidebar-user-details text-truncate flex-grow-1" style="min-width: 0;">
+                  <div class="fw-bold small text-truncate" id="sidebarUserName" style="color: #111827;" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</div>
+                  <div class="small text-truncate" id="sidebarUserRoleDisplay" style="color: #6B7280; font-size: 11px;">${roleLabel}</div>
                 </div>
-                <span class="badge ${roleBadgeClass} font-monospace" style="font-size: 9px;">${roleBadgeText}</span>
               </div>
-              <div class="d-flex gap-1.5 px-2">
+              <div class="sidebar-user-details d-flex align-items-center justify-content-between pt-1 border-top" style="border-color: #F3F4F6 !important;">
                 ${isSuper ? `
-                  <button type="button" class="btn btn-outline-light btn-sm flex-fill py-1 px-1.5" onclick="BPMPLayout.openSettingsModal()" style="font-size: 11px;" title="Pengaturan Sistem & Reset Data">
-                    <i class="ti ti-settings me-1"></i> Pengaturan
-                  </button>
-                ` : ''}
-                <button type="button" class="btn btn-outline-danger btn-sm flex-fill py-1 px-1.5" onclick="handleLogout()" style="font-size: 11px;" title="Keluar dari sesi admin">
-                  <i class="ti ti-logout me-1"></i> Keluar
-                </button>
+                  <a href="javascript:void(0)" onclick="BPMPLayout.openSettingsModal()" class="small text-decoration-none d-inline-flex align-items-center gap-1 text-secondary" style="font-size: 11.5px;" title="Pengaturan Sistem & Reset Data">
+                    <i class="ti ti-settings fs-4"></i> Pengaturan
+                  </a>
+                ` : '<div></div>'}
+                <a href="javascript:void(0)" onclick="handleLogout()" class="small text-decoration-none d-inline-flex align-items-center gap-1 text-danger fw-semibold" style="font-size: 11.5px;" title="Keluar dari sesi admin">
+                  <i class="ti ti-logout fs-4"></i> Keluar
+                </a>
               </div>
             </div>
           </div>
+
         </div>
       </aside>
     `;
   },
 
   /**
-   * Render Topbar Tipis (Breadcrumb, Jam WITA, Tombol Aksi Halaman)
+   * Render Topbar Tipis (Judul/Breadcrumb di kiri, Tanggal + Jam WITA di kanan, Tombol Aksi bila ada)
    */
   renderSlimHeader(opts = {}) {
     const role = (opts.role || this.getUserRole()).toLowerCase();
@@ -294,19 +316,26 @@ const BPMPLayout = {
     const actionButton = opts.actionButton || '';
 
     return `
-      <header class="navbar navbar-expand-md d-print-none sticky-top bg-white border-bottom shadow-xs py-2 px-3" id="slimHeader" style="z-index: 1020;">
-        <div class="container-fluid d-flex align-items-center justify-content-between">
+      <header class="navbar navbar-expand-md d-print-none sticky-top bg-white border-bottom shadow-xs py-2 px-3" id="slimHeader" style="z-index: 1020; border-color: #E5E7EB !important;">
+        <div class="container-fluid px-0 d-flex align-items-center justify-content-between">
           
-          <!-- Sisi Kiri: Hamburger Mobile & Breadcrumb / Judul -->
+          <!-- Sisi Kiri: Hamburger Mobile & Desktop Collapse Toggle & Breadcrumb / Judul -->
           <div class="d-flex align-items-center gap-2">
-            <button class="navbar-toggler d-lg-none border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle Navigation">
+            <!-- Mobile Drawer Button (< 992px) -->
+            <button class="navbar-toggler d-lg-none border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Buka Menu">
               <i class="ti ti-menu-2 fs-2 text-dark"></i>
             </button>
+
+            <!-- Desktop Collapse Toggle Button (>= 992px) -->
+            <button class="btn btn-ghost-secondary btn-icon btn-sm d-none d-lg-inline-flex text-muted border-0" type="button" onclick="BPMPLayout.toggleSidebarCollapse()" title="Kecilkan / Perluas Sidebar">
+              <i class="ti ti-layout-sidebar-left-collapse fs-3" id="btnToggleCollapseIcon"></i>
+            </button>
+
             <div>
-              <div class="text-uppercase fw-semibold text-secondary" style="font-size: 10px; letter-spacing: 0.5px;">
+              <div class="text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 0.5px; color: #6B7280;">
                 ${breadcrumb}
               </div>
-              <h2 class="page-title text-primary fw-bold mb-0 lh-1" style="font-size: 1.15rem;">
+              <h2 class="page-title fw-bold mb-0 lh-1" style="font-size: 1.15rem; color: #0056b3 !important;">
                 ${pageTitle}
               </h2>
             </div>
@@ -315,8 +344,8 @@ const BPMPLayout = {
           <!-- Sisi Kanan: Live Date & Jam WITA + Tombol Aksi Halaman -->
           <div class="d-flex align-items-center gap-2">
             <!-- Live Clock WITA -->
-            <div id="topbarLiveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2.5 py-1.5 d-none d-sm-inline-flex align-items-center" title="Waktu Indonesia Tengah (WITA)">
-              <i class="ti ti-clock me-1.5"></i>
+            <div id="topbarLiveClockBadge" class="badge font-monospace px-2.5 py-1.5 d-none d-sm-inline-flex align-items-center" style="background-color: #F3F4F6; color: #374151; border: 1px solid #E5E7EB;" title="Waktu Indonesia Tengah (WITA)">
+              <i class="ti ti-clock me-1.5 text-muted"></i>
               <span id="topbarLiveClockText">--:--:-- WITA</span>
             </div>
 
@@ -334,7 +363,7 @@ const BPMPLayout = {
    */
   renderFooter() {
     return `
-      <footer class="footer footer-transparent d-print-none mt-auto py-2.5 border-top bg-white">
+      <footer class="footer footer-transparent d-print-none mt-auto py-2.5 border-top bg-white" style="border-color: #E5E7EB !important;">
         <div class="container-xl">
           <div class="row text-center align-items-center flex-row-reverse">
             <div class="col-lg-auto ms-lg-auto">
@@ -359,16 +388,16 @@ const BPMPLayout = {
       <div class="modal modal-blur fade" id="modalSystemSettings" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
-            <div class="modal-header bg-dark text-white py-2.5">
-              <h5 class="modal-title text-white fw-bold">
-                <i class="ti ti-settings me-2"></i> Pengaturan Sistem (Superadmin)
+            <div class="modal-header py-2.5 border-bottom" style="background-color: #F8FAFC; border-color: #E5E7EB !important;">
+              <h5 class="modal-title fw-bold text-dark">
+                <i class="ti ti-settings me-2 text-primary"></i> Pengaturan Sistem (Superadmin)
               </h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
-                <label class="form-label fw-bold mb-1">Tautan Cepat Pengaturan</label>
-                <div class="list-group list-group-flush border rounded">
+                <label class="form-label fw-bold mb-1 text-dark">Tautan Cepat Pengaturan</label>
+                <div class="list-group list-group-flush border rounded" style="border-color: #E5E7EB !important;">
                   <a href="/admin/kegiatan" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2">
                     <span><i class="ti ti-calendar-event me-2 text-primary"></i> Manajemen Kegiatan Pelatihan</span>
                     <i class="ti ti-chevron-right text-muted"></i>
@@ -483,64 +512,74 @@ const BPMPLayout = {
   },
 
   /**
+   * Render Event Options pada dropdown berdasarkan status dan toggle arsip
+   */
+  renderEventOptions() {
+    const select = document.getElementById('sidebarGlobalEventSelect');
+    if (!select) return;
+
+    select.innerHTML = '';
+    if (this.cachedEvents.length === 0) {
+      select.innerHTML = '<option value="">Tidak ada kegiatan</option>';
+      return;
+    }
+
+    // Default: hanya event aktif (status === 'aktif' || is_active || active || status !== 'completed' && status !== 'arsip')
+    let displayList = this.cachedEvents;
+    if (!this.showArchivedEvents) {
+      displayList = this.cachedEvents.filter(e => e.status === 'aktif' || e.is_active || e.active || (e.status !== 'completed' && e.status !== 'arsip'));
+      // Jika tidak ada yang aktif sama sekali, fallback ke seluruh event
+      if (displayList.length === 0) {
+        displayList = this.cachedEvents;
+      }
+    }
+
+    const savedId = localStorage.getItem('bpmp_selected_event_id') || sessionStorage.getItem('bpmp_selected_event_id');
+    let targetId = savedId;
+    if (!targetId && displayList[0]) {
+      targetId = String(displayList[0].id);
+      localStorage.setItem('bpmp_selected_event_id', targetId);
+      sessionStorage.setItem('bpmp_selected_event_id', targetId);
+    }
+
+    displayList.forEach(ev => {
+      const opt = document.createElement('option');
+      opt.value = ev.id;
+      const isActive = ev.status === 'aktif' || ev.is_active || ev.active;
+      opt.textContent = `${isActive ? '● ' : ''}${ev.title || ev.nama || 'Pelatihan'}`;
+      if (String(ev.id) === String(targetId)) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
+  },
+
+  /**
+   * Toggle Tampilkan Arsip Kegiatan
+   */
+  toggleArchivedEvents(checked) {
+    this.showArchivedEvents = Boolean(checked);
+    localStorage.setItem('bpmp_show_archived', this.showArchivedEvents ? 'true' : 'false');
+    this.renderEventOptions();
+  },
+
+  /**
    * Ambil dan Sinkronkan Event Aktif Global
    */
   async initGlobalEvents() {
     try {
+      this.showArchivedEvents = localStorage.getItem('bpmp_show_archived') === 'true';
+      const chk = document.getElementById('chkShowArchivedEvents');
+      if (chk) chk.checked = this.showArchivedEvents;
+
       const res = await fetch('/api/event');
       const data = await res.json();
       if (!data.success) return;
 
       this.cachedEvents = data.events || [];
-      const select = document.getElementById('sidebarGlobalEventSelect');
-      if (!select) return;
-
-      select.innerHTML = '';
-      if (this.cachedEvents.length === 0) {
-        select.innerHTML = '<option value="">Tidak ada kegiatan aktif</option>';
-        return;
-      }
-
-      // Ambil yang tersimpan di sesi
-      const savedId = localStorage.getItem('bpmp_selected_event_id') || sessionStorage.getItem('bpmp_selected_event_id');
-      let targetId = savedId;
-
-      // Jika tidak ada di storage, pilih activeEvent dari server
-      const serverActive = data.event || this.cachedEvents.find(e => e.status === 'aktif' || e.is_active) || this.cachedEvents[0];
-      if (!targetId && serverActive) {
-        targetId = String(serverActive.id);
-        localStorage.setItem('bpmp_selected_event_id', targetId);
-        sessionStorage.setItem('bpmp_selected_event_id', targetId);
-      }
-
-      this.cachedEvents.forEach(ev => {
-        const opt = document.createElement('option');
-        opt.value = ev.id;
-        opt.textContent = `${ev.status === 'aktif' || ev.is_active ? '● ' : ''}${ev.title || ev.nama || 'Pelatihan'}`;
-        if (String(ev.id) === String(targetId)) {
-          opt.selected = true;
-        }
-        select.appendChild(opt);
-      });
-
-      // Update badge status
-      this.updateEventBadge(targetId);
-
+      this.renderEventOptions();
     } catch (e) {
       console.warn('Gagal memuat event global:', e);
-    }
-  },
-
-  updateEventBadge(eventId) {
-    const badge = document.getElementById('sidebarEventStatusBadge');
-    if (!badge) return;
-    const ev = this.cachedEvents.find(e => String(e.id) === String(eventId));
-    if (ev && (ev.status === 'aktif' || ev.is_active)) {
-      badge.className = 'badge bg-green text-green-fg';
-      badge.textContent = 'Aktif';
-    } else {
-      badge.className = 'badge bg-secondary text-white';
-      badge.textContent = 'Arsip';
     }
   },
 
@@ -551,7 +590,6 @@ const BPMPLayout = {
     if (!eventId) return;
     localStorage.setItem('bpmp_selected_event_id', eventId);
     sessionStorage.setItem('bpmp_selected_event_id', eventId);
-    this.updateEventBadge(eventId);
 
     // Pancarkan event custom ke halaman aktif
     window.dispatchEvent(new CustomEvent('bpmp:eventChanged', { detail: { eventId } }));
@@ -566,6 +604,7 @@ const BPMPLayout = {
 
   /**
    * Cek pending LPTI untuk badge sidebar
+   * Kuning bila >0 (#FEF3C7, teks #92400E, border #FCD34D), abu bila 0 (#F3F4F6, teks #6B7280, border #E5E7EB)
    */
   async updateLptiPendingCount() {
     try {
@@ -574,7 +613,18 @@ const BPMPLayout = {
       if (data.success && typeof data.total === 'number') {
         this.lptiPendingCount = data.total;
         const badge = document.getElementById('sidebarBadgeLptiPending');
-        if (badge) badge.textContent = data.total;
+        if (badge) {
+          badge.textContent = data.total;
+          if (data.total > 0) {
+            badge.style.backgroundColor = '#FEF3C7';
+            badge.style.color = '#92400E';
+            badge.style.border = '1px solid #FCD34D';
+          } else {
+            badge.style.backgroundColor = '#F3F4F6';
+            badge.style.color = '#6B7280';
+            badge.style.border = '1px solid #E5E7EB';
+          }
+        }
       }
     } catch (_) {}
   },
@@ -722,11 +772,189 @@ const BPMPLayout = {
   },
 
   /**
+   * Injeksi CSS Layout & Tema Terang Sidebar Langsung ke Dokumen
+   */
+  injectLayoutStyles() {
+    if (document.getElementById('bpmp-injected-layout-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'bpmp-injected-layout-styles';
+    style.textContent = `
+      :root {
+        --bpmp-sidebar-w: 260px;
+        --bpmp-sidebar-collapsed-w: 72px;
+      }
+
+      html, body {
+        overflow-x: hidden !important;
+      }
+
+      @media (min-width: 992px) {
+        #sidebarMenu,
+        .navbar-vertical.navbar-expand-lg {
+          width: var(--bpmp-sidebar-w) !important;
+          position: fixed !important;
+          top: 0 !important;
+          bottom: 0 !important;
+          left: 0 !important;
+          z-index: 1030 !important;
+          background-color: #ffffff !important;
+          border-right: 1px solid #E5E7EB !important;
+          box-shadow: none !important;
+          transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+        }
+
+        .page-wrapper {
+          margin-left: var(--bpmp-sidebar-w) !important;
+          width: calc(100% - var(--bpmp-sidebar-w)) !important;
+          max-width: calc(100% - var(--bpmp-sidebar-w)) !important;
+          min-height: 100vh;
+          transition: margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* Mode Ikon Collapsed */
+        body.sidebar-collapsed #sidebarMenu,
+        body.sidebar-collapsed .navbar-vertical.navbar-expand-lg {
+          width: var(--bpmp-sidebar-collapsed-w) !important;
+        }
+
+        body.sidebar-collapsed .page-wrapper {
+          margin-left: var(--bpmp-sidebar-collapsed-w) !important;
+          width: calc(100% - var(--bpmp-sidebar-collapsed-w)) !important;
+          max-width: calc(100% - var(--bpmp-sidebar-collapsed-w)) !important;
+        }
+
+        body.sidebar-collapsed .sidebar-hide-collapsed,
+        body.sidebar-collapsed .bpmp-group-title,
+        body.sidebar-collapsed .sidebar-event-selector,
+        body.sidebar-collapsed .sidebar-user-details,
+        body.sidebar-collapsed .nav-link-title,
+        body.sidebar-collapsed #sidebarBadgeLptiPending {
+          display: none !important;
+        }
+
+        body.sidebar-collapsed .navbar-brand {
+          justify-content: center !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+
+        body.sidebar-collapsed .navbar-brand .brand-text-hide {
+          display: none !important;
+        }
+
+        body.sidebar-collapsed .bpmp-nav-link {
+          justify-content: center !important;
+          padding: 0.65rem 0.5rem !important;
+          margin: 0.15rem 0.35rem !important;
+          border-left: 3px solid transparent !important;
+          border-radius: 6px !important;
+        }
+
+        body.sidebar-collapsed .bpmp-nav-link.active {
+          border-left: 3px solid #1D4ED8 !important;
+          border-radius: 0 6px 6px 0 !important;
+        }
+
+        body.sidebar-collapsed .bpmp-nav-link .nav-link-icon {
+          margin-right: 0 !important;
+        }
+
+        body.sidebar-collapsed .sidebar-footer {
+          padding: 0.75rem 0.25rem !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+        }
+      }
+
+      @media (max-width: 991.98px) {
+        .page-wrapper {
+          margin-left: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
+        #sidebarMenu,
+        .navbar-vertical.navbar-expand-lg {
+          width: 260px !important;
+          background-color: #ffffff !important;
+          border-right: 1px solid #E5E7EB !important;
+        }
+      }
+
+      /* Nav Item Link Styling Tema Terang */
+      .bpmp-nav-link {
+        color: #374151 !important;
+        font-weight: 500;
+        font-size: 0.85rem;
+        padding: 0.55rem 0.75rem !important;
+        border-radius: 0.375rem;
+        margin: 0.1rem 0.5rem;
+        transition: all 0.15s ease;
+        border-left: 3px solid transparent;
+        display: flex;
+        align-items: center;
+        text-decoration: none !important;
+      }
+
+      .bpmp-nav-link .nav-link-icon {
+        color: #6B7280 !important;
+        transition: color 0.15s ease;
+      }
+
+      .bpmp-nav-link:hover {
+        background-color: #F3F4F6 !important;
+        color: #111827 !important;
+      }
+
+      .bpmp-nav-link:hover .nav-link-icon {
+        color: #374151 !important;
+      }
+
+      .bpmp-nav-link.active {
+        background-color: #E8F0FE !important;
+        color: #1D4ED8 !important;
+        border-left: 3px solid #1D4ED8 !important;
+        font-weight: 600 !important;
+        border-radius: 0 0.375rem 0.375rem 0 !important;
+      }
+
+      .bpmp-nav-link.active .nav-link-icon {
+        color: #1D4ED8 !important;
+      }
+
+      .bpmp-group-title {
+        text-transform: uppercase;
+        color: #9CA3AF !important;
+        font-size: 10px !important;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        padding: 0.85rem 1rem 0.25rem 1rem;
+        user-select: none;
+      }
+    `;
+    document.head.appendChild(style);
+  },
+
+  /**
    * Inisialisasi Layout pada Halaman
    */
   init(opts = {}) {
+    this.injectLayoutStyles();
+
     const role = opts.role || this.getUserRole();
     const isSuper = role === 'superadmin';
+
+    // Pulihkan status collapse sidebar dari localStorage
+    if (localStorage.getItem('bpmp_sidebar_collapsed') === 'true') {
+      document.body.classList.add('sidebar-collapsed');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+    }
 
     // 1. Sidebar Container
     const sidebarEl = document.getElementById('app-sidebar') || document.getElementById('sidebar-container') || document.getElementById('bpmp-sidebar');
@@ -740,17 +968,24 @@ const BPMPLayout = {
       topbarEl.innerHTML = this.renderSlimHeader({ ...opts, role });
     }
 
+    // Update icon toggle collapse jika ada
+    const toggleIcon = document.getElementById('btnToggleCollapseIcon');
+    if (toggleIcon) {
+      toggleIcon.className = document.body.classList.contains('sidebar-collapsed')
+        ? 'ti ti-layout-sidebar-left-expand fs-3'
+        : 'ti ti-layout-sidebar-left-collapse fs-3';
+    }
+
     // 3. Fallback jika halaman lama masih menggunakan #bpmp-navbar atau #app-navbar
     const legacyNavbar = document.getElementById('bpmp-navbar') || document.getElementById('app-navbar');
     if (legacyNavbar && !sidebarEl) {
-      // Jika halaman lama belum punya sidebar-container, render sidebar dan topbar di sini
       legacyNavbar.innerHTML = this.renderSidebar({ ...opts, role }) + this.renderSlimHeader({ ...opts, role });
     }
 
     // 4. Bersihkan banner instansi 3-lapis (#bpmp-top-strip / #app-topstrip)
     const topStrip = document.getElementById('bpmp-top-strip') || document.getElementById('app-topstrip');
     if (topStrip) {
-      topStrip.innerHTML = ''; // Hapus banner 3 lapis
+      topStrip.innerHTML = '';
     }
 
     // 5. Footer Container
