@@ -140,4 +140,53 @@ test('SUITE: FASE 1 & FASE 2 - Skema Baru Multi-Event, Aturan Sertifikat & Riway
     assert.ok(history.history.length >= 1);
     assert.ok(history.summary.currentYear > 2020);
   });
+
+  await t.test('10. Penolakan Penerbitan Sertifikat bagi Pegawai Tidak Eligible (HTTP 422 + alasan)', async () => {
+    // Buat kegiatan baru dengan syarat presensi 2 sesi
+    const newKeg = await service.createKegiatan({
+      nama: 'Pelatihan Keamanan Informasi ASN 2026',
+      tgl_mulai: '2026-12-10',
+      jp: 2,
+      wajib_lpti: 1,
+      min_sesi_hadir: 2
+    });
+
+    try {
+      await service.issueOrGetCertificate(newKeg.id, testNip);
+      assert.fail('Seharusnya gagal menerbitkan sertifikat bagi pegawai yang belum presensi & belum unggah LPTI');
+    } catch (err) {
+      assert.equal(err.statusCode, 422, 'Status code harus 422');
+      assert.ok(err.message.includes('syarat penerbitan sertifikat'), 'Pesan error harus memuat alasan');
+      assert.ok(Array.isArray(err.reasons), 'Harus menyediakan array reasons');
+      assert.ok(err.reasons.length >= 1);
+    }
+  });
+
+  await t.test('11. Konsistensi Angka Kartu vs Isi Tabel Linimasa', async () => {
+    const history = await service.getEmployeeTrainingHistory(testNip);
+    const sum = history.summary;
+    const tableItems = history.history;
+
+    // 1. Kegiatan Diikuti = jumlah peserta_kegiatan
+    assert.equal(sum.total_kegiatan, tableItems.length, 'Total kegiatan pada ringkasan harus sama dengan jumlah baris tabel');
+    assert.equal(sum.totalEventsFollowed, tableItems.length);
+
+    // 2. Total JP = akumulasi earnedJp pada baris yang eligible
+    const calculatedJp = tableItems.reduce((acc, item) => acc + (item.earnedJp || 0), 0);
+    assert.equal(sum.total_jp, calculatedJp, 'Total JP pada kartu ringkasan harus sama persis dengan akumulasi JP baris tabel');
+
+    // 3. Sertifikat Resmi = jumlah baris yang memiliki sertifikat berstatus aktif
+    const activeCertsInTable = tableItems.filter(item => item.sertifikat && item.sertifikat.status === 'aktif').length;
+    assert.equal(sum.total_sertifikat, activeCertsInTable, 'Total sertifikat pada kartu harus sama dengan jumlah sertifikat aktif di tabel');
+  });
+
+  await t.test('12. Audit Log Mutasi & Rekam Jejak Pegawai: Mencatat dan membaca seluruh jejak riwayat', async () => {
+    const logs = await service.getAuditLogsForEmployee(testNip);
+    assert.ok(Array.isArray(logs), 'Audit logs harus berupa array');
+    assert.ok(logs.length >= 1, 'Harus memiliki minimal 1 rekaman audit log');
+
+    // Pastikan log memuat aktivitas sertifikat (TERBIT_SERTIFIKAT / CETAK_SERTIFIKAT / CABUT_SERTIFIKAT)
+    const hasCertLog = logs.some(l => l.aksi === 'TERBIT_SERTIFIKAT' || l.aksi === 'CABUT_SERTIFIKAT' || l.aksi === 'CETAK_SERTIFIKAT' || l.entitas === 'sertifikat');
+    assert.ok(hasCertLog, 'Harus mencatat aktivitas transaksi sertifikat ke dalam audit log pegawai');
+  });
 });

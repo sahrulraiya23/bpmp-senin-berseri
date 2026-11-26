@@ -56,12 +56,10 @@
   --bpmp-gold-bg:        #fef3c7;
   --bpmp-teal:           #0f766e;
   --bpmp-teal-bg:        #ccfbf1;
-  --bpmp-sidebar-bg:     #ffffff;
-  --bpmp-sidebar-active:  #E8F0FE;
-  --bpmp-sidebar-text:    #374151;
+  --bpmp-sidebar-bg:          #ffffff;
+  --bpmp-sidebar-active:      #E8F0FE;
+  --bpmp-sidebar-text:        #374151;
   --bpmp-sidebar-text-active: #1D4ED8;
-  --bpmp-sidebar-text:    rgba(255,255,255,0.75);
-  --bpmp-sidebar-text-active: #ffffff;
 }
 
 /* ======================================================

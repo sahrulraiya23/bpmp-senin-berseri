@@ -184,11 +184,17 @@ class MultiEventService {
         }
       }
 
-      // Migrasi Sertifikat
+      // Migrasi Sertifikat (HANYA migrasikan jika pegawai memenuhi syarat kelayakan)
       const certNumber = emp.certificate?.number || emp.certificate_number;
       if (certNumber) {
         let existingCert = store.sertifikat.find(c => c.peserta_kegiatan_id === peserta.id);
-        if (!existingCert) {
+        const attendedSessions = store.presensi.filter(p => p.peserta_kegiatan_id === peserta.id).length;
+        const lptiRec = store.lpti.find(l => l.peserta_kegiatan_id === peserta.id);
+        const lptiStatus = lptiRec ? lptiRec.status : 'belum_unggah';
+        const isEligible = attendedSessions >= (defaultKegiatan.min_sesi_hadir || 1) &&
+          (!defaultKegiatan.wajib_lpti || lptiStatus === 'disetujui');
+
+        if (!existingCert && isEligible) {
           defaultKegiatan.counter_nomor++;
           const certId = `CERT-${peserta.id}`;
           const tokenQr = emp.certificate?.certId || generateRandomCertId();
@@ -205,7 +211,7 @@ class MultiEventService {
             terbit_at: emp.certificate?.issuedAt || emp.certificate_issued_at || new Date().toISOString()
           };
 
-          store.sertifikat.push({
+          const migratedCert = {
             id: certId,
             peserta_kegiatan_id: peserta.id,
             nomor: certNumber,
@@ -215,6 +221,25 @@ class MultiEventService {
             terbit_at: snapshot.terbit_at,
             dicabut_at: null,
             alasan_cabut: null
+          };
+          store.sertifikat.push(migratedCert);
+
+          // Pastikan tercatat di audit log
+          store.audit_log.push({
+            id: `AUDIT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            user_id: 'system',
+            aksi: 'TERBIT_SERTIFIKAT',
+            entitas: 'sertifikat',
+            entitas_id: certId,
+            sebelum_json: null,
+            sesudah_json: JSON.stringify({
+              id: certId,
+              nomor: certNumber,
+              pegawai_id: emp.id,
+              pegawai_nip: emp.nip,
+              kegiatan_id: defaultKegiatan.id
+            }),
+            created_at: snapshot.terbit_at
           });
         }
       }
@@ -493,6 +518,25 @@ class MultiEventService {
     // 1. Idempoten: Jika sertifikat sudah ada untuk peserta_kegiatan ini, kembalikan sertifikat yang sama
     const existingCert = store.sertifikat.find(c => c.peserta_kegiatan_id === pk.id);
     if (existingCert) {
+      // Catat log cetak ulang / akses sertifikat dalam transaksi yang sama
+      await this.recordAuditLog({
+        userId: adminUser?.username || adminUser?.id || 'system',
+        aksi: 'CETAK_SERTIFIKAT',
+        entitas: 'sertifikat',
+        entitasId: existingCert.id,
+        sebelum: { nomor: existingCert.nomor, status: existingCert.status },
+        sesudah: {
+          id: existingCert.id,
+          nomor: existingCert.nomor,
+          token_qr: existingCert.token_qr,
+          pegawai_id: emp.id,
+          pegawai_nip: emp.nip,
+          pegawai_name: emp.name,
+          kegiatan_id: kegiatan.id,
+          cetak_at: new Date().toISOString()
+        }
+      });
+
       return {
         alreadyIssued: true,
         certificate: existingCert,
@@ -500,10 +544,15 @@ class MultiEventService {
       };
     }
 
-    // 2. Evaluasi aturan kelayakan
+    // 2. Evaluasi aturan kelayakan: Tolak dengan HTTP 422 jika tidak eligible
     const eligibility = await this.checkEligibility(kegiatanId, pegawaiId);
     if (!eligibility.eligible) {
-      throw new Error(`Pegawai belum memenuhi syarat penerbitan sertifikat: ${eligibility.reasons.join(' ')}`);
+      const reasonMsg = eligibility.reasons.join(', ');
+      const err = new Error(`Pegawai belum memenuhi syarat penerbitan sertifikat: ${reasonMsg}`);
+      err.statusCode = 422;
+      err.status = 422;
+      err.reasons = eligibility.reasons;
+      throw err;
     }
 
     // 3. Penomoran sertifikat atomik per kegiatan
@@ -544,14 +593,25 @@ class MultiEventService {
 
     store.sertifikat.push(newCert);
 
-    // Catat ke Audit Log
+    // Catat ke Audit Log dalam transaksi yang sama
     await this.recordAuditLog({
-      userId: adminUser?.username || 'system',
-      aksi: 'ISSUE_CERTIFICATE',
+      userId: adminUser?.username || adminUser?.id || 'system',
+      aksi: 'TERBIT_SERTIFIKAT',
       entitas: 'sertifikat',
       entitasId: newCert.id,
       sebelum: null,
-      sesudah: newCert
+      sesudah: {
+        id: newCert.id,
+        nomor: newCert.nomor,
+        token_qr: newCert.token_qr,
+        status: newCert.status,
+        terbit_at: newCert.terbit_at,
+        pegawai_id: emp.id,
+        pegawai_nip: emp.nip,
+        pegawai_name: emp.name,
+        kegiatan_id: kegiatan.id,
+        kegiatan_nama: kegiatan.nama
+      }
     });
 
     return {
@@ -567,6 +627,9 @@ class MultiEventService {
     const cert = store.sertifikat.find(c => c.token_qr === tokenQrOrNomor || c.nomor === tokenQrOrNomor);
     if (!cert) throw new Error('Sertifikat tidak ditemukan.');
 
+    const pk = store.peserta_kegiatan.find(p => p.id === cert.peserta_kegiatan_id);
+    const emp = pk ? await this.db.getEmployeeByIdOrNip(pk.pegawai_id) : null;
+
     const sebelum = { ...cert };
     cert.status = 'dicabut';
     cert.dicabut_at = new Date().toISOString();
@@ -574,11 +637,20 @@ class MultiEventService {
 
     await this.recordAuditLog({
       userId: adminUserId,
-      aksi: 'REVOKE_CERTIFICATE',
+      aksi: 'CABUT_SERTIFIKAT',
       entitas: 'sertifikat',
       entitasId: cert.id,
-      sebelum,
-      sesudah: cert
+      sebelum: { nomor: cert.nomor, status: 'aktif' },
+      sesudah: {
+        id: cert.id,
+        nomor: cert.nomor,
+        status: cert.status,
+        alasan_cabut: cert.alasan_cabut,
+        dicabut_at: cert.dicabut_at,
+        pegawai_id: emp?.id || pk?.pegawai_id,
+        pegawai_nip: emp?.nip,
+        pegawai_name: emp?.name
+      }
     });
 
     return cert;
@@ -744,55 +816,111 @@ class MultiEventService {
     const emp = await this.db.getEmployeeByIdOrNip(pegawaiId);
     if (!emp) throw new Error('Data pegawai tidak ditemukan.');
 
-    const pks = store.peserta_kegiatan.filter(pk => pk.pegawai_id === emp.id);
+    const empIdStr = String(emp.id);
+    const empNipStr = String(emp.nip || '');
+
+    // Cari seluruh data peserta_kegiatan milik pegawai ini
+    const pks = store.peserta_kegiatan.filter(pk => String(pk.pegawai_id) === empIdStr || (empNipStr && String(pk.pegawai_id) === empNipStr));
     const historyItems = [];
+    let totalJp = 0;
     let currentYearJp = 0;
-    let totalCertificates = 0;
+    let totalActiveCertificates = 0;
     const currentYear = new Date().getFullYear();
 
     for (const pk of pks) {
-      const keg = store.kegiatan.find(k => k.id === pk.kegiatan_id);
-      if (!keg) continue;
+      let keg = store.kegiatan.find(k => k.id === pk.kegiatan_id);
+      let isDataIncomplete = false;
 
-      const sesiList = store.sesi_kegiatan.filter(s => s.kegiatan_id === keg.id);
-      const presensiList = store.presensi.filter(p => p.peserta_kegiatan_id === pk.id);
-      const attendedCount = presensiList.length;
-
-      const lpti = store.lpti.find(l => l.peserta_kegiatan_id === pk.id);
-      const cert = store.sertifikat.find(c => c.peserta_kegiatan_id === pk.id);
-
-      const eligibility = await this.checkEligibility(keg.id, emp.id);
-
-      let certDisplayStatus = 'Belum memenuhi';
-      if (cert && cert.status === 'aktif') {
-        certDisplayStatus = 'Terbit';
-        totalCertificates++;
-      } else if (eligibility.eligible) {
-        certDisplayStatus = 'Siap';
+      if (!keg) {
+        isDataIncomplete = true;
+        keg = {
+          id: pk.kegiatan_id || 'keg_unknown',
+          nama: 'Data tidak lengkap',
+          tgl_mulai: '—',
+          tgl_selesai: '—',
+          jp: 0,
+          wajib_lpti: 0,
+          min_sesi_hadir: 1,
+          status: 'tidak_lengkap'
+        };
+        console.warn(`[DATA INCONSISTENCY] Peserta kegiatan ${pk.id} tidak memiliki referensi kegiatan yang valid (${pk.kegiatan_id}).`);
       }
 
-      const earnedJp = attendedCount >= (keg.min_sesi_hadir || 1) ? keg.jp : 0;
-      const kegYear = new Date(keg.tgl_mulai || keg.created_at).getFullYear();
+      const sesiList = store.sesi_kegiatan.filter(s => s.kegiatan_id === keg.id);
+      if (!keg.nama || !keg.tgl_mulai || keg.nama === 'Data tidak lengkap' || sesiList.length === 0) {
+        isDataIncomplete = true;
+        console.warn(`[DATA INCONSISTENCY] Kegiatan ${keg.id} data tidak lengkap (nama: '${keg.nama}', tgl_mulai: '${keg.tgl_mulai}', sesi: ${sesiList.length})`);
+      }
+
+      const presensiList = store.presensi.filter(p => p.peserta_kegiatan_id === pk.id);
+      const attendedCount = presensiList.length;
+      const minRequired = parseInt(keg.min_sesi_hadir, 10) || 1;
+      const isPresensiComplete = attendedCount >= minRequired && sesiList.length > 0;
+
+      const lpti = store.lpti.find(l => l.peserta_kegiatan_id === pk.id);
+      const isLptiApproved = !keg.wajib_lpti || (lpti && lpti.status === 'disetujui');
+
+      // Evaluasi syarat kelayakan JP & Sertifikat:
+      // Presensi >= min_sesi_hadir DAN (LPTI disetujui jika wajib_lpti)
+      const isEligible = isPresensiComplete && isLptiApproved;
+      const earnedJp = isEligible ? (parseInt(keg.jp, 10) || 0) : 0;
+      totalJp += earnedJp;
+
+      const kegYear = new Date(keg.tgl_mulai || keg.created_at || Date.now()).getFullYear();
       if (kegYear === currentYear) {
         currentYearJp += earnedJp;
       }
 
+      // Sertifikat resmi aktif
+      const cert = store.sertifikat.find(c => c.peserta_kegiatan_id === pk.id && c.status === 'aktif');
+      if (cert) {
+        totalActiveCertificates++;
+      }
+
+      const eligibility = await this.checkEligibility(keg.id, emp.id);
+
+      let certDisplayStatus = 'Belum memenuhi';
+      if (cert) {
+        certDisplayStatus = 'Terbit';
+      } else if (eligibility.eligible) {
+        certDisplayStatus = 'Siap';
+      }
+
+      const namaKegiatanDisplay = isDataIncomplete && (!keg.nama || keg.nama === 'Data tidak lengkap')
+        ? 'Data tidak lengkap'
+        : (keg.nama || 'Data tidak lengkap');
+
       historyItems.push({
+        id: keg.id,
         pesertaKegiatanId: pk.id,
+        nama: namaKegiatanDisplay,
+        tgl_mulai: keg.tgl_mulai || '—',
+        tgl_selesai: keg.tgl_selesai || keg.tgl_mulai || '—',
+        jp: parseInt(keg.jp, 10) || 0,
+        wajib_lpti: Boolean(keg.wajib_lpti),
+        min_sesi_hadir: minRequired,
+        status: keg.status || 'aktif',
+        data_tidak_lengkap: isDataIncomplete,
+
+        // Nested kegiatan object untuk kompatibilitas script lama
         kegiatan: {
           id: keg.id,
-          nama: keg.nama,
+          nama: namaKegiatanDisplay,
           tglMulai: keg.tgl_mulai,
           tglSelesai: keg.tgl_selesai,
-          jp: keg.jp,
+          jp: parseInt(keg.jp, 10) || 0,
           wajibLpti: Boolean(keg.wajib_lpti),
           batasUnggahLpti: keg.batas_unggah_lpti,
-          status: keg.status
+          status: keg.status,
+          dataIncomplete: isDataIncomplete
         },
         presensi: {
+          jumlah_hadir: attendedCount,
+          total_sesi: sesiList.length,
           attendedCount,
-          totalSesi: sesiList.length || 1,
-          isComplete: attendedCount >= (keg.min_sesi_hadir || 1),
+          totalSesi: sesiList.length,
+          isComplete: isPresensiComplete,
+          ratio: `${attendedCount} / ${sesiList.length} sesi`,
           list: presensiList
         },
         lpti: lpti ? {
@@ -821,7 +949,7 @@ class MultiEventService {
     }
 
     // Urutkan kegiatan terbaru terlebih dahulu
-    historyItems.sort((a, b) => new Date(b.kegiatan.tglMulai) - new Date(a.kegiatan.tglMulai));
+    historyItems.sort((a, b) => new Date(b.tgl_mulai || 0) - new Date(a.tgl_mulai || 0));
 
     return {
       employee: {
@@ -834,17 +962,66 @@ class MultiEventService {
       },
       summary: {
         currentYear,
-        totalJpCurrentYear: currentYearJp,
-        totalCertificates,
-        totalEventsFollowed: historyItems.length
+        total_jp: totalJp,
+        total_kegiatan: pks.length,
+        total_sertifikat: totalActiveCertificates,
+        totalJp,
+        totalEventsFollowed: pks.length,
+        totalCertificates: totalActiveCertificates,
+        totalJpCurrentYear: currentYearJp
       },
       history: historyItems
     };
   }
 
   // ================================================================
-  // 6. AUDIT LOG
+  // 6. AUDIT LOG & AUDIT LOG PER PEGAWAI
   // ================================================================
+
+  async getAuditLogsForEmployee(pegawaiId) {
+    await this.init();
+    const store = this._getStore();
+    const emp = await this.db.getEmployeeByIdOrNip(pegawaiId);
+    if (!emp) return [];
+
+    const empIdStr = String(emp.id);
+    const empNipStr = String(emp.nip || '');
+
+    // Kumpulkan seluruh ID terkait pegawai ini:
+    const myPks = store.peserta_kegiatan.filter(pk => String(pk.pegawai_id) === empIdStr || (empNipStr && String(pk.pegawai_id) === empNipStr));
+    const myPkIds = new Set(myPks.map(pk => String(pk.id)));
+
+    const myCerts = store.sertifikat.filter(c => myPkIds.has(String(c.peserta_kegiatan_id)));
+    const myCertIds = new Set(myCerts.map(c => String(c.id)));
+    myCerts.forEach(c => {
+      if (c.token_qr) myCertIds.add(String(c.token_qr));
+      if (c.nomor) myCertIds.add(String(c.nomor));
+    });
+
+    const myLptis = store.lpti.filter(l => myPkIds.has(String(l.peserta_kegiatan_id)));
+    const myLptiIds = new Set(myLptis.map(l => String(l.id)));
+
+    const logs = store.audit_log.filter(l => {
+      const entitasId = String(l.entitas_id || '');
+      const userId = String(l.user_id || '');
+
+      if (entitasId === empIdStr || (empNipStr && entitasId === empNipStr)) return true;
+      if (userId === empIdStr || (empNipStr && userId === empNipStr)) return true;
+      if (myCertIds.has(entitasId)) return true;
+      if (myLptiIds.has(entitasId)) return true;
+      if (myPkIds.has(entitasId)) return true;
+
+      const sesudahStr = l.sesudah_json || '';
+      const sebelumStr = l.sebelum_json || '';
+      if (sesudahStr.includes(empIdStr) || (empNipStr && sesudahStr.includes(empNipStr))) return true;
+      if (sebelumStr.includes(empIdStr) || (empNipStr && sebelumStr.includes(empNipStr))) return true;
+
+      return false;
+    });
+
+    logs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return logs;
+  }
 
   async recordAuditLog({ userId, aksi, entitas, entitasId, sebelum = null, sesudah = null }) {
     await this.init();

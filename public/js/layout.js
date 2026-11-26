@@ -776,27 +776,28 @@ const BPMPLayout = {
    * Sidebar Tabler Vertical HANYA boleh tampil di halaman Admin.
    */
   isAdminPage(opts = {}) {
+    // 1. Jika opts secara eksplisit menyatakan tanpa sidebar atau bukan admin
     if (opts.hasSidebar === false || opts.isAdminPage === false) return false;
-    if (opts.hasSidebar === true || opts.isAdminPage === true) return true;
+
+    // 2. Jika role adalah publik atau pegawai/peserta, tidak boleh ada sidebar
+    const role = (opts.role || '').toLowerCase();
+    if (role === 'publik' || role === 'pegawai' || role === 'peserta' || role === 'asn') {
+      return false;
+    }
 
     const path = (window.location.pathname || '').toLowerCase();
-    // Halaman login admin BUKAN dashboard admin (tidak boleh ada sidebar)
-    if (path === '/admin/login' || path.startsWith('/admin/login')) return false;
+    // 3. Halaman login, home/index, dan halaman publik lainnya sama sekali TIDAK BOLEH ada sidebar
+    if (path.includes('login') || path === '' || path === '/' || path === '/index.html' || path.startsWith('/proyektor') || path.startsWith('/sertifikat') || path.startsWith('/verify')) {
+      return false;
+    }
 
-    // Halaman rute admin resmi
+    // 4. Halaman rute admin resmi
     if (path.startsWith('/admin') || path.startsWith('/superadmin')) {
       return true;
     }
 
-    // Periksa jika dokumen secara eksplisit memiliki kontainer sidebar admin
-    const hasAdminSidebarContainer = !!(document.getElementById('app-sidebar') || document.getElementById('sidebar-container'));
-    const role = (opts.role || this.getUserRole() || '').toLowerCase();
-    if (hasAdminSidebarContainer && (role === 'admin' || role === 'superadmin' || role === 'kepegawaian')) {
-      // Pastikan bukan halaman publik
-      const publicPaths = ['/', '/index.html', '/login', '/login.html', '/proyektor', '/qr', '/sertifikat', '/verify'];
-      if (publicPaths.some(p => path === p || (p !== '/' && path.startsWith(p)))) {
-        return false;
-      }
+    // 5. Jika opts.isAdminPage atau opts.hasSidebar secara eksplisit true
+    if (opts.isAdminPage === true || opts.hasSidebar === true) {
       return true;
     }
 
@@ -1017,6 +1018,22 @@ const BPMPLayout = {
       // 1. Terapkan kelas body khusus Admin
       document.body.classList.add('has-admin-sidebar');
 
+      // Auto-detect menu aktif dari rute jika di halaman detail pegawai atau belum diset spesifik
+      const currentPath = (window.location.pathname || '').toLowerCase();
+      if (!opts.activeMenu || opts.activeMenu === 'rekap-presensi') {
+        if (currentPath.startsWith('/admin/pegawai')) {
+          opts.activeMenu = 'riwayat-pegawai';
+        } else if (currentPath.startsWith('/admin/verifikasi-lpti')) {
+          opts.activeMenu = 'verifikasi-lpti';
+        } else if (currentPath.startsWith('/admin/kegiatan')) {
+          opts.activeMenu = 'kegiatan';
+        } else if (currentPath.startsWith('/admin/audit-log')) {
+          opts.activeMenu = 'audit-log';
+        } else if (currentPath.startsWith('/admin/rekap-presensi')) {
+          opts.activeMenu = 'rekap-presensi';
+        }
+      }
+
       // Pulihkan status collapse sidebar dari localStorage
       if (localStorage.getItem('bpmp_sidebar_collapsed') === 'true') {
         document.body.classList.add('sidebar-collapsed');
@@ -1071,6 +1088,7 @@ const BPMPLayout = {
       if (existingSidebar) {
         existingSidebar.remove();
       }
+      document.querySelectorAll('aside.navbar-vertical').forEach(el => el.remove());
     }
 
     // Bersihkan banner instansi 3-lapis lama (#bpmp-top-strip / #app-topstrip)

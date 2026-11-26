@@ -12,7 +12,7 @@
   <!-- Core Styles -->
   <link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css">
   <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css">
-  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/tokens.css?v=2.5">
 
   <script>
     function escapeHtml(str) {
@@ -60,10 +60,10 @@
                     <span class="avatar avatar-lg rounded-circle bg-primary-lt text-primary fw-bold fs-2 me-3" id="avatarPegawai">
                       ASN
                     </span>
-                    <div>
+                    <div style="min-width: 0; flex: 1;">
                       <h4 class="card-title fw-bold mb-0 text-dark" id="cardEmpName">—</h4>
                       <div class="text-secondary small font-monospace" id="cardEmpNip">—</div>
-                      <span class="badge bg-blue-lt text-blue mt-1" id="cardEmpJabatan">—</span>
+                      <span class="badge bg-blue-lt text-blue mt-1 text-wrap text-start" id="cardEmpJabatan" style="white-space: normal !important; max-width: 100%; word-break: break-word; line-height: 1.35; display: inline-block;">—</span>
                     </div>
                   </div>
                   <div class="border-top pt-2 small text-secondary">
@@ -161,7 +161,7 @@
   <!-- Scripts -->
   <script src="/vendor/tabler/js/tabler.min.js"></script>
   <script src="/js/components.js"></script>
-  <script src="/js/layout.js"></script>
+  <script src="/js/layout.js?v=2.5"></script>
 
   <script>
     function getEmployeeIdFromPath() {
@@ -195,10 +195,14 @@
         const initials = p.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
         document.getElementById('avatarPegawai').textContent = initials || 'ASN';
 
-        // KPI
-        document.getElementById('kpiTotalJp').textContent = r.total_jp || 0;
-        document.getElementById('kpiTotalKegiatan').textContent = r.total_kegiatan || 0;
-        document.getElementById('kpiTotalSertifikat').textContent = r.total_sertifikat || 0;
+        // KPI (Dihitung dari satu query riwayat yang sama)
+        const totalJpVal = r.total_jp !== undefined ? r.total_jp : (r.totalJp !== undefined ? r.totalJp : 0);
+        const totalKegVal = r.total_kegiatan !== undefined ? r.total_kegiatan : (r.totalEventsFollowed !== undefined ? r.totalEventsFollowed : kegList.length);
+        const totalSertifVal = r.total_sertifikat !== undefined ? r.total_sertifikat : (r.totalCertificates !== undefined ? r.totalCertificates : 0);
+
+        document.getElementById('kpiTotalJp').textContent = totalJpVal;
+        document.getElementById('kpiTotalKegiatan').textContent = totalKegVal;
+        document.getElementById('kpiTotalSertifikat').textContent = totalSertifVal;
 
         // Timeline Table
         const tbTimeline = document.getElementById('timelineTableBody');
@@ -206,36 +210,55 @@
           tbTimeline.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada kegiatan yang diikuti.</td></tr>';
         } else {
           tbTimeline.innerHTML = kegList.map(k => {
-            const presensiRatio = `${k.presensi?.jumlah_hadir || 0} / ${k.presensi?.total_sesi || 0} sesi`;
-            const presensiBadge = (k.presensi?.jumlah_hadir || 0) >= (k.min_sesi_hadir || 1)
+            const namaKegiatan = k.nama || k.kegiatan?.nama || 'Data tidak lengkap';
+            const isDataIncomplete = k.data_tidak_lengkap || !k.nama || k.nama === 'Data tidak lengkap';
+            const warningBadge = isDataIncomplete
+              ? `<span class="badge bg-warning text-dark fw-bold ms-1" style="font-size: 10px;" title="Data kegiatan atau sesi belum lengkap"><i class="ti ti-alert-circle me-0.5"></i> Data tidak lengkap</span>`
+              : '';
+
+            const jpVal = k.jp !== undefined ? k.jp : (k.kegiatan?.jp !== undefined ? k.kegiatan.jp : 2);
+            const minHadir = k.min_sesi_hadir !== undefined ? k.min_sesi_hadir : (k.kegiatan?.min_sesi_hadir || 1);
+
+            const hadirCount = k.presensi?.jumlah_hadir !== undefined ? k.presensi.jumlah_hadir : (k.presensi?.attendedCount || 0);
+            const totalSesi = k.presensi?.total_sesi !== undefined ? k.presensi.total_sesi : (k.presensi?.totalSesi || 0);
+            const presensiRatio = `${hadirCount} / ${totalSesi} sesi`;
+            const presensiBadge = hadirCount >= minHadir && totalSesi > 0
               ? `<span class="badge bg-green-lt text-green fw-bold">${presensiRatio}</span>`
               : `<span class="badge bg-secondary-lt text-secondary">${presensiRatio}</span>`;
 
             let lptiBadge = '<span class="badge bg-secondary-lt text-secondary">Belum Unggah</span>';
-            if (k.lpti?.status === 'disetujui') {
+            const lptiStatus = k.lpti?.status || 'belum_unggah';
+            if (lptiStatus === 'disetujui' || lptiStatus === 'approved') {
               lptiBadge = '<span class="badge bg-teal-lt text-teal fw-bold"><i class="ti ti-check me-1"></i> Disetujui</span>';
-            } else if (k.lpti?.status === 'perlu_dikurasi') {
+            } else if (lptiStatus === 'perlu_dikurasi' || lptiStatus === 'pending') {
               lptiBadge = '<span class="badge bg-warning-lt text-warning fw-bold"><i class="ti ti-clock me-1"></i> Perlu Dikurasi</span>';
-            } else if (k.lpti?.status === 'revisi') {
+            } else if (lptiStatus === 'revisi' || lptiStatus === 'revision') {
               lptiBadge = '<span class="badge bg-danger-lt text-danger fw-bold"><i class="ti ti-alert-triangle me-1"></i> Revisi</span>';
             }
 
             let certBadge = '<span class="badge bg-secondary-lt text-secondary">Belum Terbit</span>';
-            if (k.sertifikat) {
+            if (k.sertifikat && k.sertifikat.nomor && k.sertifikat.status === 'aktif') {
               certBadge = `
-                <a href="/api/employees/${p.nip}/certificate.pdf" target="_blank" class="badge bg-primary text-white text-decoration-none">
+                <a href="/api/employees/${encodeURIComponent(p.nip)}/certificate.pdf" target="_blank" class="badge bg-primary text-white text-decoration-none py-1 px-2" title="Unduh / Cetak E-Sertifikat Resmi">
                   <i class="ti ti-printer me-0.5"></i> ${escapeHtml(k.sertifikat.nomor)}
                 </a>
               `;
             }
 
+            const tglMulai = k.tgl_mulai || k.kegiatan?.tglMulai || '—';
+            const tglSelesai = k.tgl_selesai || k.kegiatan?.tglSelesai || tglMulai;
+            const jadwalText = tglMulai === tglSelesai ? tglMulai : `${tglMulai} s.d. ${tglSelesai}`;
+
             return `
               <tr>
                 <td>
-                  <div class="fw-bold text-dark">${escapeHtml(k.nama)}</div>
-                  <div class="text-muted small">${k.jp || 2} JP • Min. ${k.min_sesi_hadir || 1} Hadir</div>
+                  <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
+                    ${escapeHtml(namaKegiatan)}
+                    ${warningBadge}
+                  </div>
+                  <div class="text-muted small">${jpVal} JP &bull; Min. ${minHadir} Hadir</div>
                 </td>
-                <td class="small text-secondary">${escapeHtml(k.tgl_mulai)} s.d. ${escapeHtml(k.tgl_selesai || k.tgl_mulai)}</td>
+                <td class="small text-secondary">${escapeHtml(jadwalText)}</td>
                 <td class="text-center">${presensiBadge}</td>
                 <td class="text-center">${lptiBadge}</td>
                 <td class="text-center">${certBadge}</td>
@@ -247,17 +270,33 @@
         // Audit Logs Table
         const tbLogs = document.getElementById('employeeAuditLogsBody');
         if (logs.length === 0) {
-          tbLogs.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Belum ada rekaman audit log.</td></tr>';
+          tbLogs.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Belum ada rekaman audit log untuk pegawai ini.</td></tr>';
         } else {
-          tbLogs.innerHTML = logs.map(l => `
-            <tr>
-              <td class="text-secondary small font-monospace">${escapeHtml(l.created_at)}</td>
-              <td class="fw-bold small font-monospace">${escapeHtml(l.user_id)}</td>
-              <td><span class="badge bg-secondary-lt text-secondary">${escapeHtml(l.aksi)}</span></td>
-              <td class="small font-monospace">${escapeHtml(l.entitas)}</td>
-              <td class="small text-secondary">${escapeHtml(l.sesudah_json || '—')}</td>
-            </tr>
-          `).join('');
+          tbLogs.innerHTML = logs.map(l => {
+            let keterangan = '—';
+            if (l.sesudah_json) {
+              try {
+                const parsed = JSON.parse(l.sesudah_json);
+                keterangan = parsed.nomor ? `Nomor: ${parsed.nomor} (${parsed.status || 'aktif'})` : (parsed.catatan || parsed.nama || JSON.stringify(parsed));
+              } catch (_) {
+                keterangan = l.sesudah_json;
+              }
+            } else if (l.sebelum_json) {
+              keterangan = 'Data dihapus';
+            }
+
+            const waktuFormatted = l.created_at ? new Date(l.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Makassar' }) + ' WITA' : '—';
+
+            return `
+              <tr>
+                <td class="text-secondary small font-monospace">${escapeHtml(waktuFormatted)}</td>
+                <td class="fw-bold small font-monospace">${escapeHtml(l.user_id)}</td>
+                <td><span class="badge bg-secondary-lt text-secondary font-monospace">${escapeHtml(l.aksi)}</span></td>
+                <td class="small font-monospace">${escapeHtml(l.entitas)}</td>
+                <td class="small text-secondary text-truncate" style="max-width: 280px;" title="${escapeHtml(keterangan)}">${escapeHtml(keterangan)}</td>
+              </tr>
+            `;
+          }).join('');
         }
 
       } catch (err) {
@@ -274,7 +313,7 @@
       }
       BPMPLayout.init({
         role: auth.admin.role === 'superadmin' ? 'superadmin' : 'admin',
-        activeMenu: 'rekap-presensi',
+        activeMenu: 'riwayat-pegawai',
         user: auth.admin
       });
 

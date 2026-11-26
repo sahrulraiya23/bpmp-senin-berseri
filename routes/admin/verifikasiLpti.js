@@ -328,29 +328,49 @@ function createVerifikasiLptiRouter(db, helpers = {}) {
         return res.status(code).json(result);
       }
 
-      // Generate nomor sertifikat jika belum ada
-      if (!employee.certificate || !employee.certificate.number) {
-        const activeEvent = await db.getActiveEvent();
-        const seq = await db.getNextCertificateSequence();
-        const year = new Date().getFullYear();
-        const padSeq = String(seq).padStart(4, '0');
-        const certNumber = `${padSeq}/C6.26/Sertifikat/KP.04.00/${year}`;
-
-        await db.saveCertificate({
-          employee_id: employee.id,
-          event_id: activeEvent?.id || null,
-          number: certNumber,
-          status: 'valid',
-          issued_at: new Date().toISOString()
-        });
-
-        await db.updateEmployee(employee.id, {
-          certificate: {
-            number: certNumber,
-            issuedAt: new Date().toISOString(),
-            status: 'valid'
+      // Terbitkan sertifikat HANYA jika pegawai memenuhi syarat kelayakan (presensi aula terpenuhi)
+      // Melalui multiEventService agar atomik, mencatat audit log, dan tidak membypass aturan kelayakan
+      if (employee.attended && (!employee.certificate || !employee.certificate.number)) {
+        if (multiEventService) {
+          try {
+            const activeEvt = (await db.getActiveEvent()) || {};
+            const certRes = await multiEventService.issueOrGetCertificate(activeEvt.id || 'keg_default', employee.id, admin);
+            if (certRes?.certificate) {
+              await db.updateEmployee(employee.id, {
+                certificate: {
+                  number: certRes.certificate.nomor,
+                  token: certRes.certificate.token_qr,
+                  issuedAt: certRes.certificate.terbit_at,
+                  status: 'valid'
+                }
+              });
+            }
+          } catch (certErr) {
+            console.warn('[Verifikasi LPTI] Sertifikat belum dapat diterbitkan:', certErr.message);
           }
-        });
+        } else {
+          const activeEvent = await db.getActiveEvent();
+          const seq = await db.getNextCertificateSequence();
+          const year = new Date().getFullYear();
+          const padSeq = String(seq).padStart(4, '0');
+          const certNumber = `${padSeq}/C6.26/Sertifikat/KP.04.00/${year}`;
+
+          await db.saveCertificate({
+            employee_id: employee.id,
+            event_id: activeEvent?.id || null,
+            number: certNumber,
+            status: 'valid',
+            issued_at: new Date().toISOString()
+          });
+
+          await db.updateEmployee(employee.id, {
+            certificate: {
+              number: certNumber,
+              issuedAt: new Date().toISOString(),
+              status: 'valid'
+            }
+          });
+        }
       }
 
       const updatedEmp = await db.getEmployeeByIdOrNip(employee.id);

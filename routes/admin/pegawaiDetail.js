@@ -34,17 +34,15 @@ function createPegawaiDetailRouter(multiEventService, helpers = {}) {
         return res.status(404).json({ success: false, message: 'Data pegawai tidak ditemukan.' });
       }
 
-      // Ambil juga audit log yang berelasi dengan pegawai ini
-      const logsResult = await multiEventService.getAuditLogs({
-        entitasId: String(history.employee.id)
-      });
+      // Ambil seluruh audit log yang berelasi dengan pegawai ini (mutasi, presensi, kurasi LPTI & sertifikat)
+      const logs = await multiEventService.getAuditLogsForEmployee(req.params.id);
 
       res.json({
         success: true,
         pegawai: history.employee,
         ringkasan: history.summary,
         kegiatan: history.history,
-        audit_logs: logsResult.logs
+        audit_logs: logs
       });
     } catch (err) {
       res.status(500).json({ success: false, message: 'Gagal memuat riwayat pegawai: ' + err.message });
