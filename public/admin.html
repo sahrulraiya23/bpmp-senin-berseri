@@ -215,120 +215,34 @@
     }
   </style>
 </head>
-<body class="bg-white">
+<body class="bg-light">
   <div class="page">
-    <!-- Top Identity Strip -->
-    <div id="bpmp-top-strip"></div>
+    <!-- Tabler Vertical Sidebar Component -->
+    <div id="app-sidebar"></div>
 
-    <!-- Navigation Header -->
-    <div id="bpmp-navbar"></div>
-
-    <!-- Page Body -->
     <div class="page-wrapper">
-      <!-- Container -->
-      <div class="container-xl py-3">
-        
-        <!-- Live Clock & Quick Status Subheader (Bar Resmi terpadu) -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="badge bg-primary text-white d-inline-flex align-items-center px-2 py-1">
-              <i class="ti ti-shield-check me-1"></i>
-              <span id="sideAdminRoleText">Bagian Kepegawaian</span>
-            </span>
-            <span id="sideAdminRoleBadge" class="badge bg-azure-lt text-azure">Kepegawaian</span>
-            <span class="text-secondary small d-none d-md-inline" id="sideAdminSubTitle">Pengelola Harian Kepegawaian BPMP Sultra</span>
+      <!-- Slim Topbar (Header: Breadcrumb, Live Clock WITA, Contextual Action) -->
+      <div id="app-topbar"></div>
+
+      <!-- Page Body Area -->
+      <div class="page-body">
+        <div class="container-xl py-3">
+
+          <!-- Hidden Compatibility Elements for Legacy Scripts -->
+          <div class="d-none">
+            <span id="sideAdminName"></span>
+            <div id="sideAdminAvatar"></div>
+            <span id="sideAdminRoleText"></span>
+            <span id="sideAdminRoleBadge"></span>
+            <div id="superadminActionGroup"></div>
+            <a id="navLinkDashboard" onclick="switchMainTab('dashboard')"></a>
+            <a id="navLinkQr" onclick="switchMainTab('qr')"></a>
+            <a id="navLinkEvent" onclick="openEventModal('new')"></a>
+            <button id="btnResetTestingDev" onclick="BPMPLayout.openSettingsModal()"></button>
           </div>
 
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <!-- Superadmin Shortcut Button -->
-            <a href="/superadmin" id="btnGoToSuperadmin" class="btn btn-outline-warning btn-sm d-none" aria-label="Konsol Superadmin">
-              <i class="ti ti-crown me-1 text-warning"></i> Konsol Superadmin
-            </a>
-
-            <!-- Tombol Pengaturan Reset Data (Hanya tampil di DEV / Testing) -->
-            <button id="btnResetTestingDev" onclick="handleResetTestingData()" class="btn btn-outline-danger btn-sm d-none" title="Reset data presensi dan LPTI pengujian" aria-label="Reset Data Uji Coba">
-              <i class="ti ti-rotate-2 me-1"></i> Reset Data <span class="badge bg-danger-lt ms-1">DEV</span>
-            </button>
-
-            <!-- Dropdown Menu Pengaturan -->
-            <div class="dropdown">
-              <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="btnSettingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Pengaturan Sistem & Konfigurasi">
-                <i class="ti ti-settings me-1"></i> Pengaturan
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="btnSettingsDropdown">
-                <li><h6 class="dropdown-header text-uppercase font-monospace" style="font-size: 0.65rem;">Konfigurasi Sistem</h6></li>
-                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openTemplateManagerModal()"><i class="ti ti-palette me-2 text-primary"></i> Template E-Sertifikat</a></li>
-                <li id="menuItemAdminAccounts" class="d-none"><a class="dropdown-item" href="javascript:void(0)" onclick="openAdminAccountManagerModal()"><i class="ti ti-users me-2 text-warning"></i> Akun Admin (Superadmin)</a></li>
-                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openActivityLogModal()"><i class="ti ti-activity me-2 text-info"></i> Log Aktivitas (Audit Trail)</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openSystemSettingsModal()"><i class="ti ti-database-cog me-2"></i> Sistem & Reset Data</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger fw-bold" href="javascript:void(0)" onclick="handleLogout()"><i class="ti ti-logout me-2"></i> Keluar (Logout)</a></li>
-              </ul>
-            </div>
-
-            <!-- Tombol Keluar Langsung (Mudah diakses di mobile & desktop) -->
-            <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()" title="Keluar dari sesi admin" aria-label="Keluar">
-              <i class="ti ti-logout me-1"></i> Keluar
-            </button>
-
-            <!-- Live Clock Badge WITA -->
-            <div id="liveClockBadge" class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Indonesia Tengah">
-              <i class="ti ti-clock me-1"></i> --:--:-- WITA
-            </div>
-          </div>
-        </div>
-
-        <!-- Page Header -->
-        <div class="page-header d-print-none mb-3">
-          <div class="row g-2 align-items-center">
-            <div class="col">
-              <div class="page-pretitle" id="headerBreadcrumb">
-                BPMP SULTRA / ADMIN KEPEGAWAIAN
-              </div>
-              <h2 class="page-title text-primary">
-                Dashboard Manajemen Kepegawaian & Presensi
-              </h2>
-              <p class="text-secondary mb-0 small" id="displayActiveTitle">
-                Pelatihan Transformasi Digital & Manajemen Kepegawaian ASN BPMP Sultra
-              </p>
-            </div>
-            <!-- Header Actions -->
-            <div class="col-auto ms-auto d-print-none">
-              <div class="btn-list">
-                <!-- Tab Buttons & Navigasi Halaman Terpisah -->
-                <button type="button" id="tabBtnDashboard" class="btn btn-primary" onclick="switchMainTab('dashboard')" aria-label="Ringkasan">
-                  <i class="ti ti-layout-dashboard me-1"></i> Ringkasan
-                </button>
-                <a href="/admin/rekap-presensi" class="btn btn-outline-primary" aria-label="Rekap Presensi">
-                  <i class="ti ti-clipboard-check me-1"></i> Rekap Presensi
-                </a>
-                <a href="/admin/verifikasi-lpti" class="btn btn-outline-warning text-dark fw-bold" aria-label="Verifikasi LPTI">
-                  <i class="ti ti-file-check me-1"></i> Verifikasi LPTI
-                </a>
-                <button type="button" id="tabBtnQr" class="btn btn-outline-secondary" onclick="switchMainTab('qr')" aria-label="Dynamic QR Presensi">
-                  <i class="ti ti-qrcode me-1"></i> Dynamic QR
-                </button>
-                <button type="button" class="btn btn-teal text-white" onclick="openEventModal('new')" aria-label="Tambah Event Baru">
-                  <i class="ti ti-plus me-1"></i> Tambah Event
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hidden Compatibility Elements for Scripts -->
-        <div class="d-none">
-          <span id="sideAdminName"></span>
-          <div id="sideAdminAvatar"></div>
-          <div id="superadminActionGroup"></div>
-          <a id="navLinkDashboard" onclick="switchMainTab('dashboard')"></a>
-          <a id="navLinkQr" onclick="switchMainTab('qr')"></a>
-          <a id="navLinkEvent" onclick="openEventModal('new')"></a>
-        </div>
-
-        <!-- VIEW 1: DASHBOARD UTAMA -->
-        <div id="viewDashboardSection">
+          <!-- VIEW 1: DASHBOARD UTAMA -->
+          <div id="viewDashboardSection">
           
           <!-- Alert Standar Layanan Kepegawaian BPMP Sultra (Dismissible & Disimpan di localStorage) -->
           <div id="sopBannerAlert" class="alert alert-primary border-primary-subtle shadow-sm mb-3 alert-dismissible fade show" role="alert">
@@ -386,22 +300,26 @@
                     <span id="displayActiveLocation"><i class="ti ti-map-pin me-1"></i> Aula Utama BPMP Provinsi Sulawesi Tenggara</span>
                   </div>
                 </div>
-                <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
-                  <button id="btnCompleteCurrentEvent" class="btn btn-outline-warning btn-sm" onclick="completeCurrentSelectedEvent()" title="Selesaikan kegiatan ini">
-                    <i class="ti ti-circle-check me-1"></i> Selesaikan
-                  </button>
-                  <button id="btnActivateCurrentEvent" class="btn btn-outline-success btn-sm d-none" onclick="activateCurrentSelectedEvent()" title="Buka kembali sesi kegiatan ini">
-                    <i class="ti ti-bolt me-1"></i> Aktifkan Sesi
-                  </button>
-                  <button class="btn btn-outline-primary btn-sm" onclick="openSelectEventTemplateModal()" title="Pilih Template & Pratinjau Sertifikat Kegiatan">
-                    <i class="ti ti-certificate me-1"></i> Template Sertifikat
-                  </button>
-                  <button class="btn btn-outline-secondary btn-sm" onclick="openTemplateManagerModal()" title="Pengaturan Katalog Template & Unduh Panduan Desainer">
-                    <i class="ti ti-palette me-1"></i> Pengaturan Template
-                  </button>
-                  <button class="btn btn-outline-secondary btn-sm" onclick="editCurrentEvent()" title="Ubah parameter kegiatan">
-                    <i class="ti ti-edit me-1"></i> Ubah Detail
-                  </button>
+                <div class="col-12 col-md-auto d-flex align-items-center flex-wrap gap-2">
+                  <a id="btnCardRekapPresensi" href="/admin/rekap-presensi" class="btn btn-primary btn-sm fw-bold shadow-xs">
+                    <i class="ti ti-clipboard-check me-1"></i> Rekap Presensi
+                  </a>
+                  <a id="btnCardVerifikasiLpti" href="/admin/verifikasi-lpti" class="btn btn-outline-primary btn-sm fw-bold">
+                    <i class="ti ti-file-check me-1"></i> Verifikasi LPTI
+                  </a>
+                  <!-- Dropdown ⋯ untuk Opsi Kegiatan Tambahan -->
+                  <div class="dropdown" id="eventCardMoreMenu">
+                    <button class="btn btn-outline-secondary btn-sm px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Opsi Kegiatan">
+                      <i class="ti ti-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="editCurrentEvent()"><i class="ti ti-edit me-2 text-muted"></i> Ubah Detail</a></li>
+                      <li><a class="dropdown-item" href="javascript:void(0)" onclick="openSelectEventTemplateModal()"><i class="ti ti-certificate me-2 text-muted"></i> Template Sertifikat</a></li>
+                      <li id="menuItemActivateEvent" class="d-none"><a class="dropdown-item text-success" href="javascript:void(0)" onclick="activateCurrentSelectedEvent()"><i class="ti ti-bolt me-2"></i> Aktifkan Sesi Aula</a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="completeCurrentSelectedEvent()"><i class="ti ti-circle-check me-2"></i> Selesaikan Kegiatan</a></li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -450,7 +368,7 @@
               </div>
             </div>
 
-            <!-- Presensi Hadir -->
+            <!-- Presensi Hadir & Belum Hadir -->
             <div class="col-sm-6 col-lg-3">
               <div class="card card-sm kpi-card-clickable" id="kpiCardHadir" onclick="applyKpiFilter('hadir')" title="Klik untuk filter: Pegawai Hadir di Aula">
                 <div class="card-body">
@@ -471,9 +389,11 @@
                   <div class="progress progress-xs mt-2">
                     <div class="progress-bar bg-green" id="progHadir" style="width: 0%;"></div>
                   </div>
-                  <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.72rem;">
+                  <div class="d-flex justify-content-between align-items-center text-muted small mt-1" style="font-size: 0.72rem;">
                     <span id="statHadirRatio">0 dari 105</span>
-                    <span id="statHadirPct">0%</span>
+                    <button type="button" class="badge bg-danger-lt text-danger border-0 py-0.5 px-1 fw-bold" onclick="event.stopPropagation(); applyKpiFilter('belum')" title="Klik untuk melihat ASN belum hadir">
+                      Belum Hadir &rarr;
+                    </button>
                   </div>
                 </div>
               </div>
@@ -481,7 +401,7 @@
 
             <!-- LPTI Menunggu (Perlu Dikurasi) -->
             <div class="col-sm-6 col-lg-3">
-              <div class="card card-sm kpi-card-clickable" id="kpiCardPending" onclick="applyKpiFilter('pending')" title="Klik untuk filter: LPTI Menunggu Kurasi Admin">
+              <div class="card card-sm kpi-card-clickable" id="kpiCardPending" onclick="applyKpiFilter('pending')" title="Klik untuk kurasi berkas LPTI yang masuk">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
@@ -490,8 +410,8 @@
                       </span>
                     </div>
                     <div class="col">
-                      <div class="font-weight-medium">LPTI Menunggu</div>
-                      <div class="text-secondary small">Perlu Dikurasi</div>
+                      <div class="font-weight-medium">LPTI Perlu Dikurasi</div>
+                      <div class="text-secondary small">Antrean Berkas</div>
                     </div>
                     <div class="col-auto text-end">
                       <span class="h2 mb-0 fw-bold text-warning" id="statPending">0</span>
@@ -508,9 +428,9 @@
               </div>
             </div>
 
-            <!-- Sertifikat Terbit -->
+            <!-- Siap Cetak Sertifikat -->
             <div class="col-sm-6 col-lg-3">
-              <div class="card card-sm kpi-card-clickable" id="kpiCardApproved" onclick="applyKpiFilter('disetujui')" title="Klik untuk filter: Sertifikat Terbit / Disetujui">
+              <div class="card card-sm kpi-card-clickable" id="kpiCardApproved" onclick="applyKpiFilter('sertifikat')" title="Klik untuk melihat ASN yang siap cetak sertifikat">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-auto">
@@ -519,7 +439,7 @@
                       </span>
                     </div>
                     <div class="col">
-                      <div class="font-weight-medium">Sertifikat Terbit</div>
+                      <div class="font-weight-medium">Siap Cetak Sertifikat</div>
                       <div class="text-secondary small">LPTI Disetujui</div>
                     </div>
                     <div class="col-auto text-end">
@@ -1796,8 +1716,15 @@
     updateLiveClock();
 
     // SOP Banner Dismissal (localStorage)
+    function getSopStorageKey() {
+      const u = (window.BPMPLayout && BPMPLayout.getCurrentUser()) || window.currentAdminUser;
+      const uId = u ? (u.id || u.username || u.nip || 'default') : 'default';
+      return `bpmp_sop_dismissed_${uId}`;
+    }
+
     function checkSopBannerStatus() {
-      const dismissed = localStorage.getItem('bpmp_sop_dismissed');
+      const key = getSopStorageKey();
+      const dismissed = localStorage.getItem(key);
       const banner = document.getElementById('sopBannerAlert');
       const reopenBox = document.getElementById('sopReopenBox');
       if (dismissed === 'true') {
@@ -1810,7 +1737,8 @@
     }
 
     function dismissSopBanner() {
-      localStorage.setItem('bpmp_sop_dismissed', 'true');
+      const key = getSopStorageKey();
+      localStorage.setItem(key, 'true');
       const banner = document.getElementById('sopBannerAlert');
       const reopenBox = document.getElementById('sopReopenBox');
       if (banner) banner.classList.add('d-none');
@@ -1818,7 +1746,8 @@
     }
 
     function reopenSopBanner() {
-      localStorage.removeItem('bpmp_sop_dismissed');
+      const key = getSopStorageKey();
+      localStorage.removeItem(key);
       const banner = document.getElementById('sopBannerAlert');
       const reopenBox = document.getElementById('sopReopenBox');
       if (banner) banner.classList.remove('d-none');
@@ -1997,6 +1926,12 @@
       if (headerTitle) headerTitle.textContent = ev.title;
       if (sopJp) sopJp.textContent = `${ev.jp || 2} Jam Pelajaran (JP)`;
       if (printTitle) printTitle.textContent = `Kegiatan: ${ev.title} (${ev.schedule || 'Jadwal Reguler'})`;
+
+      // Update link Rekap Presensi & Verifikasi LPTI pada kartu event aktif
+      const btnRekap = document.getElementById('btnCardRekapPresensi');
+      if (btnRekap) btnRekap.href = `/admin/rekap-presensi?eventId=${encodeURIComponent(ev.id)}`;
+      const btnVerifikasi = document.getElementById('btnCardVerifikasiLpti');
+      if (btnVerifikasi) btnVerifikasi.href = `/admin/verifikasi-lpti?eventId=${encodeURIComponent(ev.id)}`;
 
       document.getElementById('displayActiveJp').textContent = `${ev.jp || 2} JP`;
       document.getElementById('displayActiveCategory').textContent = ev.category || 'Pelatihan ASN';
@@ -2735,9 +2670,13 @@
           const lastEl = document.getElementById('lastUpdatedTimeText');
           if (lastEl) lastEl.innerHTML = `<i class="ti ti-clock me-1"></i> Terakhir: ${timeStr}`;
 
-          populateUnitKerjaDropdown(employeesData);
+          if (document.getElementById('filterUnitKerja')) {
+            populateUnitKerjaDropdown(employeesData);
+          }
           updateKPIs();
-          renderTable();
+          if (document.getElementById('employeeTableBody')) {
+            renderTable();
+          }
           if (showRefreshFeedback) {
             showToast('Data pegawai & presensi berhasil diperbarui.', 'info');
           }
@@ -2860,16 +2799,21 @@
       if (dashApproved) dashApproved.textContent = `${approved} Berkas`;
     }
 
-    // Klik KPI untuk navigasi cepat ke halaman spesifik
+    // Klik KPI untuk navigasi cepat ke halaman spesifik terfilter
     function applyKpiFilter(filterType) {
+      const savedEventId = localStorage.getItem('bpmp_selected_event_id') || '';
+      const eventQuery = savedEventId ? `&eventId=${encodeURIComponent(savedEventId)}` : '';
+
       if (filterType === 'all') {
-        window.location.href = '/admin/rekap-presensi';
+        window.location.href = `/admin/rekap-presensi?${eventQuery.replace('&', '')}`;
       } else if (filterType === 'hadir') {
-        window.location.href = '/admin/rekap-presensi?filter=hadir';
-      } else if (filterType === 'pending') {
-        window.location.href = '/admin/verifikasi-lpti?filter=pending';
-      } else if (filterType === 'disetujui') {
-        window.location.href = '/admin/verifikasi-lpti?filter=approved';
+        window.location.href = `/admin/rekap-presensi?presensi=hadir${eventQuery}`;
+      } else if (filterType === 'belum') {
+        window.location.href = `/admin/rekap-presensi?presensi=belum${eventQuery}`;
+      } else if (filterType === 'pending' || filterType === 'perlu_dikurasi') {
+        window.location.href = `/admin/verifikasi-lpti?status=perlu_dikurasi${eventQuery}`;
+      } else if (filterType === 'disetujui' || filterType === 'sertifikat') {
+        window.location.href = `/admin/rekap-presensi?sertifikat=siap${eventQuery}`;
       }
     }
 
@@ -4198,34 +4142,49 @@
     // INITIALIZATION ON DOM READY
     // ==============================================================
     document.addEventListener('DOMContentLoaded', async () => {
-      // Inisialisasi layout Tabler awal
-      if (window.BPMPLayout) {
-        BPMPLayout.init({
-          role: 'admin',
-          activeMenu: 'admin-dashboard'
-        });
-      }
-
       checkSopBannerStatus();
 
       const auth = await checkAdminAuth();
       if (!auth) return;
 
-      if (window.BPMPLayout && window.currentAdminUser) {
+      const isSuper = window.currentAdminUser && (window.currentAdminUser.role === 'superadmin' || window.currentAdminUser.username === 'superadmin');
+
+      if (window.BPMPLayout) {
         BPMPLayout.init({
-          role: 'admin',
-          activeMenu: 'admin-dashboard',
+          role: isSuper ? 'superadmin' : 'kepegawaian',
+          activeMenu: 'ringkasan',
+          title: 'Dashboard Ringkasan',
+          breadcrumb: isSuper ? 'BPMP SULTRA / SUPERADMIN' : 'BPMP SULTRA / KEPEGAWAIAN',
+          actionButton: isSuper ? `
+            <button type="button" class="btn btn-primary btn-sm fw-bold shadow-xs" onclick="openEventModal('new')" aria-label="Tambah Event Baru">
+              <i class="ti ti-plus me-1"></i> Tambah Event
+            </button>
+          ` : '',
           user: {
             name: window.currentAdminUser.name || window.currentAdminUser.username,
-            role: window.currentAdminUser.role === 'superadmin' ? 'Super Administrator' : 'Bagian Kepegawaian',
-            isSuper: window.currentAdminUser.role === 'superadmin' || window.currentAdminUser.username === 'superadmin'
+            role: isSuper ? 'Super Administrator' : 'Bagian Kepegawaian',
+            isSuper: isSuper
           }
         });
+      }
+
+      // Sembunyikan kontrol superadmin untuk kepegawaian
+      if (!isSuper) {
+        const moreMenu = document.getElementById('eventCardMoreMenu');
+        if (moreMenu) moreMenu.classList.add('d-none');
       }
 
       await loadEventData();
       await loadEmployees(false);
       await updateDynamicQr();
+
+      // Dengarkan perubahan event global dari sidebar
+      window.addEventListener('bpmp:eventChanged', async (e) => {
+        if (e.detail && e.detail.eventId) {
+          await loadEventData(e.detail.eventId);
+          await loadEmployees(false);
+        }
+      });
 
       // Polling QR Code tiap 1 detik
       setInterval(updateDynamicQr, 1000);

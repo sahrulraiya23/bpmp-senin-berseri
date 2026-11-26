@@ -2446,13 +2446,40 @@ app.get('/api/verify-cert/:certNumber', (req, res) => {
 // Reset Testing Data API (Khusus Super Administrator)
 app.post('/api/reset-data', async (req, res) => {
   const admin = getAdminFromToken(req.headers.authorization, req.headers.cookie);
-  if (!admin || admin.role !== 'superadmin') {
+  const isSuper = admin && ((admin.peran || admin.role) === 'superadmin' || admin.username === 'superadmin');
+  if (!isSuper) {
     return res.status(403).json({
       success: false,
       message: 'Akses ditolak: Operasi reset data pengujian hanya diizinkan untuk Super Administrator.'
     });
   }
+
+  const { confirmation } = req.body || {};
+  if (confirmation && confirmation.trim().toUpperCase() !== 'RESET') {
+    return res.status(400).json({
+      success: false,
+      message: 'Konfirmasi tidak valid. Harap ketik RESET untuk mengonfirmasi reset data.'
+    });
+  }
+
   await db.resetTestingData();
+
+  // Tulis rekam jejak ke audit_log
+  try {
+    const multiEventService = req.app.get('multiEventService');
+    if (multiEventService && multiEventService.db) {
+      multiEventService.db.prepare(`
+        INSERT INTO audit_log (user_id, aksi, entitas, entitas_id, sebelum_json, sesudah_json, created_at)
+        VALUES (?, 'RESET_DATA', 'system', 'all', NULL, ?, datetime('now'))
+      `).run(
+        String(admin.id || admin.username || 'superadmin'),
+        JSON.stringify({ reset_by: admin.username, timestamp: new Date().toISOString() })
+      );
+    }
+  } catch (auditErr) {
+    console.error('Gagal mencatat audit log reset data:', auditErr);
+  }
+
   res.json({ success: true, message: 'Seluruh data pengujian berhasil dibersihkan! 104 data pegawai asli tetap tersimpan rapi.' });
 });
 

@@ -120,53 +120,46 @@
     .timeline-event-card.event-claim::before { background: #ae3ec9; }
   </style>
 </head>
-<body class="bg-white">
+<body class="bg-light">
   <div class="page">
-    <!-- Top Identity Strip -->
-    <div id="bpmp-top-strip"></div>
+    <!-- Tabler Vertical Sidebar -->
+    <div id="app-sidebar"></div>
 
-    <!-- Navigation Header -->
-    <div id="bpmp-navbar"></div>
-
-    <!-- Page Body -->
     <div class="page-wrapper">
-      <div class="container-xl py-3">
+      <!-- Slim Topbar -->
+      <div id="app-topbar"></div>
 
-        <!-- Breadcrumb & Sub-Header -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="badge bg-primary text-white d-inline-flex align-items-center px-2 py-1">
-              <i class="ti ti-file-certificate me-1"></i> Kepegawaian
-            </span>
-            <span class="badge bg-warning-lt text-warning fw-bold">Kurasi LPTI</span>
-            <span class="text-secondary small d-none d-md-inline">Verifikasi Notula & Validasi Dokumen Sebelum Penerbitan Sertifikat</span>
-          </div>
+      <!-- Page Body Area -->
+      <div class="page-body">
+        <div class="container-xl py-3">
 
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <!-- Active Claim Countdown Badge -->
-            <div id="activeClaimBadge" class="badge bg-purple-lt text-purple font-monospace px-2 py-1 d-none" title="Anda sedang mengunci berkas LPTI">
-              <i class="ti ti-lock me-1"></i> Sedang Diklaim: <span id="claimTimerText">15:00</span>
+          <!-- Sub-Header Status Waktu & Refresh -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="badge bg-primary text-white d-inline-flex align-items-center px-2 py-1">
+                <i class="ti ti-file-certificate me-1"></i> Kepegawaian
+              </span>
+              <span class="badge bg-warning-lt text-warning fw-bold">Kurasi LPTI</span>
+              <span class="text-secondary small d-none d-md-inline">Verifikasi Notula &amp; Validasi Dokumen Sebelum Penerbitan Sertifikat</span>
             </div>
 
-            <!-- Live Clock Badge WITA -->
-            <div class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Terakhir Pembaruan">
-              <i class="ti ti-clock me-1"></i> Terakhir: <span id="textLastUpdated">--:--:-- WITA</span>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <!-- Active Claim Countdown Badge -->
+              <div id="activeClaimBadge" class="badge bg-purple-lt text-purple font-monospace px-2 py-1 d-none" title="Anda sedang mengunci berkas LPTI">
+                <i class="ti ti-lock me-1"></i> Sedang Diklaim: <span id="claimTimerText">15:00</span>
+              </div>
+
+              <!-- Live Clock Badge WITA -->
+              <div class="badge bg-secondary-lt text-secondary font-monospace px-2 py-1" title="Waktu Terakhir Pembaruan">
+                <i class="ti ti-clock me-1"></i> Terakhir: <span id="textLastUpdated">--:--:-- WITA</span>
+              </div>
+
+              <!-- Refresh Button -->
+              <button class="btn btn-outline-secondary btn-sm" onclick="loadLptiData(true)" title="Segarkan Data" aria-label="Segarkan Data">
+                <i class="ti ti-refresh" id="iconRefresh"></i>
+              </button>
             </div>
-
-            <!-- Refresh Button -->
-            <button class="btn btn-outline-secondary btn-sm" onclick="loadLptiData(true)" title="Segarkan Data" aria-label="Segarkan Data">
-              <i class="ti ti-refresh" id="iconRefresh"></i>
-            </button>
-
-            <!-- Navigasi ke Kegiatan & Rekap Presensi -->
-            <a href="/admin/kegiatan" class="btn btn-outline-teal btn-sm fw-bold">
-              <i class="ti ti-calendar-event me-1"></i> Kegiatan
-            </a>
-            <a href="/admin/rekap-presensi" class="btn btn-outline-primary btn-sm fw-bold">
-              <i class="ti ti-clipboard-check me-1"></i> Rekap Presensi &rarr;
-            </a>
           </div>
-        </div>
 
         <!-- Page Header -->
         <div class="page-header d-print-none mb-3">
@@ -250,15 +243,15 @@
             <table class="table table-vcenter lpti-table" id="mainLptiTable">
               <thead>
                 <tr>
-                  <th style="width: 44px;" class="text-center">No</th>
-                  <th style="width: 185px;">Nama Pegawai</th>
-                  <th style="width: 145px;">NIP</th>
-                  <th style="width: 155px;">Jabatan / Unit</th>
-                  <th style="width: 110px;" class="text-center">Berkas LPTI</th>
-                  <th style="width: 120px;" class="text-center">Status</th>
-                  <th style="width: 145px;">Diputuskan Oleh</th>
-                  <th style="width: 150px;">Catatan Revisi</th>
-                  <th style="width: 140px;" class="text-center">Aksi</th>
+                  <th style="width: 40px;" class="text-center">No</th>
+                  <th style="width: 170px;">Nama Pegawai</th>
+                  <th style="width: 135px;">NIP</th>
+                  <th style="width: 140px;">Jabatan / Unit</th>
+                  <th style="width: 95px;" class="text-center">Berkas LPTI</th>
+                  <th style="width: 110px;" class="text-center">Status</th>
+                  <th style="width: 135px;">Diputuskan Oleh</th>
+                  <th style="width: 135px;">Catatan Revisi</th>
+                  <th style="width: 125px;" class="text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody id="lptiTableBody">
@@ -429,9 +422,22 @@
     function syncStateFromUrl() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('filter')) currentFilter = params.get('filter');
+      if (params.get('status')) {
+        const st = params.get('status');
+        if (st === 'perlu_dikurasi' || st === 'pending') currentFilter = 'pending';
+        else if (st === 'disetujui' || st === 'approved') currentFilter = 'approved';
+        else if (st === 'revisi' || st === 'revision') currentFilter = 'revision';
+      }
       if (params.get('search')) currentSearch = params.get('search');
       if (params.get('nip')) targetNipParam = params.get('nip');
-      if (params.get('kegiatanId')) currentKegiatanId = params.get('kegiatanId');
+      if (params.get('kegiatanId')) {
+        currentKegiatanId = params.get('kegiatanId');
+      } else if (params.get('eventId')) {
+        currentKegiatanId = params.get('eventId');
+      } else {
+        const saved = localStorage.getItem('bpmp_selected_event_id') || sessionStorage.getItem('bpmp_selected_event_id');
+        if (saved) currentKegiatanId = saved;
+      }
       if (params.get('page')) currentPage = parseInt(params.get('page'), 10) || 1;
 
       const sInput = document.getElementById('searchLpti');
@@ -1010,14 +1016,29 @@
       const ok = await checkAdminAuth();
       if (!ok) return;
 
+      const isSuper = currentAdminUser && (currentAdminUser.role === 'superadmin' || currentAdminUser.username === 'superadmin');
+
       BPMPLayout.init({
-        role: currentAdminUser.role === 'superadmin' ? 'superadmin' : 'admin',
+        role: isSuper ? 'superadmin' : 'kepegawaian',
         activeMenu: 'verifikasi-lpti',
+        title: 'Verifikasi LPTI ASN BPMP Sultra',
+        breadcrumb: isSuper ? 'BPMP SULTRA / SUPERADMIN' : 'BPMP SULTRA / KEPEGAWAIAN',
         user: currentAdminUser
       });
 
       syncStateFromUrl();
       loadLptiData(false);
+
+      // Sinkronkan saat event diubah lewat sidebar
+      window.addEventListener('bpmp:eventChanged', (e) => {
+        if (e.detail && e.detail.eventId) {
+          currentKegiatanId = e.detail.eventId;
+          const select = document.getElementById('selectKegiatanLpti');
+          if (select) select.value = currentKegiatanId;
+          updateUrlState();
+          loadLptiData(true);
+        }
+      });
     });
   </script>
 </body>
