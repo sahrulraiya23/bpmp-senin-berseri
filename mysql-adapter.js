@@ -6,6 +6,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const { hashPasswordSync, verifyPassword, generateTempPassword, isBcryptHash } = require('./utils/password');
 let mysql = null;
 try {
   mysql = require('mysql2/promise');
@@ -146,7 +147,9 @@ function formatEmployeeRow(row) {
     id: row.id,
     nip: String(row.nip || '').trim(),
     name: row.name,
-    password: row.password || 'Bpmp2026!',
+    password_hash: row.password_hash || (row.password ? (isBcryptHash(row.password) ? row.password : hashPasswordSync(row.password)) : null),
+    wajib_ganti_password: Boolean(row.wajib_ganti_password !== undefined ? row.wajib_ganti_password : true),
+    mustChangePassword: Boolean(row.wajib_ganti_password !== undefined ? row.wajib_ganti_password : true),
     panggol: row.panggol || '',
     jabatan: row.jabatan || '',
     instansi: row.instansi || 'BPMP Provinsi Sulawesi Tenggara',
@@ -584,16 +587,28 @@ async function deleteEmployee(id) {
   return false;
 }
 
-async function resetEmployeePassword(id, newPass = 'Bpmp2026!') {
+async function resetEmployeePassword(id, newPass = null) {
   const clean = String(id).trim();
+  const tempPass = newPass || generateTempPassword();
+  const hashed = hashPasswordSync(tempPass);
   const pool = getPool();
   if (pool) {
-    await pool.execute('UPDATE employees SET password = ?, updated_at = NOW() WHERE id = ? OR nip = ?', [newPass, clean, clean]);
-    return getEmployeeByIdOrNip(clean);
+    try {
+      await pool.execute('UPDATE employees SET password_hash = ?, wajib_ganti_password = 1, updated_at = NOW() WHERE id = ? OR nip = ?', [hashed, clean, clean]);
+    } catch (_) {
+      await pool.execute('UPDATE employees SET password = ?, updated_at = NOW() WHERE id = ? OR nip = ?', [hashed, clean, clean]);
+    }
+    const emp = await getEmployeeByIdOrNip(clean);
+    return { ...emp, tempPassword: tempPass };
   }
   const emp = await getEmployeeByIdOrNip(clean);
-  if (emp) emp.password = newPass;
-  return emp;
+  if (emp) {
+    emp.password_hash = hashed;
+    emp.wajib_ganti_password = true;
+    emp.mustChangePassword = true;
+    delete emp.password;
+  }
+  return { ...emp, tempPassword: tempPass };
 }
 
 async function ensureEmployeeJp(id, eventJp = 32) {
@@ -986,17 +1001,22 @@ async function verifyAdminCredentials(username, password) {
   if (pool) {
     try {
       const [rows] = await pool.execute(
-        'SELECT * FROM admins WHERE LOWER(username) = LOWER(?) AND password = ? LIMIT 1',
-        [cleanU, cleanP]
+        'SELECT * FROM admins WHERE LOWER(username) = LOWER(?) LIMIT 1',
+        [cleanU]
       );
       if (rows && rows.length > 0) {
         const data = rows[0];
-        return {
-          id: data.id,
-          username: data.username,
-          name: data.name,
-          role: data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian')
-        };
+        const isValid = await verifyPassword(cleanP, data.password_hash || data.password);
+        if (isValid) {
+          return {
+            id: data.id,
+            username: data.username,
+            name: data.name,
+            role: data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+            peran: data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+            wajib_ganti_password: Boolean(data.wajib_ganti_password)
+          };
+        }
       }
     } catch (err) {
       console.error('[MySQL Error] verifyAdminCredentials:', err.message);
@@ -1007,16 +1027,20 @@ async function verifyAdminCredentials(username, password) {
   const mem = getMemoryStore();
   const lowerU = cleanU.toLowerCase();
   const found = (mem.admins || []).find(a =>
-    (a.username.toLowerCase() === lowerU || (lowerU === 'kepegawaian' && a.username === 'admin')) &&
-    (a.password === cleanP || cleanP === 'bpmp123' || cleanP === 'Bpmp2026!')
+    a.username.toLowerCase() === lowerU || (lowerU === 'kepegawaian' && a.username === 'admin')
   );
   if (found) {
-    return {
-      id: found.id,
-      username: found.username,
-      name: found.name,
-      role: found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian')
-    };
+    const isValid = await verifyPassword(cleanP, found.password_hash || found.password);
+    if (isValid) {
+      return {
+        id: found.id,
+        username: found.username,
+        name: found.name,
+        role: found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+        peran: found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+        wajib_ganti_password: Boolean(found.wajib_ganti_password)
+      };
+    }
   }
   return null;
 }
@@ -1025,55 +1049,88 @@ async function getAllAdmins() {
   const pool = getPool();
   if (pool) {
     try {
-      const [rows] = await pool.query('SELECT id, username, name, role, created_at FROM admins ORDER BY id ASC');
+      const [rows] = await pool.query('SELECT id, username, name, role, wajib_ganti_password, created_at FROM admins ORDER BY id ASC');
       return rows;
     } catch (err) {
       console.error('[MySQL Error] getAllAdmins:', err.message);
     }
   }
   const mem = getMemoryStore();
-  return mem.admins || [];
+  return (mem.admins || []).map(a => {
+    const { password, password_hash, ...safe } = a;
+    return safe;
+  });
 }
 
 async function createAdmin(adminData) {
   const pool = getPool();
   const username = String(adminData.username || '').trim();
-  const password = adminData.password || 'Bpmp2026!';
+  const rawPass = adminData.password || adminData.tempPassword || generateTempPassword();
+  const hashedPassword = isBcryptHash(rawPass) ? rawPass : hashPasswordSync(rawPass);
   const name = adminData.name || username;
   const role = adminData.role || 'kepegawaian';
 
   if (pool) {
-    const [res] = await pool.execute(
-      'INSERT INTO admins (username, password, name, role, created_at) VALUES (?, ?, ?, ?, NOW())',
-      [username, password, name, role]
-    );
-    return { id: res.insertId, username, name, role };
+    try {
+      const [res] = await pool.execute(
+        'INSERT INTO admins (username, password_hash, name, role, wajib_ganti_password, created_at) VALUES (?, ?, ?, ?, 1, NOW())',
+        [username, hashedPassword, name, role]
+      );
+      return { id: res.insertId, username, name, role, tempPassword: rawPass, initialPassword: rawPass, wajib_ganti_password: true };
+    } catch (_) {
+      const [res] = await pool.execute(
+        'INSERT INTO admins (username, password, name, role, created_at) VALUES (?, ?, ?, ?, NOW())',
+        [username, hashedPassword, name, role]
+      );
+      return { id: res.insertId, username, name, role, tempPassword: rawPass, initialPassword: rawPass, wajib_ganti_password: true };
+    }
   }
 
   const mem = getMemoryStore();
-  const newAdm = { id: Date.now(), username, password, name, role };
+  const newAdm = { id: Date.now(), username, password_hash: hashedPassword, name, role, wajib_ganti_password: true };
   mem.admins.push(newAdm);
-  return newAdm;
+  return { ...newAdm, tempPassword: rawPass, initialPassword: rawPass };
 }
 
 async function updateAdmin(id, adminData) {
   const cleanId = String(id).trim();
   const pool = getPool();
+  const rawP = adminData.password || adminData.password_hash;
+  const hashedP = rawP ? (isBcryptHash(rawP) ? rawP : hashPasswordSync(rawP)) : null;
+
   if (pool) {
-    await pool.execute(
-      `UPDATE admins SET
-        name = COALESCE(?, name),
-        role = COALESCE(?, role),
-        password = COALESCE(?, password)
-       WHERE id = ? OR username = ?`,
-      [adminData.name || null, adminData.role || null, adminData.password || null, cleanId, cleanId]
-    );
-    const [rows] = await pool.execute('SELECT id, username, name, role FROM admins WHERE id = ? OR username = ?', [cleanId, cleanId]);
+    try {
+      await pool.execute(
+        `UPDATE admins SET
+          name = COALESCE(?, name),
+          role = COALESCE(?, role),
+          password_hash = COALESCE(?, password_hash),
+          wajib_ganti_password = COALESCE(?, wajib_ganti_password)
+         WHERE id = ? OR username = ?`,
+        [adminData.name || null, adminData.role || null, hashedP, adminData.wajib_ganti_password !== undefined ? (adminData.wajib_ganti_password ? 1 : 0) : null, cleanId, cleanId]
+      );
+    } catch (_) {
+      await pool.execute(
+        `UPDATE admins SET
+          name = COALESCE(?, name),
+          role = COALESCE(?, role),
+          password = COALESCE(?, password)
+         WHERE id = ? OR username = ?`,
+        [adminData.name || null, adminData.role || null, hashedP, cleanId, cleanId]
+      );
+    }
+    const [rows] = await pool.execute('SELECT id, username, name, role, wajib_ganti_password FROM admins WHERE id = ? OR username = ?', [cleanId, cleanId]);
     return rows[0] || null;
   }
   const mem = getMemoryStore();
   const a = mem.admins.find(adm => String(adm.id) === cleanId || adm.username === cleanId);
-  if (a) Object.assign(a, adminData);
+  if (a) {
+    Object.assign(a, adminData);
+    if (hashedP) {
+      a.password_hash = hashedP;
+      delete a.password;
+    }
+  }
   return a;
 }
 

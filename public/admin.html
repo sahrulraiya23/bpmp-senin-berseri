@@ -380,7 +380,7 @@
                     </div>
                     <div class="col">
                       <div class="font-weight-medium">Presensi Hadir</div>
-                      <div class="text-secondary small">Di Aula BPMP</div>
+                      <div class="text-secondary small text-truncate" style="max-width: 150px;" id="kpiHadirSub" title="Event Aktif">Di Aula BPMP</div>
                     </div>
                     <div class="col-auto text-end">
                       <span class="h2 mb-0 fw-bold text-green" id="statHadir">0</span>
@@ -1926,6 +1926,12 @@
       if (headerTitle) headerTitle.textContent = ev.title;
       if (sopJp) sopJp.textContent = `${ev.jp || 2} Jam Pelajaran (JP)`;
       if (printTitle) printTitle.textContent = `Kegiatan: ${ev.title} (${ev.schedule || 'Jadwal Reguler'})`;
+
+      const kpiHadirSub = document.getElementById('kpiHadirSub');
+      if (kpiHadirSub) {
+        kpiHadirSub.textContent = ev.title ? `Event: ${ev.title}` : 'Tidak ada event aktif';
+        kpiHadirSub.title = ev.title || 'Tidak ada event aktif';
+      }
 
       // Update link Rekap Presensi & Verifikasi LPTI pada kartu event aktif
       const btnRekap = document.getElementById('btnCardRekapPresensi');

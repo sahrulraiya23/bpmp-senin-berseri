@@ -17,6 +17,7 @@ if (typeof globalThis.WebSocket === 'undefined') {
 }
 
 const { createClient } = require('@supabase/supabase-js');
+const { hashPasswordSync, verifyPassword, generateTempPassword, isBcryptHash } = require('./utils/password');
 
 // Load environment variables automatically jika belum dimuat
 if (typeof process.loadEnvFile === 'function') {
@@ -48,7 +49,8 @@ const BUILTIN_TEST_USERS = [
     username: 'sahrul',
     nip: '199508232024011001',
     name: 'Muhammad Saharullah Raiya',
-    password: 'bpmp123',
+    password_hash: hashPasswordSync('bpmp123'),
+    wajib_ganti_password: true,
     panggol: 'Penata Muda, III/a',
     jabatan: 'Pranata Komputer / Pengembang Sistem',
     instansi: 'BPMP Provinsi Sulawesi Tenggara',
@@ -63,7 +65,8 @@ const BUILTIN_TEST_USERS = [
     username: 'rafli',
     nip: '199703142024021002',
     name: 'M. Rafli',
-    password: 'bpmp123',
+    password_hash: hashPasswordSync('bpmp123'),
+    wajib_ganti_password: true,
     panggol: 'Penata Muda, III/a',
     jabatan: 'Pengelola Kepegawaian & Mutu ASN',
     instansi: 'BPMP Provinsi Sulawesi Tenggara',
@@ -78,7 +81,8 @@ const BUILTIN_TEST_USERS = [
     username: 'user',
     nip: '199811052024031003',
     name: 'User Pegawai ASN (Testing)',
-    password: 'bpmp123',
+    password_hash: hashPasswordSync('bpmp123'),
+    wajib_ganti_password: true,
     panggol: 'Pengatur, II/c',
     jabatan: 'Staf Pelaksana BPMP Sultra',
     instansi: 'BPMP Provinsi Sulawesi Tenggara',
@@ -128,22 +132,29 @@ function getMemoryStore() {
       {
         id: 1,
         username: 'superadmin',
-        password: process.env.SUPERADMIN_PASSWORD || 'Bpmp2026!',
+        password_hash: hashPasswordSync(process.env.SUPERADMIN_PASSWORD || 'Bpmp2026!'),
         name: 'Super Administrator BPMP Sultra',
-        role: 'superadmin'
+        role: 'superadmin',
+        peran: 'superadmin',
+        aktif: true,
+        wajib_ganti_password: true
       },
       {
         id: 2,
         username: 'admin',
-        password: process.env.ADMIN_PASSWORD || 'Bpmp2026!',
+        password_hash: hashPasswordSync(process.env.ADMIN_PASSWORD || 'Bpmp2026!'),
         name: 'Bagian Kepegawaian BPMP Sultra',
-        role: 'kepegawaian'
+        role: 'kepegawaian',
+        peran: 'kepegawaian',
+        aktif: true,
+        wajib_ganti_password: true
       }
     ];
   } else {
     const adminObj = _memoryStore.admins.find(a => a.username === 'admin');
     if (adminObj) {
       adminObj.role = 'kepegawaian';
+      adminObj.peran = 'kepegawaian';
       adminObj.name = 'Bagian Kepegawaian BPMP Sultra';
     }
   }
@@ -155,8 +166,11 @@ function getMemoryStore() {
         id: _memoryStore.admins.length + 1,
         username: tu.username,
         name: tu.name,
-        password: tu.password,
+        password_hash: tu.password_hash,
+        wajib_ganti_password: true,
         role: 'kepegawaian',
+        peran: 'kepegawaian',
+        aktif: true,
         createdAt: new Date().toISOString()
       });
     }
@@ -250,7 +264,9 @@ function formatSupabaseEmployee(row) {
     id: row.id,
     nip: String(row.nip || '').trim(),
     name: row.name,
-    password: row.password || 'Bpmp2026!',
+    password_hash: row.password_hash || (row.password ? (isBcryptHash(row.password) ? row.password : hashPasswordSync(row.password)) : null),
+    wajib_ganti_password: Boolean(row.wajib_ganti_password !== undefined ? row.wajib_ganti_password : (row.mustChangePassword !== undefined ? row.mustChangePassword : true)),
+    mustChangePassword: Boolean(row.wajib_ganti_password !== undefined ? row.wajib_ganti_password : (row.mustChangePassword !== undefined ? row.mustChangePassword : true)),
     panggol: row.panggol || '',
     jabatan: row.jabatan || '',
     instansi: row.instansi || 'BPMP Provinsi Sulawesi Tenggara',
@@ -1790,7 +1806,6 @@ async function verifyAdminCredentials(username, password) {
       .from('admins')
       .select('*')
       .ilike('username', cleanU)
-      .eq('password', cleanP)
       .maybeSingle();
 
     if (!error && data) {
@@ -1801,22 +1816,33 @@ async function verifyAdminCredentials(username, password) {
         };
       }
 
-      // Update terakhir_login
-      const now = new Date().toISOString();
-      try {
-        await client.from('admins').update({ terakhir_login: now }).eq('id', data.id);
-      } catch (e) {}
+      const isValid = await verifyPassword(cleanP, data.password_hash || data.password);
+      if (isValid) {
+        // Auto-hash jika belum bcrypt
+        if (!isBcryptHash(data.password_hash)) {
+          try {
+            const newHash = hashPasswordSync(cleanP);
+            await client.from('admins').update({ password_hash: newHash }).eq('id', data.id);
+          } catch (_) {}
+        }
 
-      return {
-        id: data.id,
-        username: data.username,
-        name: data.name,
-        role: data.peran || data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
-        peran: data.peran || data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
-        aktif: true,
-        wajib_ganti_password: Boolean(data.wajib_ganti_password),
-        terakhir_login: now
-      };
+        // Update terakhir_login
+        const now = new Date().toISOString();
+        try {
+          await client.from('admins').update({ terakhir_login: now }).eq('id', data.id);
+        } catch (e) {}
+
+        return {
+          id: data.id,
+          username: data.username,
+          name: data.name,
+          role: data.peran || data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+          peran: data.peran || data.role || (data.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+          aktif: true,
+          wajib_ganti_password: Boolean(data.wajib_ganti_password),
+          terakhir_login: now
+        };
+      }
     }
 
     // Fallback verifikator resmi LPTI Kepegawaian (3 NIP)
@@ -1828,17 +1854,20 @@ async function verifyAdminCredentials(username, password) {
     const matchedVerifier = authorizedVerifiers.find(v => v.nip === cleanU);
     if (matchedVerifier) {
       const emp = await getEmployeeByIdOrNip(cleanU);
-      if (emp && (emp.password === cleanP || cleanP === 'Bpmp2026!' || cleanP === 'bpmp123')) {
-        return {
-          id: 'admin-' + matchedVerifier.nip,
-          username: matchedVerifier.nip,
-          name: matchedVerifier.name,
-          role: 'kepegawaian',
-          peran: 'kepegawaian',
-          aktif: true,
-          wajib_ganti_password: false,
-          terakhir_login: new Date().toISOString()
-        };
+      if (emp) {
+        const isEmpValid = await verifyPassword(cleanP, emp.password_hash || emp.password);
+        if (isEmpValid) {
+          return {
+            id: 'admin-' + matchedVerifier.nip,
+            username: matchedVerifier.nip,
+            name: matchedVerifier.name,
+            role: 'kepegawaian',
+            peran: 'kepegawaian',
+            aktif: true,
+            wajib_ganti_password: false,
+            terakhir_login: new Date().toISOString()
+          };
+        }
       }
     }
   }
@@ -1847,8 +1876,7 @@ async function verifyAdminCredentials(username, password) {
   const mem = getMemoryStore();
   const lowerU = cleanU.toLowerCase();
   const found = (mem.admins || []).find(a => 
-    (a.username.toLowerCase() === lowerU || (lowerU === 'kepegawaian' && a.username === 'admin')) && 
-    (a.password === cleanP || cleanP === 'bpmp123' || cleanP === 'Bpmp2026!')
+    a.username.toLowerCase() === lowerU || (lowerU === 'kepegawaian' && a.username === 'admin')
   );
   if (found) {
     if (found.aktif === false) {
@@ -1858,18 +1886,25 @@ async function verifyAdminCredentials(username, password) {
       };
     }
 
-    const now = new Date().toISOString();
-    found.terakhir_login = now;
-    return {
-      id: found.id,
-      username: found.username,
-      name: found.name,
-      role: found.peran || found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
-      peran: found.peran || found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
-      aktif: true,
-      wajib_ganti_password: Boolean(found.wajib_ganti_password),
-      terakhir_login: now
-    };
+    const isValid = await verifyPassword(cleanP, found.password_hash || found.password);
+    if (isValid) {
+      if (!isBcryptHash(found.password_hash)) {
+        found.password_hash = hashPasswordSync(cleanP);
+        delete found.password;
+      }
+      const now = new Date().toISOString();
+      found.terakhir_login = now;
+      return {
+        id: found.id,
+        username: found.username,
+        name: found.name,
+        role: found.peran || found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+        peran: found.peran || found.role || (found.username === 'superadmin' ? 'superadmin' : 'kepegawaian'),
+        aktif: true,
+        wajib_ganti_password: Boolean(found.wajib_ganti_password),
+        terakhir_login: now
+      };
+    }
   }
 
   // Fallback kredensial bawaan jika env cocok atau database bootstrap
@@ -1879,17 +1914,20 @@ async function verifyAdminCredentials(username, password) {
     { nip: '199306042025212053', name: 'Indriani Saputri, S.IK.' }
   ];
   const memVerifier = authorizedMemVerifiers.find(v => v.nip === cleanU);
-  if (memVerifier && (cleanP === 'Bpmp2026!' || cleanP === 'bpmp123')) {
-    return {
-      id: 'admin-' + memVerifier.nip,
-      username: memVerifier.nip,
-      name: memVerifier.name,
-      role: 'kepegawaian',
-      peran: 'kepegawaian',
-      aktif: true,
-      wajib_ganti_password: false,
-      terakhir_login: new Date().toISOString()
-    };
+  if (memVerifier) {
+    const isVerifierValid = await verifyPassword(cleanP, hashPasswordSync('Bpmp2026!'));
+    if (isVerifierValid) {
+      return {
+        id: 'admin-' + memVerifier.nip,
+        username: memVerifier.nip,
+        name: memVerifier.name,
+        role: 'kepegawaian',
+        peran: 'kepegawaian',
+        aktif: true,
+        wajib_ganti_password: false,
+        terakhir_login: new Date().toISOString()
+      };
+    }
   }
 
   const superPwd = process.env.SUPERADMIN_PASSWORD || 'Bpmp2026!';
@@ -2112,7 +2150,13 @@ async function updateEmployee(idOrNip, empData) {
     if (empData.accumulatedJp !== undefined || empData.accumulated_jp !== undefined) {
       updatePayload.accumulated_jp = parseInt(empData.accumulatedJp || empData.accumulated_jp || 0, 10);
     }
-    if (empData.password) updatePayload.password = String(empData.password).trim();
+    if (empData.password || empData.password_hash) {
+      const rawP = empData.password || empData.password_hash;
+      updatePayload.password_hash = isBcryptHash(rawP) ? rawP : hashPasswordSync(rawP);
+    }
+    if (empData.wajib_ganti_password !== undefined) {
+      updatePayload.wajib_ganti_password = Boolean(empData.wajib_ganti_password);
+    }
 
     const { data, error } = await client
       .from('employees')
@@ -2141,7 +2185,15 @@ async function updateEmployee(idOrNip, empData) {
   if (empData.accumulatedJp !== undefined || empData.accumulated_jp !== undefined) {
     target.accumulatedJp = parseInt(empData.accumulatedJp || empData.accumulated_jp || 0, 10);
   }
-  if (empData.password) target.password = String(empData.password).trim();
+  if (empData.password || empData.password_hash) {
+    const rawP = empData.password || empData.password_hash;
+    target.password_hash = isBcryptHash(rawP) ? rawP : hashPasswordSync(rawP);
+    delete target.password;
+  }
+  if (empData.wajib_ganti_password !== undefined) {
+    target.wajib_ganti_password = Boolean(empData.wajib_ganti_password);
+    target.mustChangePassword = Boolean(empData.wajib_ganti_password);
+  }
   if (empData.lpti) target.lpti = { ...(target.lpti || {}), ...empData.lpti };
   target.updatedAt = now;
 
@@ -2172,8 +2224,14 @@ async function deleteEmployee(idOrNip) {
   return false;
 }
 
-async function resetEmployeePassword(idOrNip, newPassword = 'Bpmp2026!') {
-  return updateEmployee(idOrNip, { password: newPassword });
+async function resetEmployeePassword(idOrNip, newPassword = null) {
+  const tempPass = newPassword || generateTempPassword();
+  const updated = await updateEmployee(idOrNip, {
+    password_hash: hashPasswordSync(tempPass),
+    wajib_ganti_password: true,
+    mustChangePassword: true
+  });
+  return { ...updated, tempPassword: tempPass };
 }
 
 // ==============================================================
@@ -2242,15 +2300,16 @@ async function createAdmin(adminData) {
   const username = String(adminData.username || '').trim().toLowerCase();
   if (!username) throw new Error('NIP / Username admin wajib diisi!');
   
-  // Jika password tidak diberikan, buat password acak 8 karakter sekali pakai
-  const password = String(adminData.password || `Bpmp${Math.floor(1000 + Math.random() * 9000)}!`).trim();
+  // Jika password tidak diberikan, buat password acak dengan generateTempPassword
+  const rawPassword = String(adminData.password || adminData.tempPassword || generateTempPassword()).trim();
+  const hashedPassword = isBcryptHash(rawPassword) ? rawPassword : hashPasswordSync(rawPassword);
   const peran = (adminData.peran === 'superadmin' || adminData.role === 'superadmin') ? 'superadmin' : (adminData.peran || adminData.role || 'kepegawaian');
   const wajibGanti = adminData.wajib_ganti_password !== undefined ? Boolean(adminData.wajib_ganti_password) : true;
   const aktif = adminData.aktif !== undefined ? Boolean(adminData.aktif) : true;
 
   const record = {
     username: username,
-    password: password,
+    password_hash: hashedPassword,
     name: (adminData.name || 'Petugas Kepegawaian').trim(),
     role: peran,
     peran: peran,
@@ -2269,7 +2328,7 @@ async function createAdmin(adminData) {
       console.error('Supabase createAdmin error:', error.message);
       throw new Error(error.message);
     }
-    return { ...data, initialPassword: password };
+    return { ...data, initialPassword: rawPassword, tempPassword: rawPassword };
   }
 
   const mem = getMemoryStore();
@@ -2290,7 +2349,8 @@ async function createAdmin(adminData) {
     peran: newAdmin.peran,
     aktif: newAdmin.aktif,
     wajib_ganti_password: newAdmin.wajib_ganti_password,
-    initialPassword: password
+    initialPassword: rawPassword,
+    tempPassword: rawPassword
   };
 }
 
@@ -2325,7 +2385,10 @@ async function updateAdmin(idOrUsername, adminData) {
       updatePayload.peran = adminData.role;
       updatePayload.role = adminData.role;
     }
-    if (adminData.password !== undefined) updatePayload.password = String(adminData.password).trim();
+    if (adminData.password !== undefined || adminData.password_hash !== undefined) {
+      const rawP = adminData.password || adminData.password_hash;
+      updatePayload.password_hash = isBcryptHash(rawP) ? rawP : hashPasswordSync(rawP);
+    }
     if (adminData.aktif !== undefined) updatePayload.aktif = Boolean(adminData.aktif);
     if (adminData.wajib_ganti_password !== undefined) updatePayload.wajib_ganti_password = Boolean(adminData.wajib_ganti_password);
     if (adminData.terakhir_login !== undefined) updatePayload.terakhir_login = adminData.terakhir_login;
@@ -2359,7 +2422,11 @@ async function updateAdmin(idOrUsername, adminData) {
     memTarget.peran = adminData.role;
     memTarget.role = adminData.role;
   }
-  if (adminData.password !== undefined) memTarget.password = String(adminData.password).trim();
+  if (adminData.password !== undefined || adminData.password_hash !== undefined) {
+    const rawP = adminData.password || adminData.password_hash;
+    memTarget.password_hash = isBcryptHash(rawP) ? rawP : hashPasswordSync(rawP);
+    delete memTarget.password;
+  }
   if (adminData.aktif !== undefined) memTarget.aktif = Boolean(adminData.aktif);
   if (adminData.wajib_ganti_password !== undefined) memTarget.wajib_ganti_password = Boolean(adminData.wajib_ganti_password);
   if (adminData.terakhir_login !== undefined) memTarget.terakhir_login = adminData.terakhir_login;
@@ -2388,9 +2455,9 @@ async function toggleAdminActive(idOrUsername, targetState = null) {
 }
 
 async function resetAdminPassword(idOrUsername, tempPassword = null) {
-  const newPwd = tempPassword || `Bpmp${Math.floor(1000 + Math.random() * 9000)}!`;
+  const newPwd = tempPassword || generateTempPassword();
   const updated = await updateAdmin(idOrUsername, {
-    password: newPwd,
+    password_hash: hashPasswordSync(newPwd),
     wajib_ganti_password: true
   });
   return { ...updated, tempPassword: newPwd };

@@ -1,0 +1,25 @@
+{
+  "employees": [],
+  "admins": [
+    {
+      "id": 1,
+      "username": "superadmin",
+      "name": "Super Administrator BPMP Sultra",
+      "role": "superadmin",
+      "peran": "superadmin",
+      "password_hash": "$2b$12$T5pm9pTFgwmRHphyQhcEXOapci7iGsACrT5eH1IOPDVzwoNSdMp4u",
+      "wajib_ganti_password": true
+    },
+    {
+      "id": 2,
+      "username": "admin",
+      "name": "Bagian Kepegawaian BPMP Sultra",
+      "role": "kepegawaian",
+      "peran": "kepegawaian",
+      "password_hash": "$2b$12$Zg3ezZBljlmMx.egdmtGSOBtNu9jsr01pebVCK9fbAQCQU6L2Dfa.",
+      "wajib_ganti_password": true
+    }
+  ],
+  "events": [],
+  "audit_log": []
+}

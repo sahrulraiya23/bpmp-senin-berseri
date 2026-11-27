@@ -16,6 +16,17 @@ const {
   getProductionBaseUrl, 
   verifyCertificateSignature 
 } = require('./cert-crypto');
+const {
+  hashPassword,
+  hashPasswordSync,
+  verifyPassword,
+  validatePassword,
+  generateTempPassword,
+  isBcryptHash
+} = require('./utils/password');
+
+const GENERIC_LOGIN_ERROR_MESSAGE = 'NIP/Username atau Password tidak valid.';
+
 // Auto-load .env environment file (Node.js 20+)
 if (typeof process.loadEnvFile === 'function') {
   try {
@@ -340,26 +351,49 @@ app.get('/api/qr/current', async (req, res) => {
 
 // 1. Admin Login (Soft UI Console)
 app.post('/api/auth/admin-login', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body || {};
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Username dan Password admin wajib diisi!' });
   }
 
-  const admin = await db.verifyAdminCredentials(username, password);
-  if (!admin) {
-    return res.status(401).json({
-      success: false,
-      message: 'Username atau Password salah!'
-    });
+  const cleanU = String(username).trim();
+  const cleanP = String(password).trim();
+  const ipKey = `ip_${ip}`;
+  const accountKey = `admin_${cleanU.toLowerCase()}`;
+
+  // Rate Limiting per IP dan per akun
+  const ipCheck = checkLoginRateLimit(ipKey);
+  if (!ipCheck.allowed) {
+    return res.status(429).json({ success: false, message: ipCheck.message });
+  }
+  const accCheck = checkLoginRateLimit(accountKey);
+  if (!accCheck.allowed) {
+    return res.status(429).json({ success: false, message: accCheck.message });
   }
 
-  if (admin.error === 'INACTIVE' || admin.aktif === false) {
+  const admin = await db.verifyAdminCredentials(cleanU, cleanP);
+  if (admin && (admin.error === 'INACTIVE' || admin.aktif === false)) {
     return res.status(403).json({
       success: false,
       inactive: true,
       message: 'Akun administrator Anda telah dinonaktifkan. Silakan hubungi Super Administrator.'
     });
   }
+
+  if (!admin || !admin.id || admin.error) {
+    recordLoginFailure(ipKey);
+    recordLoginFailure(accountKey);
+    return res.status(401).json({
+      success: false,
+      message: GENERIC_LOGIN_ERROR_MESSAGE
+    });
+  }
+
+  // Login berhasil -> hapus tracker kegagalan
+  clearLoginAttempts(ipKey);
+  clearLoginAttempts(accountKey);
 
   const token = createAdminToken(admin);
 
@@ -372,7 +406,15 @@ app.post('/api/auth/admin-login', async (req, res) => {
     success: true,
     message: `Selamat datang, ${admin.name}!`,
     token: token,
-    admin: admin,
+    admin: {
+      id: admin.id,
+      username: admin.username,
+      name: admin.name,
+      role: admin.role,
+      peran: admin.peran,
+      wajib_ganti_password: Boolean(admin.wajib_ganti_password)
+    },
+    wajib_ganti_password: Boolean(admin.wajib_ganti_password),
     redirectUrl: isSuper ? '/superadmin' : '/admin'
   });
 });
@@ -410,32 +452,12 @@ app.get('/api/auth/admin-logout', handleAdminLogout);
 app.get('/admin/logout', handleAdminLogout);
 
 // ==============================================================
-// 0. PASSWORD HASHING & RATE LIMITING SECURITY HELPERS
+// 0. RATE LIMITING SECURITY HELPERS (15 Menit Window / 5x Gagal)
 // ==============================================================
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(String(password).trim(), salt, 10000, 64, 'sha512').toString('hex');
-  return `${salt}:${hash}`;
-}
-
-function verifyPassword(password, storedPassword) {
-  if (!storedPassword || !password) return false;
-  const cleanPass = String(password).trim();
-  const cleanStored = String(storedPassword).trim();
-
-  // Format salt:hash
-  if (cleanStored.includes(':')) {
-    const [salt, key] = cleanStored.split(':');
-    const hash = crypto.pbkdf2Sync(cleanPass, salt, 10000, 64, 'sha512').toString('hex');
-    return key === hash;
-  }
-
-  // Fallback plain text legacy
-  return cleanPass === cleanStored;
-}
-
-// In-memory Rate Limiter: Map<identifier, { count, firstAttempt, lockedUntil }>
 const loginAttemptTracker = new Map();
+const RATE_LIMIT_MAX_ATTEMPTS = 5;
+const RATE_LIMIT_LOCK_MS = 15 * 60 * 1000; // 15 menit
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 menit
 
 function checkLoginRateLimit(identifier) {
   const now = Date.now();
@@ -451,8 +473,8 @@ function checkLoginRateLimit(identifier) {
     };
   }
 
-  // Reset setelah jendela 5 menit lewat
-  if (now - record.firstAttempt > 300000) {
+  // Reset setelah jendela lewat
+  if (record.firstAttempt && (now - record.firstAttempt > RATE_LIMIT_WINDOW_MS)) {
     loginAttemptTracker.delete(identifier);
     return { allowed: true };
   }
@@ -463,9 +485,18 @@ function checkLoginRateLimit(identifier) {
 function recordLoginFailure(identifier) {
   const now = Date.now();
   const record = loginAttemptTracker.get(identifier) || { count: 0, firstAttempt: now, lockedUntil: null };
-  record.count += 1;
-  if (record.count >= 5) {
-    record.lockedUntil = now + 300000; // 5 menit
+  if (record.lockedUntil && record.lockedUntil > now) return;
+
+  if (now - record.firstAttempt > RATE_LIMIT_WINDOW_MS) {
+    record.count = 1;
+    record.firstAttempt = now;
+    record.lockedUntil = null;
+  } else {
+    record.count += 1;
+  }
+
+  if (record.count >= RATE_LIMIT_MAX_ATTEMPTS) {
+    record.lockedUntil = now + RATE_LIMIT_LOCK_MS;
   }
   loginAttemptTracker.set(identifier, record);
 }
@@ -539,7 +570,8 @@ app.post('/api/auth/login', async (req, res) => {
 
     const cleanNip = String(nip).trim();
     const cleanPassword = String(password).trim();
-    const rateLimitKey = `${cleanNip}_${ip}`;
+    const ipKey = `ip_${ip}`;
+    const accountKey = `emp_${cleanNip.toLowerCase()}`;
 
     // 1. Tolak login 1-klik / akun testing di lingkungan produksi
     if (isProduction && (isTestUser || ['sahrul', 'rafli', 'user'].includes(cleanNip.toLowerCase()))) {
@@ -549,54 +581,55 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // 2. Periksa Rate Limit (5x gagal -> kunci 5 menit)
-    const rateCheck = checkLoginRateLimit(rateLimitKey);
-    if (!rateCheck.allowed) {
-      return res.status(429).json({ success: false, message: rateCheck.message });
+    // 2. Periksa Rate Limit per IP dan per Akun (15 menit window / 5x gagal)
+    const ipCheck = checkLoginRateLimit(ipKey);
+    if (!ipCheck.allowed) {
+      return res.status(429).json({ success: false, message: ipCheck.message });
+    }
+    const accCheck = checkLoginRateLimit(accountKey);
+    if (!accCheck.allowed) {
+      return res.status(429).json({ success: false, message: accCheck.message });
     }
 
     const employee = await db.getEmployeeByIdOrNip(cleanNip);
     if (!employee) {
-      recordLoginFailure(rateLimitKey);
+      recordLoginFailure(ipKey);
+      recordLoginFailure(accountKey);
       return res.status(401).json({
         success: false,
-        message: 'NIP atau kata sandi tidak valid. Silakan periksa kembali.'
+        message: GENERIC_LOGIN_ERROR_MESSAGE
       });
     }
 
-    const defaultPassword = 'Bpmp2026!';
-    const storedPassword = employee.password || defaultPassword;
-
-    // Verifikasi Password (hash atau legacy default)
-    let isPasswordCorrect = verifyPassword(cleanPassword, storedPassword);
-    if (!isPasswordCorrect && (cleanPassword === defaultPassword || cleanPassword === 'bpmp123')) {
-      isPasswordCorrect = true;
-    }
+    const storedHash = employee.password_hash || employee.password;
+    const isPasswordCorrect = await verifyPassword(cleanPassword, storedHash);
 
     if (!isPasswordCorrect) {
-      recordLoginFailure(rateLimitKey);
+      recordLoginFailure(ipKey);
+      recordLoginFailure(accountKey);
       return res.status(401).json({
         success: false,
-        message: 'NIP atau kata sandi tidak valid. Silakan periksa kembali.'
+        message: GENERIC_LOGIN_ERROR_MESSAGE
       });
     }
 
     // Login berhasil -> Bersihkan tracker kegagalan
-    clearLoginAttempts(rateLimitKey);
+    clearLoginAttempts(ipKey);
+    clearLoginAttempts(accountKey);
 
     // Deteksi apakah pegawai harus ganti kata sandi
-    const isDefaultPass = (cleanPassword === 'bpmp123' || cleanPassword === 'Bpmp2026!' || !String(storedPassword).includes(':'));
-    const mustChangePassword = Boolean(employee.mustChangePassword || isDefaultPass);
+    const mustChangePassword = Boolean(employee.wajib_ganti_password || employee.mustChangePassword);
 
-    // Auto-hash password legacy di latar belakang
-    if (!String(storedPassword).includes(':')) {
+    // Auto-hash password jika belum bcrypt di latar belakang
+    if (storedHash && !isBcryptHash(storedHash)) {
       try {
-        await db.updateEmployee(employee.id, { password: hashPassword(cleanPassword) });
+        const newHash = await hashPassword(cleanPassword);
+        await db.updateEmployee(employee.id, { password_hash: newHash });
       } catch (eHash) {}
     }
 
     const activeEvent = await db.getActiveEvent();
-    const { password: _, ...safeEmployee } = employee;
+    const { password: _, password_hash: __, ...safeEmployee } = employee;
     const employeeSessionToken = createEmployeeSessionToken(employee);
     res.cookie('employee_session', employeeSessionToken, { httpOnly: true, sameSite: 'lax', path: '/' });
 
@@ -604,10 +637,13 @@ app.post('/api/auth/login', async (req, res) => {
       success: true,
       message: `Login berhasil! Selamat datang, ${employee.name}.`,
       mustChangePassword,
+      wajib_ganti_password: mustChangePassword,
       isProduction,
       sessionToken: employeeSessionToken,
       employee: {
-        ...safeEmployee
+        ...safeEmployee,
+        wajib_ganti_password: mustChangePassword,
+        mustChangePassword
       },
       redirectUrl: '/pegawai',
       event: activeEvent
@@ -630,32 +666,39 @@ app.post('/api/auth/change-password', async (req, res) => {
     const cleanOld = String(oldPassword).trim();
     const cleanNew = String(newPassword).trim();
 
-    if (cleanNew.length < 6) {
-      return res.status(400).json({ success: false, message: 'Kata sandi baru minimal 6 karakter!' });
-    }
-    if (cleanNew === 'bpmp123' || cleanNew === 'Bpmp2026!') {
-      return res.status(400).json({ success: false, message: 'Kata sandi baru tidak boleh menggunakan kata sandi default!' });
-    }
-
     const employee = await db.getEmployeeByIdOrNip(cleanNip);
     if (!employee) {
       return res.status(404).json({ success: false, message: 'Pegawai tidak ditemukan.' });
     }
 
-    const storedPassword = employee.password || 'Bpmp2026!';
-    let isOldValid = verifyPassword(cleanOld, storedPassword);
-    if (!isOldValid && (cleanOld === 'bpmp123' || cleanOld === 'Bpmp2026!')) {
-      isOldValid = true;
+    // Validasi kekuatan password: minimal 8 karakter, tolak sama dengan NIP atau tanggal lahir
+    const validation = validatePassword(cleanNew, { nip: employee.nip, username: employee.username });
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, message: validation.message });
     }
+
+    const storedHash = employee.password_hash || employee.password;
+    const isOldValid = await verifyPassword(cleanOld, storedHash);
 
     if (!isOldValid) {
       return res.status(401).json({ success: false, message: 'Kata sandi lama yang Anda masukkan tidak sesuai.' });
     }
 
-    const hashedNew = hashPassword(cleanNew);
+    const hashedNew = await hashPassword(cleanNew);
     await db.updateEmployee(employee.id, {
-      password: hashedNew,
+      password_hash: hashedNew,
+      wajib_ganti_password: false,
       mustChangePassword: false
+    });
+
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    await db.recordActivityLog({
+      aktor_id: employee.nip,
+      aktor_nama: employee.name,
+      aksi: 'ganti_password_pegawai',
+      target: employee.nip,
+      keterangan: `Pegawai ${employee.name} (${employee.nip}) berhasil memperbarui kata sandi mandiri.`,
+      ip: clientIp
     });
 
     return res.json({
@@ -1465,11 +1508,18 @@ app.get('/api/system/status', async (req, res) => {
 // ========================================================
 // EMPLOYEES & LPTI VERIFICATION APIs
 // ========================================================
+function sanitizeEmployeeResponse(emp) {
+  if (!emp) return emp;
+  const { password, password_hash, ...safe } = emp;
+  return safe;
+}
+
 app.get('/api/employees', async (req, res) => {
   const employees = await db.getAllEmployees();
   const activeEvent = await db.getActiveEvent();
   const allEvents = await db.getAllEvents();
-  res.json({ success: true, employees, event: activeEvent, events: allEvents });
+  const safeEmployees = (employees || []).map(sanitizeEmployeeResponse);
+  res.json({ success: true, employees: safeEmployees, event: activeEvent, events: allEvents });
 });
 
 app.get('/api/employees/:id', async (req, res) => {
@@ -1484,7 +1534,7 @@ app.get('/api/employees/:id', async (req, res) => {
     targetEvent = await db.getActiveEvent();
   }
   const derivedStatus = getEventDerivedStatus(targetEvent);
-  res.json({ success: true, employee: emp, event: targetEvent, derivedStatus });
+  res.json({ success: true, employee: sanitizeEmployeeResponse(emp), event: targetEvent, derivedStatus });
 });
 
 // Endpoint Event Mendatang (Akan Datang)
@@ -2659,9 +2709,42 @@ app.delete('/api/employees/:id', requireSuperAdminMiddleware, async (req, res) =
 
 app.post('/api/employees/:id/reset-password', requireSuperAdminMiddleware, async (req, res) => {
   try {
-    const newPass = req.body.newPassword || 'Bpmp2026!';
-    const updated = await db.resetEmployeePassword(req.params.id, newPass);
-    res.json({ success: true, message: `Password pegawai ${updated.name} berhasil di-reset ke "${newPass}".`, employee: updated });
+    const tempPassword = generateTempPassword();
+    const updated = await db.resetEmployeePassword(req.params.id, tempPassword);
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+    await db.recordActivityLog({
+      aktor_id: req.admin.username,
+      aktor_nama: req.admin.name,
+      aksi: 'reset_password_pegawai',
+      target: updated.nip,
+      keterangan: `Mereset password akun pegawai: ${updated.name} (${updated.nip}) dengan password sementara acak`,
+      ip: clientIp
+    });
+
+    if (multiEventService && multiEventService.recordAuditLog) {
+      await multiEventService.recordAuditLog({
+        userId: req.admin.username,
+        aksi: 'RESET_PASSWORD_PEGAWAI',
+        entitas: 'pegawai',
+        entitasId: updated.id || updated.nip,
+        sebelum: null,
+        sesudah: { id: updated.id, nip: updated.nip, name: updated.name, wajib_ganti_password: true }
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Password pegawai ${updated.name} berhasil di-reset. Berikan password sementara ini kepada pegawai yang bersangkutan.`,
+      tempPassword,
+      employee: {
+        id: updated.id,
+        nip: updated.nip,
+        name: updated.name,
+        jabatan: updated.jabatan,
+        wajib_ganti_password: true
+      }
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -2771,7 +2854,7 @@ app.post('/api/admins/:id/toggle-active', requireSuperAdminMiddleware, async (re
 
 app.post('/api/admins/:id/reset-password', requireSuperAdminMiddleware, async (req, res) => {
   try {
-    const tempPassword = req.body.newPassword || `Bpmp${Math.floor(1000 + Math.random() * 9000)}!`;
+    const tempPassword = generateTempPassword();
     const result = await db.resetAdminPassword(req.params.id, tempPassword);
     const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
 
@@ -2784,11 +2867,29 @@ app.post('/api/admins/:id/reset-password', requireSuperAdminMiddleware, async (r
       ip: clientIp
     });
 
+    if (multiEventService && multiEventService.recordAuditLog) {
+      await multiEventService.recordAuditLog({
+        userId: req.admin.username,
+        aksi: 'RESET_PASSWORD_ADMIN',
+        entitas: 'admins',
+        entitasId: result.id || result.username,
+        sebelum: null,
+        sesudah: { id: result.id, username: result.username, name: result.name, wajib_ganti_password: true }
+      });
+    }
+
     res.json({
       success: true,
-      message: `Password akun "${result.username}" berhasil direset!`,
-      tempPassword: result.tempPassword,
-      admin: result
+      message: `Password akun "${result.username}" berhasil direset! Catat password sementara ini karena hanya ditampilkan sekali.`,
+      tempPassword,
+      admin: {
+        id: result.id,
+        username: result.username,
+        name: result.name,
+        role: result.role,
+        peran: result.peran,
+        wajib_ganti_password: true
+      }
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -2801,21 +2902,27 @@ app.post('/api/auth/admin-change-password', async (req, res) => {
     return res.status(401).json({ success: false, message: 'Autentikasi admin diperlukan.' });
   }
 
-  const { oldPassword, newPassword } = req.body;
-  if (!newPassword || String(newPassword).length < 8) {
-    return res.status(400).json({ success: false, message: 'Password baru minimal 8 karakter!' });
+  const { oldPassword, newPassword } = req.body || {};
+  const cleanNew = String(newPassword || '').trim();
+  const cleanOld = String(oldPassword || '').trim();
+
+  // Validasi: minimal 8 karakter, tolak password yang sama dengan username atau konteks NIP / tanggal lahir
+  const validation = validatePassword(cleanNew, { username: admin.username, nip: admin.username });
+  if (!validation.valid) {
+    return res.status(400).json({ success: false, message: validation.message });
   }
 
-  if (oldPassword) {
-    const verified = await db.verifyAdminCredentials(admin.username, oldPassword);
+  if (cleanOld) {
+    const verified = await db.verifyAdminCredentials(admin.username, cleanOld);
     if (!verified || verified.error) {
       return res.status(400).json({ success: false, message: 'Password lama tidak cocok!' });
     }
   }
 
   try {
+    const hashed = await hashPassword(cleanNew);
     const updated = await db.updateAdmin(admin.username, {
-      password: String(newPassword).trim(),
+      password_hash: hashed,
       wajib_ganti_password: false
     });
 
@@ -2828,6 +2935,17 @@ app.post('/api/auth/admin-change-password', async (req, res) => {
       keterangan: `Admin ${admin.name} (${admin.username}) berhasil memperbarui password mandiri.`,
       ip: clientIp
     });
+
+    if (multiEventService && multiEventService.recordAuditLog) {
+      await multiEventService.recordAuditLog({
+        userId: admin.username,
+        aksi: 'GANTI_PASSWORD_ADMIN',
+        entitas: 'admins',
+        entitasId: admin.username,
+        sebelum: null,
+        sesudah: { username: admin.username, wajib_ganti_password: false }
+      });
+    }
 
     const newToken = createAdminToken({ ...updated, wajib_ganti_password: false });
     res.setHeader('Set-Cookie', `admin_token=${newToken}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax`);

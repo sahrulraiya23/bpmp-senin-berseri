@@ -300,7 +300,7 @@
                     <th>Golongan</th>
                     <th>Jabatan Dinas</th>
                     <th>Akumulasi JP</th>
-                    <th>Status Hadir</th>
+                    <th id="thEventHadir">Presensi Event</th>
                     <th class="text-center w-1">Aksi</th>
                   </tr>
                 </thead>
@@ -807,7 +807,13 @@
         const res = await fetch('/api/employees');
         const json = await res.json();
         const employees = json.employees || [];
+        const activeEvent = json.event;
         appState.employees = employees;
+
+        const thEventHadir = document.getElementById('thEventHadir');
+        if (thEventHadir) {
+          thEventHadir.textContent = activeEvent ? `Presensi (${activeEvent.title})` : 'Presensi (Tidak Ada Event)';
+        }
 
         document.getElementById('employeeCountText').innerText = `Menampilkan ${employees.length} pegawai ASN terdaftar`;
 
@@ -835,16 +841,18 @@
                 <span class="badge bg-primary-lt fw-bold">${emp.accumulatedJp || 0} JP</span>
               </td>
               <td>
-                ${isAttended 
-                  ? `<span class="badge bg-success text-success-fg"><i class="ti ti-check me-1"></i> HADIR</span>` 
-                  : `<span class="badge bg-secondary-lt">Belum Hadir</span>`}
+                ${activeEvent 
+                  ? (isAttended 
+                      ? `<span class="badge bg-success text-success-fg"><i class="ti ti-check me-1"></i> HADIR</span>` 
+                      : `<span class="badge bg-secondary-lt">Belum Hadir</span>`)
+                  : `<span class="text-muted small">-</span>`}
               </td>
               <td class="text-center">
                 <div class="btn-list flex-nowrap justify-content-center">
                   <button class="btn btn-outline-primary btn-sm btn-icon" title="Sunting Pegawai" onclick="openEditEmployeeModal('${emp.id || emp.nip}')">
                     <i class="ti ti-edit"></i>
                   </button>
-                  <button class="btn btn-outline-warning btn-sm btn-icon" title="Reset Sandi ke Bpmp2026!" onclick="handleResetEmployeePassword('${emp.id || emp.nip}', '${emp.name}')">
+                  <button class="btn btn-outline-warning btn-sm btn-icon" title="Reset Sandi Acak Sekali Pakai" onclick="handleResetEmployeePassword('${emp.id || emp.nip}', '${emp.name}')">
                     <i class="ti ti-key"></i>
                   </button>
                   <button class="btn btn-outline-danger btn-sm btn-icon" title="Hapus Pegawai" onclick="handleDeleteEmployee('${emp.id || emp.nip}', '${emp.name}')">
@@ -973,22 +981,22 @@
 
     async function handleResetEmployeePassword(idOrNip, name) {
       BPMPComponents.showConfirmModal({
-        title: 'Reset Kata Sandi?',
-        message: `Kembalikan kata sandi pegawai <strong>${name}</strong> ke default "Bpmp2026!"?`,
+        title: 'Reset Kata Sandi Pegawai?',
+        message: `Buat kata sandi sementara acak untuk pegawai <strong>${name}</strong>? Kata sandi baru hanya akan ditampilkan sekali dan wajib diganti oleh pegawai saat login.`,
         icon: 'ti-key',
         iconColor: 'warning',
         confirmClass: 'btn-warning',
-        confirmText: 'Reset Password',
+        confirmText: 'Reset Sandi Acak',
         onConfirm: async () => {
           try {
             const res = await fetch(`/api/employees/${idOrNip}/reset-password`, {
               method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify({ newPassword: 'Bpmp2026!' })
+              headers: getAuthHeaders()
             });
             const data = await res.json();
             if (data.success) {
-              BPMPComponents.showToast(data.message, 'success');
+              prompt('Password sementara pegawai berhasil dibuat (Salin untuk diberikan kepada pegawai):', data.tempPassword);
+              BPMPComponents.showToast('Password pegawai berhasil di-reset ke sandi sementara acak.', 'success');
             } else {
               BPMPComponents.showToast(data.message || 'Gagal reset sandi.', 'danger');
             }

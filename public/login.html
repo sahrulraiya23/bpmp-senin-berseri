@@ -283,9 +283,6 @@
                 <div class="col">
                   <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                     <h3 class="card-title mb-0 fw-bold text-primary" id="empName">Memuat Pegawai...</h3>
-                    <span class="badge bg-green-lt" id="empAttendanceBadge">
-                      <i class="ti ti-clock me-1"></i> Menunggu Presensi
-                    </span>
                   </div>
                   <div class="text-secondary small d-flex flex-wrap gap-2">
                     <span class="font-monospace fw-bold" id="empNip">NIP: -</span>
@@ -361,6 +358,9 @@
                       <span class="badge bg-purple text-white" id="eventJpBadge">2 JP</span>
                       <span class="badge bg-green text-green-fg" id="eventDerivedStatusBadge">
                         <i class="ti ti-circle-filled me-1"></i> Sedang Berlangsung
+                      </span>
+                      <span class="badge bg-green text-white d-none" id="eventPresensiContextBadge">
+                        <i class="ti ti-check me-1"></i> Presensi: Hadir 1/1 sesi &bull; terverifikasi
                       </span>
                     </div>
                     <h4 class="mb-1 text-primary fw-bold" id="eventTitleBanner">
@@ -938,6 +938,10 @@
       }
 
       if (currentAuthUser && (currentAuthUser.nip || currentAuthUser.id)) {
+        if (currentAuthUser.wajib_ganti_password || currentAuthUser.mustChangePassword) {
+          openChangePasswordModal(true);
+          return;
+        }
         if (localStorage.getItem('bpmp_attended_' + currentAuthUser.nip) === 'true') {
           currentAuthUser.attended = true;
           currentAuthUser.attendedAt = localStorage.getItem('bpmp_attended_time_' + currentAuthUser.nip) || currentAuthUser.attendedAt;
@@ -1003,9 +1007,10 @@
           sessionStorage.setItem('bpmp_auth_user', JSON.stringify(currentAuthUser));
 
           // Cek apakah pegawai WAJIB ganti kata sandi
-          if (data.mustChangePassword) {
+          // Cek apakah pegawai WAJIB ganti kata sandi
+          if (data.mustChangePassword || data.wajib_ganti_password || currentAuthUser.wajib_ganti_password) {
             openChangePasswordModal(true);
-            showToast('Selamat datang! Silakan buat kata sandi baru untuk mengamankan akun.', 'info');
+            showToast('Selamat datang! Demi keamanan, Anda wajib membuat kata sandi baru.', 'warning');
             return;
           }
 
@@ -1069,14 +1074,24 @@
         showToast('Konfirmasi kata sandi baru tidak cocok!', 'error');
         return;
       }
-      if (newPassword.length < 6) {
-        showToast('Kata sandi baru minimal 6 karakter!', 'error');
+      if (newPassword.length < 8) {
+        showToast('Kata sandi baru minimal 8 karakter!', 'error');
         return;
       }
 
       const nip = currentAuthUser?.nip || localStorage.getItem('bpmp_auth_nip');
       if (!nip) {
         showToast('Sesi pegawai tidak ditemukan. Silakan login kembali.', 'error');
+        return;
+      }
+
+      const cleanNip = String(nip).trim();
+      if (newPassword.toLowerCase() === cleanNip.toLowerCase()) {
+        showToast('Kata sandi tidak boleh sama dengan NIP Anda!', 'error');
+        return;
+      }
+      if (cleanNip.length >= 8 && newPassword.includes(cleanNip.slice(0, 8))) {
+        showToast('Kata sandi tidak boleh memuat tanggal lahir dari NIP Anda!', 'error');
         return;
       }
 
@@ -1262,26 +1277,41 @@
       // Update Stepper Nodes
       updateHorizontalStepper(isAttended, lptiStatus, isLptiApproved);
 
-      // Render Step 1
-      const attBadge = document.getElementById('empAttendanceBadge');
+      // Render Step 1 & Konteks Kehadiran
       const actionBox = document.getElementById('attendanceActionBox');
       const successBox = document.getElementById('attendanceSuccessBox');
+      const presensiContextBadge = document.getElementById('eventPresensiContextBadge');
+
+      const attendedTime = emp.attendedAt || localStorage.getItem('bpmp_attended_time_' + emp.nip);
+      let timeFormatted = '08.00 WITA';
+      if (attendedTime) {
+        try {
+          const dt = new Date(attendedTime);
+          timeFormatted = !isNaN(dt.getTime()) ? dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.') + ' WITA' : attendedTime;
+        } catch(e) {}
+      }
+
+      if (currentEvent) {
+        if (presensiContextBadge) {
+          presensiContextBadge.classList.remove('d-none');
+          if (isAttended) {
+            presensiContextBadge.className = 'badge bg-green text-white';
+            presensiContextBadge.innerHTML = `<i class="ti ti-check me-1"></i> Presensi: Hadir 1/1 sesi &bull; terverifikasi ${timeFormatted}`;
+          } else {
+            presensiContextBadge.className = 'badge bg-warning-lt text-warning-emphasis';
+            presensiContextBadge.innerHTML = `<i class="ti ti-clock me-1"></i> Presensi: Belum Hadir (0/1 sesi)`;
+          }
+        }
+      } else if (presensiContextBadge) {
+        presensiContextBadge.classList.add('d-none');
+      }
 
       if (isAttended) {
-        attBadge.className = 'badge bg-green text-white';
-        attBadge.innerHTML = '<i class="ti ti-check me-1"></i> Hadir Terverifikasi';
         actionBox?.classList.add('d-none');
         successBox?.classList.remove('d-none');
-        const attendedTime = emp.attendedAt || localStorage.getItem('bpmp_attended_time_' + emp.nip);
-        if (attendedTime) {
-          try {
-            const dt = new Date(attendedTime);
-            document.getElementById('attendanceTimeLabel').textContent = 'Hadir pada ' + (!isNaN(dt.getTime()) ? dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA' : attendedTime);
-          } catch(e) {}
-        }
+        const timeLabel = document.getElementById('attendanceTimeLabel');
+        if (timeLabel) timeLabel.textContent = `Hadir pada ${timeFormatted}`;
       } else {
-        attBadge.className = 'badge bg-secondary-lt';
-        attBadge.innerHTML = '<i class="ti ti-clock me-1"></i> Menunggu Presensi';
         actionBox?.classList.remove('d-none');
         successBox?.classList.add('d-none');
       }

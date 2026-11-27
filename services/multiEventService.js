@@ -18,7 +18,7 @@ class MultiEventService {
    * Mengambil memory store internal adapter (fallback storage untuk testing & offline)
    */
   _getStore() {
-    if (typeof this.db.getMemoryStore === 'function') {
+    if (this.db && typeof this.db.getMemoryStore === 'function') {
       return this.db.getMemoryStore();
     }
     if (!global.__seninBerseriStore) {
@@ -1026,14 +1026,32 @@ class MultiEventService {
   async recordAuditLog({ userId, aksi, entitas, entitasId, sebelum = null, sesudah = null }) {
     await this.init();
     const store = this._getStore();
+
+    // Pastikan password / hash / sandi sementara tidak pernah masuk audit_log
+    const sanitizePayload = (obj) => {
+      if (!obj || typeof obj !== 'object') return obj;
+      const clean = Array.isArray(obj) ? [...obj] : { ...obj };
+      for (const key of Object.keys(clean)) {
+        if (['password', 'password_hash', 'tempPassword', 'newPassword', 'oldPassword'].includes(key)) {
+          delete clean[key];
+        } else if (typeof clean[key] === 'object' && clean[key] !== null) {
+          clean[key] = sanitizePayload(clean[key]);
+        }
+      }
+      return clean;
+    };
+
+    const cleanSebelum = sanitizePayload(sebelum);
+    const cleanSesudah = sanitizePayload(sesudah);
+
     const log = {
       id: `AUDIT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       user_id: userId || 'system',
       aksi,
       entitas,
       entitas_id: entitasId,
-      sebelum_json: sebelum ? JSON.stringify(sebelum) : null,
-      sesudah_json: sesudah ? JSON.stringify(sesudah) : null,
+      sebelum_json: cleanSebelum ? JSON.stringify(cleanSebelum) : null,
+      sesudah_json: cleanSesudah ? JSON.stringify(cleanSesudah) : null,
       created_at: new Date().toISOString()
     };
     store.audit_log.unshift(log);
